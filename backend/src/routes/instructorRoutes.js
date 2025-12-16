@@ -1,0 +1,43 @@
+import express from 'express';
+import instructorController from '../controllers/instructorController.js';
+import { authenticate } from '../middlewares/auth.js';
+import { checkRole } from '../middlewares/roleCheck.js';
+
+const router = express.Router();
+
+// All routes require authentication and faculty/admin role
+router.use(authenticate);
+router.use(checkRole('faculty', 'admin'));
+
+// Course routes
+router.get('/courses', instructorController.getMyCourses);
+router.post('/courses', instructorController.createCourse);
+router.put('/courses/:courseId', instructorController.updateCourse);
+router.delete('/courses/:courseId', instructorController.deleteCourse);
+router.get('/courses/:courseId/students', instructorController.getCourseStudents);
+
+// Assignment routes
+router.post('/assignments', instructorController.createAssignment);
+router.get('/courses/:courseId/assignments', instructorController.getCourseAssignments);
+router.put('/assignments/:assignmentId', instructorController.updateAssignment);
+router.delete('/assignments/:assignmentId', instructorController.deleteAssignment);
+router.post('/assignments/:assignmentId/grade/:studentId', instructorController.gradeSubmission);
+
+// Attendance routes
+router.post('/attendance', instructorController.markAttendance);
+router.get('/courses/:courseId/attendance', instructorController.getCourseAttendance);
+
+// Announcement routes
+router.post('/announcements', instructorController.createAnnouncement);
+router.get('/courses/:courseId/announcements', instructorController.getCourseAnnouncements);
+router.put('/announcements/:announcementId', instructorController.updateAnnouncement);
+router.delete('/announcements/:announcementId', instructorController.deleteAnnouncement);
+
+// Grade routes
+router.post('/grades', instructorController.submitGrades);
+router.get('/courses/:courseId/grades', instructorController.getCourseGrades);
+
+// Statistics route
+router.get('/statistics', instructorController.getStatistics);
+
+export default router;

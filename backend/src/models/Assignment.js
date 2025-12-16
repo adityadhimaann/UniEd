@@ -1,0 +1,94 @@
+import mongoose from 'mongoose';
+
+const submissionSchema = new mongoose.Schema({
+  student: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  submittedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  files: {
+    type: [String],
+    default: [],
+  },
+  grade: {
+    type: Number,
+    min: 0,
+    default: null,
+  },
+  feedback: {
+    type: String,
+    default: null,
+  },
+  status: {
+    type: String,
+    enum: ['submitted', 'graded', 'late'],
+    default: 'submitted',
+  },
+});
+
+const assignmentSchema = new mongoose.Schema(
+  {
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      required: [true, 'Course is required'],
+    },
+    title: {
+      type: String,
+      required: [true, 'Title is required'],
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    totalMarks: {
+      type: Number,
+      required: [true, 'Total marks are required'],
+      min: [1, 'Total marks must be at least 1'],
+    },
+    dueDate: {
+      type: Date,
+      required: [true, 'Due date is required'],
+    },
+    attachments: {
+      type: [String],
+      default: [],
+    },
+    submissions: {
+      type: [submissionSchema],
+      default: [],
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Creator is required'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Indexes
+assignmentSchema.index({ course: 1 });
+assignmentSchema.index({ createdBy: 1 });
+assignmentSchema.index({ dueDate: 1 });
+assignmentSchema.index({ 'submissions.student': 1 });
+
+// Ensure virtuals are included in JSON
+assignmentSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    return ret;
+  },
+});
+
+const Assignment = mongoose.model('Assignment', assignmentSchema);
+
+export default Assignment;

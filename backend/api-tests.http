@@ -1,0 +1,120 @@
+### UniEd Backend API Testing
+### Base URL
+@baseURL = http://localhost:5001/api/v1
+@accessToken = your-access-token-here
+@refreshToken = your-refresh-token-here
+
+###############################################
+# Health Check
+###############################################
+
+### Health Check
+GET http://localhost:5001/health
+
+###############################################
+# Authentication
+###############################################
+
+### Register Student
+POST {{baseURL}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student@unied.com",
+  "password": "password123",
+  "role": "student",
+  "firstName": "John",
+  "lastName": "Doe",
+  "studentId": "STU001",
+  "department": "Computer Science",
+  "semester": 1
+}
+
+### Register Faculty
+POST {{baseURL}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "faculty@unied.com",
+  "password": "password123",
+  "role": "faculty",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "employeeId": "FAC001",
+  "department": "Computer Science"
+}
+
+### Register Admin
+POST {{baseURL}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@unied.com",
+  "password": "password123",
+  "role": "admin",
+  "firstName": "Admin",
+  "lastName": "User",
+  "employeeId": "ADM001"
+}
+
+### Login
+POST {{baseURL}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@unied.com",
+  "password": "password123"
+}
+
+### Get Profile (requires authentication)
+GET {{baseURL}}/auth/profile
+Authorization: Bearer {{accessToken}}
+
+### Refresh Access Token
+POST {{baseURL}}/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout (requires authentication)
+POST {{baseURL}}/auth/logout
+Authorization: Bearer {{accessToken}}
+
+### Forgot Password
+POST {{baseURL}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "student@unied.com"
+}
+
+###############################################
+# Test Invalid Requests
+###############################################
+
+### Register with missing fields
+POST {{baseURL}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@unied.com",
+  "password": "123"
+}
+
+### Login with wrong credentials
+POST {{baseURL}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "wrong@unied.com",
+  "password": "wrongpassword"
+}
+
+### Access protected route without token
+GET {{baseURL}}/auth/profile
+
+### Access with invalid token
+GET {{baseURL}}/auth/profile
+Authorization: Bearer invalid-token
