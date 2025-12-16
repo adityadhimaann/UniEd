@@ -79,7 +79,7 @@ export default function AssignmentsManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <img src="/src/assets/loadicon.gif" alt="Loading..." className="h-48 w-48" />
+        <img src="/loadicon.gif" alt="Loading..." className="h-48 w-48" />
       </div>
     );
   }
