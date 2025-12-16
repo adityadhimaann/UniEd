@@ -4,6 +4,7 @@ import messageRoutes from './messageRoutes.js';
 import reviewRoutes from './reviewRoutes.js';
 import instructorRoutes from './instructorRoutes.js';
 import studentRoutes from './studentRoutes.js';
+import oauthRoutes from './oauthRoutes.js';
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.get('/health', (req, res) => {
 
 // Routes
 router.use(`${API_VERSION}/auth`, authRoutes);
+router.use(`${API_VERSION}/oauth`, oauthRoutes);
 router.use(`${API_VERSION}/reviews`, reviewRoutes);
 router.use(`${API_VERSION}/messages`, messageRoutes);
 router.use(`${API_VERSION}/instructor`, instructorRoutes);

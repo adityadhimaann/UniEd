@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
+import passport from './config/passport.js';
 import routes from './routes/index.js';
 import errorHandler from './middlewares/errorHandler.js';
 import { apiLimiter } from './middlewares/rateLimiter.js';
@@ -25,6 +26,9 @@ app.use(
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Passport middleware
+app.use(passport.initialize());
 
 // Compression
 app.use(compression());

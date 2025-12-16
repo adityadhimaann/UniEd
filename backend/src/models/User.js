@@ -13,9 +13,46 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function() {
+        return !this.googleId && !this.microsoftId;
+      },
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    microsoftId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'microsoft'],
+      default: 'local',
+    },
+    firstName: {
+      type: String,
+      required: function() {
+        return this.authProvider === 'local';
+      },
+      trim: true,
+      default: '',
+    },
+    lastName: {
+      type: String,
+      required: function() {
+        return this.authProvider === 'local';
+      },
+      trim: true,
+      default: '',
+    },
+    avatar: {
+      type: String,
+      default: null,
     },
     role: {
       type: String,
@@ -24,20 +61,6 @@ const userSchema = new mongoose.Schema(
       default: 'student',
     },
     profile: {
-      firstName: {
-        type: String,
-        required: [true, 'First name is required'],
-        trim: true,
-      },
-      lastName: {
-        type: String,
-        required: [true, 'Last name is required'],
-        trim: true,
-      },
-      avatar: {
-        type: String,
-        default: null,
-      },
       phone: {
         type: String,
         trim: true,

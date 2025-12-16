@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AuthCallback from "./pages/AuthCallback";
+import SetPassword from "./pages/SetPassword";
 import InstructorPortal from "./pages/InstructorPortal";
 import InstructorDashboard from "./components/instructor/InstructorDashboard";
 import CoursesManagement from "./components/instructor/CoursesManagement";
@@ -28,13 +30,20 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/set-password" element={<SetPassword />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             
             {/* Instructor Portal Routes */}
