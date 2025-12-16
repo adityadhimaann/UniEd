@@ -6,14 +6,25 @@ dotenv.config();
 let redisClient = null;
 
 const connectRedis = async () => {
+  // Skip Redis if REDIS_URL is not set or points to localhost in production
+  const redisUrl = process.env.REDIS_URL;
+  
+  if (!redisUrl || redisUrl.includes('localhost') && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  Redis not configured - skipping Redis connection');
+    return null;
+  }
+
   try {
     redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      url: redisUrl,
       password: process.env.REDIS_PASSWORD || undefined,
+      socket: {
+        reconnectStrategy: false, // Disable reconnection attempts
+      },
     });
 
     redisClient.on('error', (err) => {
-      console.error('❌ Redis Client Error:', err);
+      console.error('❌ Redis Client Error:', err.message);
     });
 
     redisClient.on('connect', () => {
