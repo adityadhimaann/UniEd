@@ -67,26 +67,36 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
               needsUpdate = true;
             }
             
-            // Update firstName and lastName if they're empty
-            if (!user.firstName || user.firstName === '') {
+            // Update firstName and lastName if they're empty or whitespace
+            const currentFirstName = (user.firstName || '').trim();
+            const currentLastName = (user.lastName || '').trim();
+            
+            if (!currentFirstName && firstName) {
               user.firstName = firstName;
               needsUpdate = true;
             }
             
-            if (!user.lastName || user.lastName === '') {
+            if (!currentLastName && lastName) {
               user.lastName = lastName;
               needsUpdate = true;
             }
             
-            // Update avatar if not set
-            if (!user.avatar && profile.photos?.[0]?.value) {
+            // Update avatar if not set or empty
+            if ((!user.avatar || user.avatar.trim() === '') && profile.photos?.[0]?.value) {
               user.avatar = profile.photos[0].value;
               needsUpdate = true;
             }
             
             if (needsUpdate) {
               await user.save();
-              console.log('Updated existing user:', { id: user._id, firstName: user.firstName, lastName: user.lastName });
+              console.log('Updated existing user:', { 
+                id: user._id, 
+                firstName: user.firstName, 
+                lastName: user.lastName,
+                avatar: user.avatar ? 'set' : 'not set'
+              });
+            } else {
+              console.log('No updates needed for user:', user._id);
             }
             
             return done(null, user);
