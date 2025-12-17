@@ -23,9 +23,17 @@ router.get(
     console.log('Google OAuth callback received');
     next();
   },
-  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`, session: false }),
+  passport.authenticate('google', { 
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=account_exists`,
+    session: false 
+  }),
   async (req, res) => {
     try {
+      // Check if authentication failed (user will be false if denied in strategy)
+      if (!req.user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=account_exists`);
+      }
+
       // Generate JWT token
       const token = generateAccessToken({ userId: req.user._id, role: req.user.role });
       

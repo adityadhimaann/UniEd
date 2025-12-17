@@ -59,6 +59,28 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    // Show error message if redirected from OAuth with error
+    if (errorParam) {
+      let errorMessage = 'Authentication failed';
+      
+      if (errorParam === 'account_exists') {
+        errorMessage = 'An account with this email already exists. Please login with your email and password instead.';
+      } else if (errorParam === 'google_auth_failed' || errorParam === 'auth_failed') {
+        errorMessage = 'Google authentication failed. Please try again.';
+      }
+      
+      toast({
+        title: 'Authentication Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+
+      // Clear the error from URL
+      navigate('/login', { replace: true });
+    }
+  }, [errorParam, toast, navigate]);
+
+  useEffect(() => {
     // Show error message if present in URL
     if (errorParam) {
       toast({

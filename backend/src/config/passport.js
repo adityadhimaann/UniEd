@@ -49,23 +49,21 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
           console.log('Extracted names:', { firstName, lastName, displayName });
           
-          // Check if user already exists
-          let user = await User.findOne({ 
-            $or: [
-              { googleId: profile.id },
-              { email: profile.emails[0].value }
-            ]
-          });
+          // Check if user already exists with this email
+          let user = await User.findOne({ email: profile.emails[0].value });
 
           if (user) {
-            // Update user data if needed
-            let needsUpdate = false;
-            
-            if (!user.googleId) {
-              user.googleId = profile.id;
-              user.authProvider = 'google';
-              needsUpdate = true;
+            // If user exists but doesn't have googleId, they registered with email/password
+            // Don't allow automatic linking - require them to login with their password
+            if (!user.googleId && user.authProvider !== 'google') {
+              console.log('Account exists with email/password - denying Google OAuth');
+              return done(null, false, { 
+                message: 'An account with this email already exists. Please login with your email and password.' 
+              });
             }
+
+            // User exists and has googleId - this is a returning OAuth user
+            let needsUpdate = false;
             
             // Update firstName and lastName if they're empty or whitespace
             const currentFirstName = (user.firstName || '').trim();
@@ -73,6 +71,19 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             
             if (!currentFirstName && firstName) {
               user.firstName = firstName;
+              needsUpdate = true;
+            }
+            
+            if (!currentLastName && lastName) {
+              user.lastName = lastName;
+              needsUpdate = true;
+            }
+            
+            // Update avatar if not set or empty
+            if ((!user.avatar || user.avatar.trim() === '') && profile.photos?.[0]?.value) {
+              user.avatar = profile.photos[0].value;
+              needsUpdate = true;
+            }
               needsUpdate = true;
             }
             
