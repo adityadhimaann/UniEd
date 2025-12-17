@@ -195,7 +195,6 @@ export default function Signup() {
             transition={{ duration: 0.8 }}
           >
             <div className="flex items-center justify-center gap-3 mb-4">
-              <img src={uniEdLogo} alt="UniEd" className="w-16 h-12 object-contain" />
               <h1 className="font-display text-5xl font-bold text-white">UniEd</h1>
             </div>
             <p className="text-white/90 text-xl font-medium mb-2">Unified Education Platform</p>
@@ -245,11 +244,8 @@ export default function Signup() {
         >
           {/* Logo and Back Button */}
           <div className="flex items-center justify-between mb-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-16 h-10 flex items-center justify-center">
-                <img src={uniEdLogo} alt="UniEd" className="w-16 h-10 object-contain" />
-              </div>
-              <span className="font-display text-xl font-bold">UniEd</span>
+            <Link to="/">
+              <span className="font-display text-2xl font-bold">UniEd</span>
             </Link>
             <Link to="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
