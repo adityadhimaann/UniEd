@@ -139,17 +139,18 @@ export function Navbar() {
                 {item.label}
               </motion.a>
             ))}
-            <div className="border-t border-border pt-4 mt-4 space-y-3">
+            <div className="border-t border-border pt-4 mt-4 space-y-4">
               {user ? (
                 <>
                   <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                    <Button className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-6">
                       Go to Dashboard
                     </Button>
                   </Link>
+                  
                   <Button 
                     variant="outline" 
-                    className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                    className="w-full py-6 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                     onClick={handleLogout}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
@@ -159,10 +160,11 @@ export function Navbar() {
               ) : (
                 <>
                   <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">Sign In</Button>
+                    <Button variant="outline" className="w-full py-6">Sign In</Button>
                   </Link>
+                  <div className="h-0.5"></div>
                   <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                    <Button className="w-full py-6 bg-gradient-to-r from-primary to-accent text-primary-foreground">
                       Get Started
                     </Button>
                   </Link>

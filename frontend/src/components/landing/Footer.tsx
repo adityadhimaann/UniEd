@@ -51,9 +51,9 @@ export function Footer() {
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background to-transparent" />
 
       <div className="container relative z-10 px-4">
-        <div className="grid md:grid-cols-2 lg:grid-cols-6 gap-12 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-6 md:gap-12 mb-16">
           {/* Brand column */}
-          <div className="lg:col-span-2">
+          <div className="col-span-2 lg:col-span-2">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -66,18 +66,18 @@ export function Footer() {
                 </div>
                 <span className="font-display text-xl font-bold">UniEd</span>
               </div>
-              <p className="text-muted-foreground mb-6 max-w-xs">
+              <p className="text-muted-foreground mb-6 max-w-xs text-sm md:text-base">
                 The unified platform for modern education. Empowering students and educators worldwide.
               </p>
 
               {/* Newsletter signup */}
               <div className="space-y-3">
-                <p className="text-sm font-medium">Subscribe to our newsletter</p>
+                <p className="text-xs md:text-sm font-medium">Subscribe to our newsletter</p>
                 <div className="flex gap-2">
                   <Input 
                     type="email" 
                     placeholder="Enter your email" 
-                    className="bg-secondary/50 border-border/50"
+                    className="bg-secondary/50 border-border/50 text-sm"
                   />
                   <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground shrink-0">
                     <Mail className="w-4 h-4" />
@@ -96,13 +96,13 @@ export function Footer() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: categoryIndex * 0.1 }}
             >
-              <h4 className="font-display font-semibold mb-4 capitalize">{category}</h4>
-              <ul className="space-y-3">
+              <h4 className="font-display font-semibold mb-3 md:mb-4 capitalize text-sm md:text-base">{category}</h4>
+              <ul className="space-y-2 md:space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
                     <a 
                       href={link.href} 
-                      className="text-muted-foreground hover:text-foreground transition-colors duration-200"
+                      className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-xs md:text-sm"
                     >
                       {link.label}
                     </a>

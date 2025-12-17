@@ -171,6 +171,15 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
 }
 
 @keyframes gradient-shift {
@@ -216,4 +225,8 @@
 
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
+}
+/* 3D Perspective for stacked cards */
+.perspective-1000 {
+  perspective: 1000px;
 }

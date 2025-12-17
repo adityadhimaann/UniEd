@@ -69,7 +69,7 @@ export function StatsSection() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -79,9 +79,9 @@ export function StatsSection() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               className="group"
             >
-              <div className="glass rounded-2xl p-8 text-center h-full transition-all duration-300 hover:bg-card/80 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
+              <div className="glass rounded-2xl p-4 md:p-8 text-center h-full transition-all duration-300 hover:bg-card/80 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
                 {/* Circular progress indicator */}
-                <div className="relative w-24 h-24 mx-auto mb-4">
+                <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-2 md:mb-4">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"
@@ -113,16 +113,16 @@ export function StatsSection() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-display text-2xl font-bold gradient-text">
+                    <span className="font-display text-lg md:text-2xl font-bold gradient-text">
                       <AnimatedCounter value={stat.value} suffix={stat.suffix} />
                     </span>
                   </div>
                 </div>
 
-                <h3 className="font-display text-lg font-semibold mb-1">
+                <h3 className="font-display text-sm md:text-lg font-semibold mb-1">
                   {stat.label}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   {stat.description}
                 </p>
               </div>
