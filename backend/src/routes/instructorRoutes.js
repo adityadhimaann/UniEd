@@ -40,4 +40,9 @@ router.get('/courses/:courseId/grades', instructorController.getCourseGrades);
 // Statistics route
 router.get('/statistics', instructorController.getStatistics);
 
+// Notification routes
+router.get('/notifications', instructorController.getMyNotifications);
+router.patch('/notifications/:notificationId/read', instructorController.markNotificationAsRead);
+router.patch('/notifications/mark-all-read', instructorController.markAllNotificationsAsRead);
+
 export default router;

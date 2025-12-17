@@ -61,6 +61,11 @@ class AuthService {
       user.refreshToken = refreshToken;
       await user.save();
 
+      // Send welcome email (async, don't wait for it)
+      emailService.sendWelcomeEmail(user).catch(err => {
+        console.error('Failed to send welcome email:', err);
+      });
+
       return {
         user: sanitizeUser(user),
         accessToken,

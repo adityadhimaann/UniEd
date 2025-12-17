@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['assignment', 'grade', 'announcement', 'message'],
+      enum: ['assignment', 'grade', 'announcement', 'message', 'enrollment-request', 'enrollment-response'],
       required: [true, 'Type is required'],
     },
     title: {

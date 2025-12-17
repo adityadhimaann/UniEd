@@ -19,14 +19,16 @@ export const createMessage = async (messageData) => {
 
   // For now, we'll use a simple in-memory structure
   // In production, you'd save to a Message collection
+  const fullName = `${senderUser.firstName || ''} ${senderUser.lastName || ''}`.trim();
   const message = {
     _id: new Date().getTime().toString(),
     sender: {
       _id: senderUser._id,
-      firstName: senderUser.profile?.firstName || '',
-      lastName: senderUser.profile?.lastName || '',
+      firstName: senderUser.firstName || '',
+      lastName: senderUser.lastName || '',
+      name: fullName || senderUser.email.split('@')[0],
       email: senderUser.email,
-      avatar: senderUser.profile?.avatar || null,
+      avatar: senderUser.avatar || null,
     },
     receiver: receiverUser._id,
     content,
@@ -44,28 +46,31 @@ export const getConversations = async (userId) => {
   // Get all users except the current user
   const users = await User.find(
     { _id: { $ne: userId } },
-    'profile.firstName profile.lastName email profile.avatar role lastSeen'
+    'firstName lastName email avatar role lastSeen'
   )
     .sort({ lastSeen: -1 })
     .limit(50)
     .lean();
 
   // Transform to conversation format
-  const conversations = users.map(user => ({
-    _id: user._id,
-    user: {
+  const conversations = users.map(user => {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return {
       _id: user._id,
-      firstName: user.profile?.firstName || '',
-      lastName: user.profile?.lastName || '',
-      name: `${user.profile?.firstName || ''} ${user.profile?.lastName || ''}`.trim(),
-      email: user.email,
-      avatar: user.profile?.avatar || null,
-      role: user.role,
-    },
-    lastMessage: null,
-    unreadCount: 0,
-    lastMessageTime: user.lastSeen || user.createdAt,
-  }));
+      user: {
+        _id: user._id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        name: fullName || user.email.split('@')[0],
+        email: user.email,
+        avatar: user.avatar || null,
+        role: user.role,
+      },
+      lastMessage: null,
+      unreadCount: 0,
+      lastMessageTime: user.lastSeen || user.createdAt,
+    };
+  });
 
   return conversations;
 };
@@ -80,8 +85,8 @@ export const getUsers = async (currentUserId, filters = {}) => {
   if (filters.search) {
     const searchRegex = new RegExp(filters.search, 'i');
     query.$or = [
-      { 'profile.firstName': searchRegex },
-      { 'profile.lastName': searchRegex },
+      { firstName: searchRegex },
+      { lastName: searchRegex },
       { email: searchRegex },
     ];
   }
@@ -91,19 +96,22 @@ export const getUsers = async (currentUserId, filters = {}) => {
     query.role = filters.role;
   }
 
-  const users = await User.find(query, 'profile.firstName profile.lastName email profile.avatar role')
+  const users = await User.find(query, 'firstName lastName email avatar role')
     .limit(50)
     .lean();
 
-  return users.map(user => ({
-    _id: user._id,
-    firstName: user.profile?.firstName || '',
-    lastName: user.profile?.lastName || '',
-    name: `${user.profile?.firstName || ''} ${user.profile?.lastName || ''}`.trim(),
-    email: user.email,
-    avatar: user.profile?.avatar || null,
-    role: user.role,
-  }));
+  return users.map(user => {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return {
+      _id: user._id,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      name: fullName || user.email.split('@')[0],
+      email: user.email,
+      avatar: user.avatar || null,
+      role: user.role,
+    };
+  });
 };
 
 /**

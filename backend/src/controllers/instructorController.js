@@ -265,6 +265,44 @@ export const getCourseGrades = asyncHandler(async (req, res) => {
   );
 });
 
+// Get instructor notifications
+export const getMyNotifications = asyncHandler(async (req, res) => {
+  const instructorId = req.user._id;
+  const { limit = 20, skip = 0 } = req.query;
+
+  const notifications = await instructorService.getNotifications(instructorId, { 
+    limit: parseInt(limit), 
+    skip: parseInt(skip) 
+  });
+
+  res.status(200).json(
+    ApiResponse.success(notifications, 'Notifications retrieved successfully')
+  );
+});
+
+// Mark notification as read
+export const markNotificationAsRead = asyncHandler(async (req, res) => {
+  const { notificationId } = req.params;
+  const instructorId = req.user._id;
+
+  const notification = await instructorService.markNotificationAsRead(notificationId, instructorId);
+
+  res.status(200).json(
+    ApiResponse.success(notification, 'Notification marked as read')
+  );
+});
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
+  const instructorId = req.user._id;
+
+  const result = await instructorService.markAllNotificationsAsRead(instructorId);
+
+  res.status(200).json(
+    ApiResponse.success(result, 'All notifications marked as read')
+  );
+});
+
 export default {
   getMyCourses,
   createCourse,
@@ -285,4 +323,7 @@ export default {
   getStatistics,
   submitGrades,
   getCourseGrades,
+  getMyNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
 };

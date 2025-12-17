@@ -33,4 +33,9 @@ router.get('/courses/:courseId/attendance', studentController.getCourseAttendanc
 router.get('/announcements', studentController.getMyAnnouncements);
 router.get('/courses/:courseId/announcements', studentController.getCourseAnnouncements);
 
+// Notifications
+router.get('/notifications', studentController.getMyNotifications);
+router.patch('/notifications/:notificationId/read', studentController.markNotificationAsRead);
+router.patch('/notifications/mark-all-read', studentController.markAllNotificationsAsRead);
+
 export default router;

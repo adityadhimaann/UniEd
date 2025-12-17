@@ -78,19 +78,62 @@ class EmailService {
 
   async sendWelcomeEmail(user) {
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Welcome to UniEd!</h2>
-        <p>Hello ${user.profile.firstName},</p>
-        <p>Your account has been successfully created and verified.</p>
-        <p>You can now log in and start using all the features of UniEd.</p>
-        <a href="${process.env.FRONTEND_URL}/login" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-          Go to Login
-        </a>
-        <p>Best regards,<br>UniEd Team</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4F46E5; margin: 0;">UniEd</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Unified Education Platform</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+          <h2 style="color: white; margin: 0 0 10px 0;">Welcome to UniEd! 🎉</h2>
+          <p style="color: white; margin: 0; font-size: 16px;">Your educational journey starts here</p>
+        </div>
+
+        <div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Hello <strong>${user.firstName}</strong>,
+          </p>
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Thank you for joining UniEd! Your account has been successfully created.
+          </p>
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            You now have access to:
+          </p>
+          <ul style="color: #374151; font-size: 15px; line-height: 1.8;">
+            <li>Unified dashboard for all your courses</li>
+            <li>Real-time collaboration with peers and faculty</li>
+            <li>Assignment management and tracking</li>
+            <li>Grade analytics and performance insights</li>
+            <li>Attendance tracking and reports</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/login" 
+             style="display: inline-block; padding: 14px 32px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+            Get Started
+          </a>
+        </div>
+
+        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Need help? Contact our support team anytime.
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Best regards,<br>
+            <strong style="color: #4F46E5;">The UniEd Team</strong>
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} UniEd. All rights reserved.
+          </p>
+        </div>
       </div>
     `;
 
-    return this.sendEmail(user.email, 'Welcome to UniEd!', html);
+    return this.sendEmail(user.email, 'Welcome to UniEd! 🎉', html);
   }
 
   async sendAssignmentNotification(user, assignment, course) {

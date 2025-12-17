@@ -136,6 +136,41 @@ const getCourseAnnouncements = asyncHandler(async (req, res) => {
   );
 });
 
+// Get student notifications
+const getMyNotifications = asyncHandler(async (req, res) => {
+  const studentId = req.user._id;
+  const { limit = 20, skip = 0 } = req.query;
+
+  const notifications = await studentService.getNotifications(studentId, { limit: parseInt(limit), skip: parseInt(skip) });
+
+  res.status(200).json(
+    ApiResponse.success(notifications, 'Notifications retrieved successfully')
+  );
+});
+
+// Mark notification as read
+const markNotificationAsRead = asyncHandler(async (req, res) => {
+  const { notificationId } = req.params;
+  const studentId = req.user._id;
+
+  const notification = await studentService.markNotificationAsRead(notificationId, studentId);
+
+  res.status(200).json(
+    ApiResponse.success(notification, 'Notification marked as read')
+  );
+});
+
+// Mark all notifications as read
+const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
+  const studentId = req.user._id;
+
+  const result = await studentService.markAllNotificationsAsRead(studentId);
+
+  res.status(200).json(
+    ApiResponse.success(result, 'All notifications marked as read')
+  );
+});
+
 export default {
   getDashboard,
   getMyCourses,
@@ -149,4 +184,7 @@ export default {
   getCourseAttendance,
   getMyAnnouncements,
   getCourseAnnouncements,
+  getMyNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
 };

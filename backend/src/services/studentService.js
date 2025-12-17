@@ -4,6 +4,7 @@ import Assignment from '../models/Assignment.js';
 import Grade from '../models/Grade.js';
 import Attendance from '../models/Attendance.js';
 import Announcement from '../models/Announcement.js';
+import Notification from '../models/Notification.js';
 import ApiError from '../utils/ApiError.js';
 
 // Get student dashboard data
@@ -350,6 +351,57 @@ const getCourseAnnouncements = async (courseId, studentId) => {
   return announcements;
 };
 
+// Get student notifications
+const getNotifications = async (studentId, options = {}) => {
+  const { limit = 20, skip = 0 } = options;
+
+  const notifications = await Notification.find({ user: studentId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(skip);
+
+  const unreadCount = await Notification.countDocuments({ 
+    user: studentId, 
+    isRead: false 
+  });
+
+  return {
+    notifications,
+    unreadCount,
+    total: await Notification.countDocuments({ user: studentId })
+  };
+};
+
+// Mark notification as read
+const markNotificationAsRead = async (notificationId, studentId) => {
+  const notification = await Notification.findOne({
+    _id: notificationId,
+    user: studentId
+  });
+
+  if (!notification) {
+    throw new ApiError(404, 'Notification not found');
+  }
+
+  notification.isRead = true;
+  await notification.save();
+
+  return notification;
+};
+
+// Mark all notifications as read
+const markAllNotificationsAsRead = async (studentId) => {
+  const result = await Notification.updateMany(
+    { user: studentId, isRead: false },
+    { $set: { isRead: true } }
+  );
+
+  return {
+    modifiedCount: result.modifiedCount,
+    message: `${result.modifiedCount} notifications marked as read`
+  };
+};
+
 export default {
   getDashboardData,
   getEnrolledCourses,
@@ -363,4 +415,7 @@ export default {
   getCourseAttendance,
   getStudentAnnouncements,
   getCourseAnnouncements,
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
 };
