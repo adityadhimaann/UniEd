@@ -34,10 +34,9 @@ class AuthService {
       email,
       password,
       role,
-      profile: {
-        firstName,
-        lastName,
-      },
+      firstName,
+      lastName,
+      authProvider: 'local',
       academicInfo: {
         studentId: role === 'student' ? studentId : undefined,
         employeeId: role !== 'student' ? employeeId : undefined,
@@ -324,14 +323,19 @@ class AuthService {
     // Update role
     user.role = data.role;
 
+    // Ensure academicInfo object exists
+    if (!user.academicInfo) {
+      user.academicInfo = {};
+    }
+
     // Update role-specific fields
     if (data.role === 'student') {
-      if (data.studentId) user.studentId = data.studentId;
-      if (data.department) user.department = data.department;
-      if (data.semester) user.semester = data.semester;
+      if (data.studentId) user.academicInfo.studentId = data.studentId;
+      if (data.department) user.academicInfo.department = data.department;
+      if (data.semester) user.academicInfo.semester = data.semester;
     } else if (data.role === 'instructor') {
-      if (data.employeeId) user.employeeId = data.employeeId;
-      if (data.department) user.department = data.department;
+      if (data.employeeId) user.academicInfo.employeeId = data.employeeId;
+      if (data.department) user.academicInfo.department = data.department;
     }
 
     await user.save();
