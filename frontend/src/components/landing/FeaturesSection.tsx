@@ -77,11 +77,6 @@ export function FeaturesSection() {
 
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-background" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
-
       <div className="container relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

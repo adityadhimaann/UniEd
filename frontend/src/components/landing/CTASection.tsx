@@ -11,9 +11,6 @@ const trustBadges = [
 export function CTASection() {
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
-      
       {/* Animated particles/shapes */}
       <motion.div
         className="absolute top-10 left-10 w-4 h-4 bg-primary rounded-full"

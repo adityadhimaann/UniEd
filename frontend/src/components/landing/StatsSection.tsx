@@ -42,15 +42,6 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
 export function StatsSection() {
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-      
-      {/* Pattern overlay */}
-      <div className="absolute inset-0 opacity-30" style={{
-        backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--muted-foreground) / 0.15) 1px, transparent 0)`,
-        backgroundSize: '40px 40px',
-      }} />
-
       <div className="container relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

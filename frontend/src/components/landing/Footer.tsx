@@ -48,8 +48,6 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer className="relative pt-24 pb-8 border-t border-border/50">
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background to-transparent" />
-
       <div className="container relative z-10 px-4">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-6 md:gap-12 mb-16">
           {/* Brand column */}

@@ -12,8 +12,6 @@ const integrations = [
 export function IntegrationsSection() {
   return (
     <section className="py-16 relative overflow-hidden border-y border-border/50">
-      <div className="absolute inset-0 bg-muted/30" />
-      
       <div className="container relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
