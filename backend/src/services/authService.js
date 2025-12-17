@@ -176,16 +176,33 @@ class AuthService {
       throw ApiError.notFound('User not found');
     }
 
+    // Update top-level fields
+    if (firstName !== undefined) user.firstName = firstName;
+    if (lastName !== undefined) user.lastName = lastName;
+
     // Update profile fields
-    if (firstName !== undefined) user.profile.firstName = firstName;
-    if (lastName !== undefined) user.profile.lastName = lastName;
-    if (phone !== undefined) user.profile.phone = phone;
-    if (dateOfBirth !== undefined) user.profile.dateOfBirth = dateOfBirth;
-    if (address !== undefined) user.profile.address = address;
+    if (phone !== undefined) {
+      if (!user.profile) user.profile = {};
+      user.profile.phone = phone;
+    }
+    if (dateOfBirth !== undefined) {
+      if (!user.profile) user.profile = {};
+      user.profile.dateOfBirth = dateOfBirth;
+    }
+    if (address !== undefined) {
+      if (!user.profile) user.profile = {};
+      user.profile.address = address;
+    }
 
     // Update academic info
-    if (department !== undefined) user.academicInfo.department = department;
-    if (semester !== undefined) user.academicInfo.semester = semester;
+    if (department !== undefined) {
+      if (!user.academicInfo) user.academicInfo = {};
+      user.academicInfo.department = department;
+    }
+    if (semester !== undefined) {
+      if (!user.academicInfo) user.academicInfo = {};
+      user.academicInfo.semester = semester;
+    }
 
     // Save the user first
     await user.save();
