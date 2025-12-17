@@ -311,6 +311,50 @@ class AuthService {
 
     return { message: 'Password reset successful. You can now login with your new password.' };
   }
+
+  async setPasswordAndRole(userId, data) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    // Update password
+    user.password = data.password;
+
+    // Update role
+    user.role = data.role;
+
+    // Update role-specific fields
+    if (data.role === 'student') {
+      if (data.studentId) user.studentId = data.studentId;
+      if (data.department) user.department = data.department;
+      if (data.semester) user.semester = data.semester;
+    } else if (data.role === 'instructor') {
+      if (data.employeeId) user.employeeId = data.employeeId;
+      if (data.department) user.department = data.department;
+    }
+
+    await user.save();
+
+    // Generate new tokens with updated role
+    const accessToken = generateAccessToken({ 
+      userId: user._id.toString(), 
+      role: user.role 
+    });
+    const refreshToken = generateRefreshToken({ 
+      userId: user._id.toString(), 
+      role: user.role 
+    });
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    return {
+      user: sanitizeUser(user),
+      accessToken,
+      refreshToken,
+    };
+  }
 }
 
 export default new AuthService();

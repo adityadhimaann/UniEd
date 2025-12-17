@@ -140,3 +140,32 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
     )
   );
 });
+
+export const setPasswordAndRole = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { password, role, studentId, employeeId, department, semester } = req.body;
+
+  if (!password || password.length < 6) {
+    throw new ApiError(400, 'Password must be at least 6 characters');
+  }
+
+  if (!role || !['student', 'instructor'].includes(role)) {
+    throw new ApiError(400, 'Valid role (student or instructor) is required');
+  }
+
+  const result = await authService.setPasswordAndRole(userId, {
+    password,
+    role,
+    studentId,
+    employeeId,
+    department,
+    semester
+  });
+
+  res.status(200).json(
+    ApiResponse.success(
+      result,
+      'Password and role set successfully'
+    )
+  );
+});

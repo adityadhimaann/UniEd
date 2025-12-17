@@ -10,6 +10,7 @@ import {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  setPasswordAndRole,
 } from '../controllers/authController.js';
 import User from '../models/User.js';
 import { authenticate } from '../middlewares/auth.js';
@@ -33,23 +34,6 @@ router.post('/logout', authenticate, logout);
 router.get('/profile', authenticate, getProfile);
 router.patch('/profile', authenticate, updateProfile);
 router.post('/profile/picture', authenticate, upload.single('profilePicture'), uploadProfilePicture);
-router.post('/set-password', authenticate, async (req, res, next) => {
-  try {
-    const { password } = req.body;
-    const user = await User.findById(req.user._id);
-    
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    
-    // Set the new password (will be hashed by the model pre-save hook)
-    user.password = password;
-    await user.save();
-    
-    res.status(200).json({ success: true, message: 'Password set successfully' });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/set-password-role', authenticate, setPasswordAndRole);
 
 export default router;

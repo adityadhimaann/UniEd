@@ -43,16 +43,16 @@ export const sanitizeUser = (user) => {
   delete userObj.refreshToken;
   delete userObj.__v;
   
-  // Flatten profile and academicInfo for easier frontend consumption
+  // firstName, lastName, and avatar are now at top level (not in profile)
   return {
     _id: userObj._id,
     email: userObj.email,
     role: userObj.role,
-    firstName: userObj.profile?.firstName,
-    lastName: userObj.profile?.lastName,
-    name: `${userObj.profile?.firstName || ''} ${userObj.profile?.lastName || ''}`.trim(),
-    avatar: userObj.profile?.avatar,
-    profilePicture: userObj.profile?.avatar,
+    firstName: userObj.firstName,
+    lastName: userObj.lastName,
+    name: `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim(),
+    avatar: userObj.avatar,
+    profilePicture: userObj.avatar,
     phone: userObj.profile?.phone,
     dateOfBirth: userObj.profile?.dateOfBirth,
     address: userObj.profile?.address,

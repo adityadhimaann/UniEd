@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
-import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight, User, GraduationCap, Briefcase } from "lucide-react";
 import uniEdLogo from "@/assets/UniEdlogoo.png";
 import eduBg1 from "@/assets/edu-bg-1.jpg";
 import eduBg2 from "@/assets/edu-bg-2.jpg";
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const educationContent = [
   {
@@ -41,6 +42,11 @@ const SetPassword = () => {
   const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'student' | 'instructor'>('student');
+  const [studentId, setStudentId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
+  const [department, setDepartment] = useState('');
+  const [semester, setSemester] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -78,11 +84,47 @@ const SetPassword = () => {
     try {
       setIsLoading(true);
       
-      await api.post('/auth/set-password', { password });
+      const payload: any = { password, role };
+      
+      if (role === 'student') {
+        if (!studentId || !department || !semester) {
+          toast({
+            title: 'Error',
+            description: 'Please fill in all student fields',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+        payload.studentId = studentId;
+        payload.department = department;
+        payload.semester = parseInt(semester);
+      } else {
+        if (!employeeId || !department) {
+          toast({
+            title: 'Error',
+            description: 'Please fill in all instructor fields',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+        payload.employeeId = employeeId;
+        payload.department = department;
+      }
+
+      const response = await api.post('/auth/set-password-role', payload);
+
+      // Update local storage with new tokens and role
+      if (response.data?.data?.accessToken) {
+        localStorage.setItem('accessToken', response.data.data.accessToken);
+        const userData = response.data.data.user;
+        localStorage.setItem('edu_user', JSON.stringify(userData));
+      }
 
       toast({
         title: 'Success',
-        description: 'Password set successfully!',
+        description: 'Account setup completed successfully!',
       });
 
       navigate('/dashboard');
@@ -90,7 +132,7 @@ const SetPassword = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to set password',
+        description: error.response?.data?.message || 'Failed to complete setup',
         variant: 'destructive',
       });
     } finally {
@@ -183,13 +225,128 @@ const SetPassword = () => {
           </div>
 
           <div>
-            <h1 className="font-display text-3xl font-bold mb-2">Set Your Password</h1>
+            <h1 className="font-display text-3xl font-bold mb-2">Complete Your Profile</h1>
             <p className="text-muted-foreground">
-              Create a secure password to complete your account setup
+              Set your password and choose your role to get started
             </p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Role Selection */}
+            <div className="space-y-3">
+              <Label>I am a</Label>
+              <RadioGroup value={role} onValueChange={(value: 'student' | 'instructor') => setRole(value)}>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label
+                      htmlFor="student"
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        role === 'student'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <RadioGroupItem value="student" id="student" />
+                      <GraduationCap className="w-5 h-5" />
+                      <div className="flex-1">
+                        <div className="font-medium">Student</div>
+                        <div className="text-xs text-muted-foreground">Access courses and assignments</div>
+                      </div>
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <label
+                      htmlFor="instructor"
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        role === 'instructor'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <RadioGroupItem value="instructor" id="instructor" />
+                      <Briefcase className="w-5 h-5" />
+                      <div className="flex-1">
+                        <div className="font-medium">Instructor</div>
+                        <div className="text-xs text-muted-foreground">Teach and manage courses</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Conditional Fields for Student */}
+            {role === 'student' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="studentId">Student ID</Label>
+                  <Input
+                    id="studentId"
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    placeholder="Enter your student ID"
+                    className="bg-secondary/50 border-border/50 focus:border-primary focus:ring-primary/20"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Input
+                      id="department"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      placeholder="e.g., Computer Science"
+                      className="bg-secondary/50 border-border/50 focus:border-primary focus:ring-primary/20"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="semester">Semester</Label>
+                    <Input
+                      id="semester"
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={semester}
+                      onChange={(e) => setSemester(e.target.value)}
+                      placeholder="e.g., 3"
+                      className="bg-secondary/50 border-border/50 focus:border-primary focus:ring-primary/20"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Conditional Fields for Instructor */}
+            {role === 'instructor' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="employeeId">Employee ID</Label>
+                  <Input
+                    id="employeeId"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    placeholder="Enter your employee ID"
+                    className="bg-secondary/50 border-border/50 focus:border-primary focus:ring-primary/20"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    placeholder="e.g., Computer Science"
+                    className="bg-secondary/50 border-border/50 focus:border-primary focus:ring-primary/20"
+                    required
+                  />
+                </div>
+              </>
+            )}
+
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -247,7 +404,7 @@ const SetPassword = () => {
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:shadow-lg hover:shadow-primary/25 transition-all duration-300"
             >
-              {isLoading ? "Setting Password..." : "Set Password"}
+              {isLoading ? "Setting Up..." : "Complete Setup"}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </form>
