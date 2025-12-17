@@ -30,41 +30,50 @@ class AuthService {
     }
 
     // Create user
-    const user = await User.create({
-      email,
-      password,
-      role,
-      firstName,
-      lastName,
-      authProvider: 'local',
-      academicInfo: {
-        studentId: role === 'student' ? studentId : undefined,
-        employeeId: role !== 'student' ? employeeId : undefined,
-        department,
-        semester,
-      },
-    });
+    try {
+      const user = await User.create({
+        email,
+        password,
+        role,
+        firstName,
+        lastName,
+        authProvider: 'local',
+        academicInfo: {
+          studentId: role === 'student' ? studentId : undefined,
+          employeeId: role !== 'student' ? employeeId : undefined,
+          department,
+          semester,
+        },
+      });
 
-    // Generate tokens
-    const accessToken = generateAccessToken({
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-    });
+      // Generate tokens
+      const accessToken = generateAccessToken({
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+      });
 
-    const refreshToken = generateRefreshToken({
-      userId: user._id,
-    });
+      const refreshToken = generateRefreshToken({
+        userId: user._id,
+      });
 
-    // Save refresh token to database
-    user.refreshToken = refreshToken;
-    await user.save();
+      // Save refresh token to database
+      user.refreshToken = refreshToken;
+      await user.save();
 
-    return {
-      user: sanitizeUser(user),
-      accessToken,
-      refreshToken,
-    };
+      return {
+        user: sanitizeUser(user),
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      // If it's a validation error, let it bubble up to the error handler
+      if (error.name === 'ValidationError') {
+        throw error;
+      }
+      // For any other error, wrap it in ApiError
+      throw ApiError.internalError('Failed to create user account');
+    }
   }
 
   async login(email, password) {

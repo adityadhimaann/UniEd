@@ -84,19 +84,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
               user.avatar = profile.photos[0].value;
               needsUpdate = true;
             }
-              needsUpdate = true;
-            }
-            
-            if (!currentLastName && lastName) {
-              user.lastName = lastName;
-              needsUpdate = true;
-            }
-            
-            // Update avatar if not set or empty
-            if ((!user.avatar || user.avatar.trim() === '') && profile.photos?.[0]?.value) {
-              user.avatar = profile.photos[0].value;
-              needsUpdate = true;
-            }
             
             if (needsUpdate) {
               await user.save();

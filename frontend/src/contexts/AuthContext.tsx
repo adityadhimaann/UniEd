@@ -142,6 +142,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error("Signup error:", error);
       console.error("Error response:", error.response?.data);
+      
+      // Handle validation errors with detailed field messages
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        const errorMessages = error.response.data.errors
+          .map((err: { field: string; message: string }) => `${err.field}: ${err.message}`)
+          .join(", ");
+        throw new Error(errorMessages);
+      }
+      
       throw new Error(error.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
