@@ -149,8 +149,8 @@ export const setPasswordAndRole = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Password must be at least 6 characters');
   }
 
-  if (!role || !['student', 'instructor'].includes(role)) {
-    throw new ApiError(400, 'Valid role (student or instructor) is required');
+  if (!role || !['student', 'instructor', 'faculty', 'parent'].includes(role)) {
+    throw new ApiError(400, 'Valid role (student, instructor, faculty, or parent) is required');
   }
 
   const result = await authService.setPasswordAndRole(userId, {
@@ -166,6 +166,19 @@ export const setPasswordAndRole = asyncHandler(async (req, res) => {
     ApiResponse.success(
       result,
       'Password and role set successfully'
+    )
+  );
+});
+
+export const completeOnboarding = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  
+  const result = await authService.completeOnboarding(userId);
+
+  res.status(200).json(
+    ApiResponse.success(
+      result,
+      'Onboarding completed successfully'
     )
   );
 });

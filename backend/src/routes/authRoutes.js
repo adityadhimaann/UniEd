@@ -11,6 +11,7 @@ import {
   resetPassword,
   verifyEmail,
   setPasswordAndRole,
+  completeOnboarding,
 } from '../controllers/authController.js';
 import User from '../models/User.js';
 import { authenticate } from '../middlewares/auth.js';
@@ -35,5 +36,6 @@ router.get('/profile', authenticate, getProfile);
 router.patch('/profile', authenticate, updateProfile);
 router.post('/profile/picture', authenticate, upload.single('profilePicture'), uploadProfilePicture);
 router.post('/set-password-role', authenticate, setPasswordAndRole);
+router.post('/complete-onboarding', authenticate, completeOnboarding);
 
 export default router;

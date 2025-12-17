@@ -42,7 +42,7 @@ const SetPassword = () => {
   const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'student' | 'instructor'>('student');
+  const [role, setRole] = useState<'student' | 'instructor' | 'faculty' | 'parent'>('student');
   const [studentId, setStudentId] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [department, setDepartment] = useState('');
@@ -99,11 +99,11 @@ const SetPassword = () => {
         payload.studentId = studentId;
         payload.department = department;
         payload.semester = parseInt(semester);
-      } else {
+      } else if (role === 'instructor' || role === 'faculty') {
         if (!employeeId || !department) {
           toast({
             title: 'Error',
-            description: 'Please fill in all instructor fields',
+            description: 'Please fill in all required fields',
             variant: 'destructive',
           });
           setIsLoading(false);
@@ -112,6 +112,7 @@ const SetPassword = () => {
         payload.employeeId = employeeId;
         payload.department = department;
       }
+      // Parent role doesn't require additional fields
 
       const response = await api.post('/auth/set-password-role', payload);
 
@@ -127,8 +128,7 @@ const SetPassword = () => {
         description: 'Account setup completed successfully!',
       });
 
-      navigate('/dashboard');
-      window.location.reload();
+      navigate('/welcome');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -235,42 +235,71 @@ const SetPassword = () => {
             {/* Role Selection */}
             <div className="space-y-3">
               <Label>I am a</Label>
-              <RadioGroup value={role} onValueChange={(value: 'student' | 'instructor') => setRole(value)}>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label
-                      htmlFor="student"
-                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        role === 'student'
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <RadioGroupItem value="student" id="student" />
-                      <GraduationCap className="w-5 h-5" />
-                      <div className="flex-1">
-                        <div className="font-medium">Student</div>
-                        <div className="text-xs text-muted-foreground">Access courses and assignments</div>
-                      </div>
-                    </label>
-                  </div>
-                  <div className="flex-1">
-                    <label
-                      htmlFor="instructor"
-                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        role === 'instructor'
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <RadioGroupItem value="instructor" id="instructor" />
-                      <Briefcase className="w-5 h-5" />
-                      <div className="flex-1">
-                        <div className="font-medium">Instructor</div>
-                        <div className="text-xs text-muted-foreground">Teach and manage courses</div>
-                      </div>
-                    </label>
-                  </div>
+              <RadioGroup value={role} onValueChange={(value: 'student' | 'instructor' | 'faculty' | 'parent') => setRole(value)}>
+                <div className="grid grid-cols-2 gap-3">
+                  <label
+                    htmlFor="student"
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      role === 'student'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="student" id="student" />
+                    <GraduationCap className="w-5 h-5" />
+                    <div className="flex-1">
+                      <div className="font-medium">Student</div>
+                      <div className="text-xs text-muted-foreground">Learn & grow</div>
+                    </div>
+                  </label>
+                  
+                  <label
+                    htmlFor="faculty"
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      role === 'faculty'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="faculty" id="faculty" />
+                    <Briefcase className="w-5 h-5" />
+                    <div className="flex-1">
+                      <div className="font-medium">Faculty</div>
+                      <div className="text-xs text-muted-foreground">Teach courses</div>
+                    </div>
+                  </label>
+
+                  <label
+                    htmlFor="instructor"
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      role === 'instructor'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="instructor" id="instructor" />
+                    <Briefcase className="w-5 h-5" />
+                    <div className="flex-1">
+                      <div className="font-medium">Instructor</div>
+                      <div className="text-xs text-muted-foreground">Guide students</div>
+                    </div>
+                  </label>
+
+                  <label
+                    htmlFor="parent"
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      role === 'parent'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="parent" id="parent" />
+                    <User className="w-5 h-5" />
+                    <div className="flex-1">
+                      <div className="font-medium">Parent</div>
+                      <div className="text-xs text-muted-foreground">Monitor progress</div>
+                    </div>
+                  </label>
                 </div>
               </RadioGroup>
             </div>
@@ -319,8 +348,8 @@ const SetPassword = () => {
               </>
             )}
 
-            {/* Conditional Fields for Instructor */}
-            {role === 'instructor' && (
+            {/* Conditional Fields for Instructor/Faculty */}
+            {(role === 'instructor' || role === 'faculty') && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="employeeId">Employee ID</Label>

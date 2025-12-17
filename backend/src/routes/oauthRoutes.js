@@ -31,9 +31,10 @@ router.get(
       
       // Check if this is a new OAuth user
       const isNewUser = req.user.isNewOAuthUser || false;
+      const hasCompletedOnboarding = req.user.hasCompletedOnboarding || false;
       
-      // Redirect to frontend with token and new user flag
-      res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}&provider=google&isNewUser=${isNewUser}`);
+      // Redirect to frontend with token, new user flag, and onboarding status
+      res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}&provider=google&isNewUser=${isNewUser}&hasCompletedOnboarding=${hasCompletedOnboarding}&firstName=${encodeURIComponent(req.user.firstName || '')}&lastName=${encodeURIComponent(req.user.lastName || '')}`);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);

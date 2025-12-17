@@ -13,6 +13,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AuthCallback from "./pages/AuthCallback";
 import SetPassword from "./pages/SetPassword";
+import Welcome from "./pages/Welcome";
 import InstructorPortal from "./pages/InstructorPortal";
 import InstructorDashboard from "./components/instructor/InstructorDashboard";
 import CoursesManagement from "./components/instructor/CoursesManagement";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/welcome" element={<Welcome />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             
             {/* Instructor Portal Routes */}

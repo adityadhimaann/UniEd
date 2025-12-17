@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import uniEdLogo from "@/assets/UniEdlogoo.png";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const educationContent = [
   {
@@ -46,6 +47,8 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const errorParam = searchParams.get('error');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -54,6 +57,17 @@ export default function Login() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    // Show error message if present in URL
+    if (errorParam) {
+      toast({
+        title: "Error",
+        description: errorParam,
+        variant: "destructive",
+      });
+    }
+  }, [errorParam, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

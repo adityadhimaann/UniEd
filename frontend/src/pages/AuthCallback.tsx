@@ -11,10 +11,19 @@ const AuthCallback = () => {
       const token = searchParams.get('token');
       const error = searchParams.get('error');
       const isNewUser = searchParams.get('isNewUser') === 'true';
+      const hasCompletedOnboarding = searchParams.get('hasCompletedOnboarding') === 'true';
+      const firstName = searchParams.get('firstName') || '';
+      const lastName = searchParams.get('lastName') || '';
 
       if (error) {
         console.error('OAuth error:', error);
-        navigate('/login?error=Authentication failed');
+        
+        // Check if it's a specific error about existing account
+        if (error === 'account_exists') {
+          navigate('/login?error=This email is already registered. Please login instead.');
+        } else {
+          navigate('/login?error=Authentication failed');
+        }
         return;
       }
 
@@ -31,23 +40,29 @@ const AuthCallback = () => {
             id: userProfile._id,
             email: userProfile.email,
             role: userProfile.role,
-            firstName: userProfile.firstName || '',
-            lastName: userProfile.lastName || '',
-            name: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
+            firstName: userProfile.firstName || firstName || '',
+            lastName: userProfile.lastName || lastName || '',
+            name: `${userProfile.firstName || firstName || ''} ${userProfile.lastName || lastName || ''}`.trim(),
             avatar: userProfile.profilePicture || userProfile.avatar,
             studentId: userProfile.studentId,
             employeeId: userProfile.employeeId,
             department: userProfile.department,
             semester: userProfile.semester,
+            hasCompletedOnboarding: userProfile.hasCompletedOnboarding || hasCompletedOnboarding,
           };
           
           localStorage.setItem('edu_user', JSON.stringify(userData));
           
-          // If new OAuth user, redirect to set password page
+          // If new OAuth user, redirect to set password/role page
           if (isNewUser) {
             navigate('/set-password');
-          } else {
-            // Redirect to dashboard
+          } 
+          // If user hasn't completed onboarding, show welcome screen
+          else if (!userData.hasCompletedOnboarding) {
+            navigate('/welcome');
+          } 
+          // Otherwise, go to dashboard
+          else {
             navigate('/dashboard');
             window.location.reload();
           }

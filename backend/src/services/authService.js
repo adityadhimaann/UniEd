@@ -350,10 +350,13 @@ class AuthService {
       if (data.studentId) user.academicInfo.studentId = data.studentId;
       if (data.department) user.academicInfo.department = data.department;
       if (data.semester) user.academicInfo.semester = data.semester;
-    } else if (data.role === 'instructor') {
+    } else if (data.role === 'instructor' || data.role === 'faculty') {
       if (data.employeeId) user.academicInfo.employeeId = data.employeeId;
       if (data.department) user.academicInfo.department = data.department;
     }
+
+    // Mark that setup is complete but not onboarding yet
+    user.hasCompletedOnboarding = false;
 
     await user.save();
 
@@ -374,6 +377,21 @@ class AuthService {
       user: sanitizeUser(user),
       accessToken,
       refreshToken,
+    };
+  }
+
+  async completeOnboarding(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    user.hasCompletedOnboarding = true;
+    await user.save();
+
+    return {
+      user: sanitizeUser(user),
+      hasCompletedOnboarding: true,
     };
   }
 }

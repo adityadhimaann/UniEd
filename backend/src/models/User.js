@@ -56,9 +56,13 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'faculty', 'admin'],
+      enum: ['student', 'faculty', 'admin', 'parent'],
       required: [true, 'Role is required'],
       default: 'student',
+    },
+    hasCompletedOnboarding: {
+      type: Boolean,
+      default: false,
     },
     profile: {
       phone: {
