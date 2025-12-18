@@ -4,15 +4,9 @@ import {
   Twitter, 
   Linkedin, 
   Github, 
-  Youtube,
-  Mail
+  Youtube
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import uniEdLogo from "@/assets/UniEdlogoo.png";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import api from "@/lib/api";
 
 const footerLinks = {
   product: [
@@ -49,56 +43,8 @@ const socialLinks = [
 ];
 
 export function Footer() {
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await api.post('/newsletter/subscribe', { email });
-      
-      toast({
-        title: "Successfully Subscribed! 🎉",
-        description: "Check your email for a confirmation message.",
-      });
-      
-      setEmail("");
-    } catch (error: any) {
-      toast({
-        title: "Subscription Failed",
-        description: error.response?.data?.message || "Please try again later",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
-    <footer className="relative pt-24 pb-8 border-t border-border/50">
+    <footer id="contact" className="relative pt-24 pb-8 border-t border-border/50">
       <div className="container relative z-10 px-4">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-6 md:gap-12 mb-16">
           {/* Brand column */}
@@ -118,32 +64,6 @@ export function Footer() {
               <p className="text-muted-foreground mb-6 max-w-xs text-sm md:text-base">
                 The unified platform for modern education. Empowering students and educators worldwide.
               </p>
-
-              {/* Newsletter signup */}
-              <div className="space-y-3">
-                <p className="text-xs md:text-sm font-medium">Subscribe to our newsletter</p>
-                <form onSubmit={handleNewsletterSubscribe} className="flex gap-2">
-                  <Input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isSubmitting}
-                    className="bg-secondary/50 border-border/50 text-sm"
-                  />
-                  <Button 
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-gradient-to-r from-primary to-accent text-primary-foreground shrink-0"
-                  >
-                    {isSubmitting ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Mail className="w-4 h-4" />
-                    )}
-                  </Button>
-                </form>
-              </div>
             </motion.div>
           </div>
 

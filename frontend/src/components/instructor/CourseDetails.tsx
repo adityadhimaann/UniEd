@@ -91,12 +91,12 @@ export default function CourseDetails() {
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-semibold">
-                          {student.profile.firstName[0]}{student.profile.lastName[0]}
+                          {student.firstName?.[0]}{student.lastName?.[0]}
                         </span>
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">
-                          {student.profile.firstName} {student.profile.lastName}
+                          {student.firstName} {student.lastName}
                         </h3>
                         <p className="text-sm text-gray-500">{student.email}</p>
                       </div>
@@ -125,7 +125,7 @@ export default function CourseDetails() {
                 <CardTitle>Assignments</CardTitle>
                 <Button
                   className="bg-blue-600 hover:bg-blue-700"
-                  onClick={() => window.location.href = `/instructor/assignments/create?courseId=${courseId}`}
+                  onClick={() => window.location.href = `/instructor/assignments?courseId=${courseId}`}
                 >
                   Create Assignment
                 </Button>

@@ -3,6 +3,15 @@ import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { sanitizeUser } from '../utils/helpers.js';
 import emailService from './emailService.js';
+import Enrollment from '../models/Enrollment.js';
+import CourseEnrollmentRequest from '../models/CourseEnrollmentRequest.js';
+import Grade from '../models/Grade.js';
+import Message from '../models/Message.js';
+import Notification from '../models/Notification.js';
+import Review from '../models/Review.js';
+import Assignment from '../models/Assignment.js';
+import Attendance from '../models/Attendance.js';
+import Announcement from '../models/Announcement.js';
 
 class AuthService {
   async register(userData) {
@@ -407,6 +416,55 @@ class AuthService {
       user: sanitizeUser(user),
       hasCompletedOnboarding: true,
     };
+  }
+
+  async deleteAccount(userId) {
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    // Delete all related data in cascade
+    try {
+      // Delete enrollments
+      await Enrollment.deleteMany({ student: userId });
+      await Enrollment.deleteMany({ instructor: userId });
+
+      // Delete course enrollment requests
+      await CourseEnrollmentRequest.deleteMany({ student: userId });
+      await CourseEnrollmentRequest.deleteMany({ instructor: userId });
+
+      // Delete grades
+      await Grade.deleteMany({ student: userId });
+      await Grade.deleteMany({ instructor: userId });
+
+      // Delete messages
+      await Message.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] });
+
+      // Delete notifications
+      await Notification.deleteMany({ user: userId });
+
+      // Delete reviews
+      await Review.deleteMany({ $or: [{ reviewedBy: userId }, { instructor: userId }] });
+
+      // Delete assignments created by user
+      await Assignment.deleteMany({ instructor: userId });
+
+      // Delete attendance records
+      await Attendance.deleteMany({ student: userId });
+
+      // Delete announcements created by user
+      await Announcement.deleteMany({ instructor: userId });
+
+      // Finally, delete the user
+      await User.findByIdAndDelete(userId);
+
+      return { message: 'Account deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw ApiError.internalError('Failed to delete account. Please try again later.');
+    }
   }
 }
 

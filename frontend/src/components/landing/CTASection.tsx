@@ -10,7 +10,7 @@ const trustBadges = [
 
 export function CTASection() {
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="pricing" className="py-24 relative overflow-hidden">
       {/* Animated particles/shapes */}
       <motion.div
         className="absolute top-10 left-10 w-4 h-4 bg-primary rounded-full"

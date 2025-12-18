@@ -46,14 +46,22 @@ export default function AssignmentsManagement() {
 
   useEffect(() => {
     fetchData();
+    // Auto-open create form if courseId is provided
+    if (courseId) {
+      setShowCreateForm(true);
+    }
   }, [courseId]);
 
   const fetchData = async () => {
     try {
       const coursesRes = await instructorService.getMyCourses();
-      setCourses(coursesRes.data);
+      const coursesData = coursesRes?.data || coursesRes || [];
+      console.log('Courses data:', coursesData);
+      setCourses(Array.isArray(coursesData) ? coursesData : []);
       
       if (courseId) {
+        // Update form data with the courseId
+        setFormData(prev => ({ ...prev, course: courseId }));
         const assignmentsRes = await instructorService.getCourseAssignments(courseId);
         setAssignments(assignmentsRes.data);
       }
@@ -121,14 +129,16 @@ export default function AssignmentsManagement() {
                   onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white"
                   required
+                  disabled={!!courseId}
                 >
                   <option value="">Select a course</option>
                   {courses.map((course) => (
                     <option key={course._id} value={course._id}>
-                      {course.code} - {course.name}
+                      {course.courseCode} - {course.courseName}
                     </option>
                   ))}
                 </select>
+                {courseId && <p className="text-xs text-gray-400">Course pre-selected from course details</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-gray-200">Title *</Label>

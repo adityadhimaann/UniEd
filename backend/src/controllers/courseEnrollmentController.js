@@ -1,5 +1,6 @@
 import CourseEnrollmentRequest from '../models/CourseEnrollmentRequest.js';
 import Course from '../models/Course.js';
+import Enrollment from '../models/Enrollment.js';
 import Notification from '../models/Notification.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
@@ -15,7 +16,7 @@ export const createEnrollmentRequest = asyncHandler(async (req, res) => {
   const studentId = req.user._id;
 
   // Validate course exists
-  const course = await Course.findById(courseId).populate('instructor');
+  const course = await Course.findById(courseId).populate('faculty');
   if (!course) {
     throw new ApiError(404, 'Course not found');
   }
@@ -35,7 +36,7 @@ export const createEnrollmentRequest = asyncHandler(async (req, res) => {
   const enrollmentRequest = await CourseEnrollmentRequest.create({
     student: studentId,
     course: courseId,
-    instructor: course.instructor._id,
+    instructor: course.faculty._id,
     enrollmentType,
     message,
     status: 'pending'
@@ -46,14 +47,14 @@ export const createEnrollmentRequest = asyncHandler(async (req, res) => {
 
   // Create notification for instructor
   await Notification.create({
-    user: course.instructor._id,
+    user: course.faculty._id,
     type: 'enrollment-request',
     title: 'New Enrollment Request',
-    message: `${req.user.firstName} ${req.user.lastName} has requested to enroll in ${course.name}`,
+    message: `${req.user.firstName} ${req.user.lastName} has requested to enroll in ${course.courseName}`,
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: course._id,
-      courseName: course.name,
+      courseName: course.courseName,
       studentId: studentId,
       studentName: `${req.user.firstName} ${req.user.lastName}`,
       enrollmentType
@@ -65,12 +66,12 @@ export const createEnrollmentRequest = asyncHandler(async (req, res) => {
     user: studentId,
     type: 'enrollment-request',
     title: 'Enrollment Request Submitted',
-    message: `Your enrollment request for ${course.name} has been submitted to ${course.instructor.firstName} ${course.instructor.lastName}`,
+    message: `Your enrollment request for ${course.courseName} has been submitted to ${course.faculty.firstName} ${course.faculty.lastName}`,
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: course._id,
-      courseName: course.name,
-      instructorName: `${course.instructor.firstName} ${course.instructor.lastName}`,
+      courseName: course.courseName,
+      instructorName: `${course.faculty.firstName} ${course.faculty.lastName}`,
       enrollmentType
     }
   });
@@ -101,7 +102,7 @@ export const getEnrollmentRequests = asyncHandler(async (req, res) => {
 
   const enrollmentRequests = await CourseEnrollmentRequest.find(filter)
     .populate('student', 'firstName lastName email avatar')
-    .populate('course', 'name code')
+    .populate('course', 'courseName courseCode')
     .sort({ createdAt: -1 });
 
   res.status(200).json(
@@ -118,7 +119,7 @@ export const getMyEnrollmentRequests = asyncHandler(async (req, res) => {
   const studentId = req.user._id;
   
   const enrollmentRequests = await CourseEnrollmentRequest.find({ student: studentId })
-    .populate('course', 'name code image')
+    .populate('course', 'courseName courseCode')
     .populate('instructor', 'firstName lastName email')
     .sort({ createdAt: -1 });
 
@@ -145,7 +146,7 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
   // Find the enrollment request
   const enrollmentRequest = await CourseEnrollmentRequest.findById(id)
     .populate('student', 'firstName lastName email')
-    .populate('course', 'name code');
+    .populate('course', 'courseName courseCode');
 
   if (!enrollmentRequest) {
     throw new ApiError(404, 'Enrollment request not found');
@@ -170,10 +171,28 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
   }
   await enrollmentRequest.save();
 
+  // If approved, create an enrollment record
+  if (status === 'approved') {
+    // Check if enrollment already exists
+    const existingEnrollment = await Enrollment.findOne({
+      student: enrollmentRequest.student._id,
+      course: enrollmentRequest.course._id
+    });
+
+    if (!existingEnrollment) {
+      await Enrollment.create({
+        student: enrollmentRequest.student._id,
+        course: enrollmentRequest.course._id,
+        enrollmentDate: new Date(),
+        status: 'active'
+      });
+    }
+  }
+
   // Create notification for student
   const notificationMessage = status === 'approved' 
-    ? `Your enrollment request for ${enrollmentRequest.course.name} has been approved! ${responseMessage || ''}`
-    : `Your enrollment request for ${enrollmentRequest.course.name} has been rejected. ${responseMessage || ''}`;
+    ? `Your enrollment request for ${enrollmentRequest.course.courseName} has been approved! ${responseMessage || ''}`
+    : `Your enrollment request for ${enrollmentRequest.course.courseName} has been rejected. ${responseMessage || ''}`;
 
   await Notification.create({
     user: enrollmentRequest.student._id,
@@ -183,7 +202,7 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: enrollmentRequest.course._id,
-      courseName: enrollmentRequest.course.name,
+      courseName: enrollmentRequest.course.courseName,
       status,
       instructorName: `${req.user.firstName} ${req.user.lastName}`
     }
@@ -205,7 +224,7 @@ export const getEnrollmentRequestById = asyncHandler(async (req, res) => {
 
   const enrollmentRequest = await CourseEnrollmentRequest.findById(id)
     .populate('student', 'firstName lastName email avatar')
-    .populate('course', 'name code description image')
+    .populate('course', 'courseName courseCode description')
     .populate('instructor', 'firstName lastName email');
 
   if (!enrollmentRequest) {

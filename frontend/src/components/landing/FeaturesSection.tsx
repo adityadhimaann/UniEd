@@ -76,7 +76,7 @@ export function FeaturesSection() {
   const scrollDistance = -(features.length * 350);
 
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="features" className="py-24 relative overflow-hidden">
       <div className="container relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

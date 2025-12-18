@@ -12,6 +12,7 @@ import {
   verifyEmail,
   setPasswordAndRole,
   completeOnboarding,
+  deleteAccount,
 } from '../controllers/authController.js';
 import User from '../models/User.js';
 import { authenticate } from '../middlewares/auth.js';
@@ -37,5 +38,6 @@ router.patch('/profile', authenticate, updateProfile);
 router.post('/profile/picture', authenticate, upload.single('profilePicture'), uploadProfilePicture);
 router.post('/set-password-role', authenticate, setPasswordAndRole);
 router.post('/complete-onboarding', authenticate, completeOnboarding);
+router.delete('/account', authenticate, deleteAccount);
 
 export default router;

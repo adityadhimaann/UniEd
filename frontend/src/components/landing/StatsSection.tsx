@@ -41,7 +41,7 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
 
 export function StatsSection() {
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="about" className="py-24 relative overflow-hidden">
       <div className="container relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

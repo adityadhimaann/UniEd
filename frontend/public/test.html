@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API</title>
+</head>
+<body>
+    <h2>API Test</h2>
+    <button onclick="testInstructorAPI()">Test Instructor Courses API</button>
+    <button onclick="testStudentAPI()">Test Student Courses API</button>
+    <button onclick="checkAuth()">Check Auth</button>
+    <pre id="output"></pre>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api/v1';
+        
+        function log(msg) {
+            document.getElementById('output').textContent += msg + '\n';
+        }
+
+        function checkAuth() {
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('accessToken');
+            document.getElementById('output').textContent = '';
+            log('User: ' + user);
+            log('\nToken exists: ' + (token ? 'Yes' : 'No'));
+            if (user) {
+                try {
+                    const userObj = JSON.parse(user);
+                    log('\nUser Details:');
+                    log('  Email: ' + userObj.email);
+                    log('  Role: ' + userObj.role);
+                    log('  Name: ' + userObj.firstName + ' ' + userObj.lastName);
+                } catch(e) {
+                    log('Error parsing user: ' + e);
+                }
+            }
+        }
+
+        async function testInstructorAPI() {
+            document.getElementById('output').textContent = '';
+            const token = localStorage.getItem('accessToken');
+            
+            if (!token) {
+                log('ERROR: No access token found. Please login first.');
+                return;
+            }
+
+            log('Testing: GET /instructor/courses\n');
+            
+            try {
+                const response = await fetch(`${API_BASE}/instructor/courses`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log('Status: ' + response.status);
+                const data = await response.json();
+                log('\nResponse:');
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('ERROR: ' + error.message);
+            }
+        }
+
+        async function testStudentAPI() {
+            document.getElementById('output').textContent = '';
+            const token = localStorage.getItem('accessToken');
+            
+            if (!token) {
+                log('ERROR: No access token found. Please login first.');
+                return;
+            }
+
+            log('Testing: GET /student/available-courses\n');
+            
+            try {
+                const response = await fetch(`${API_BASE}/student/available-courses`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log('Status: ' + response.status);
+                const data = await response.json();
+                log('\nResponse:');
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('ERROR: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

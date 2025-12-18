@@ -49,6 +49,22 @@ export const studentService = {
     return response.data;
   },
 
+  // Course Suggestions and Available Courses
+  async getCourseSuggestions() {
+    const response = await api.get('/student/course-suggestions');
+    return response.data;
+  },
+
+  async getAvailableCourses() {
+    const response = await api.get('/student/available-courses');
+    return response.data;
+  },
+
+  async enrollInCourse(courseId: string) {
+    const response = await api.post(`/student/courses/${courseId}/enroll`);
+    return response.data;
+  },
+
   // Attendance
   async getMyAttendance() {
     const response = await api.get('/student/attendance');

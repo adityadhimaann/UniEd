@@ -182,3 +182,16 @@ export const completeOnboarding = asyncHandler(async (req, res) => {
     )
   );
 });
+
+export const deleteAccount = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  
+  const result = await authService.deleteAccount(userId);
+
+  res.status(200).json(
+    ApiResponse.success(
+      result,
+      'Account deleted successfully'
+    )
+  );
+});

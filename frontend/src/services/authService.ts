@@ -94,6 +94,13 @@ class AuthService {
     );
     return response.data.data;
   }
+
+  async deleteAccount(): Promise<{ message: string }> {
+    const response = await api.delete<ApiResponse<{ message: string }>>(
+      '/auth/account'
+    );
+    return response.data.data;
+  }
 }
 
 export default new AuthService();

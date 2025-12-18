@@ -30,6 +30,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import DashboardHome from "@/components/dashboard/DashboardHome";
 import { CoursesPage } from "@/components/dashboard/CoursesPage";
 import { AssignmentsPage } from "@/components/dashboard/AssignmentsPage";
@@ -37,6 +47,7 @@ import { GradesPage } from "@/components/dashboard/GradesPage";
 import { CalendarPage } from "@/components/dashboard/CalendarPage";
 import { MessagesPage } from "@/components/dashboard/MessagesPage";
 import { SettingsPage } from "@/components/dashboard/SettingsPage";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import sidebarIcon from "@/assets/sidebar.png";
@@ -75,6 +86,7 @@ const adminNavItems = [
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
@@ -97,9 +109,14 @@ export default function Dashboard() {
       : studentNavItems;
 
   const handleLogout = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = () => {
     logout();
     navigate("/");
     toast.success("Logged out successfully");
+    setShowLogoutDialog(false);
   };
 
   return (
@@ -291,10 +308,7 @@ export default function Dashboard() {
               )}
               
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              </Button>
+              <NotificationBell />
 
               {/* Profile dropdown */}
               <DropdownMenu>
@@ -350,6 +364,24 @@ export default function Dashboard() {
           </Routes>
         </div>
       </main>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be logged out of your account and redirected to the home page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLogout} className="bg-destructive hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

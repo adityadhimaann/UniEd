@@ -269,7 +269,8 @@ export function MessagesPage() {
                       <Avatar className="w-12 h-12">
                         <AvatarImage src={conversation.user.avatar} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                          {conversation.user.firstName?.[0]}{conversation.user.lastName?.[0]}
+                          {conversation.user.firstName?.[0] || conversation.user.email?.[0]?.toUpperCase() || 'U'}
+                          {conversation.user.lastName?.[0] || conversation.user.email?.[1]?.toUpperCase() || ''}
                         </AvatarFallback>
                       </Avatar>
                       {isOnline(conversation.user._id) && (
@@ -329,7 +330,8 @@ export function MessagesPage() {
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={selectedConversation.user.avatar} />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                      {selectedConversation.user.firstName?.[0]}{selectedConversation.user.lastName?.[0]}
+                      {selectedConversation.user.firstName?.[0] || selectedConversation.user.email?.[0]?.toUpperCase() || 'U'}
+                      {selectedConversation.user.lastName?.[0] || selectedConversation.user.email?.[1]?.toUpperCase() || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div>

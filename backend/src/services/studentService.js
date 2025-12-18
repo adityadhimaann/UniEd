@@ -89,13 +89,69 @@ const getEnrolledCourses = async (studentId) => {
     .populate({
       path: 'course',
       populate: {
-        path: 'instructor',
-        select: 'profile.firstName profile.lastName email'
+        path: 'faculty',
+        select: 'firstName lastName email'
       }
     })
     .sort({ enrolledAt: -1 });
 
-  return enrollments.map(e => e.course);
+  return enrollments;
+};
+
+// Get all available courses created by faculty
+const getAvailableCourses = async (studentId) => {
+  // Get courses the student is already enrolled in
+  const enrolledCourseIds = await Enrollment.find({
+    student: studentId,
+    status: 'active'
+  }).distinct('course');
+
+  // Get all active courses
+  const courses = await Course.find({
+    isActive: true
+  })
+    .populate('faculty', 'firstName lastName email')
+    .sort({ createdAt: -1 });
+
+  // Mark which courses the student is enrolled in
+  return courses.map(course => ({
+    ...course.toObject(),
+    isEnrolled: enrolledCourseIds.some(id => id.toString() === course._id.toString())
+  }));
+};
+
+// Get course suggestions (courses not enrolled in)
+const getCourseSuggestions = async (studentId) => {
+  // Get courses the student is already enrolled in
+  const enrolledCourseIds = await Enrollment.find({
+    student: studentId,
+    status: 'active'
+  }).distinct('course');
+
+  // Get courses not enrolled in
+  const suggestions = await Course.find({
+    isActive: true,
+    _id: { $nin: enrolledCourseIds }
+  })
+    .populate('faculty', 'firstName lastName email')
+    .limit(10)
+    .sort({ createdAt: -1 });
+
+  // Add enrollment count
+  const coursesWithCount = await Promise.all(
+    suggestions.map(async (course) => {
+      const enrollmentCount = await Enrollment.countDocuments({
+        course: course._id,
+        status: 'active'
+      });
+      return {
+        ...course.toObject(),
+        enrollmentCount
+      };
+    })
+  );
+
+  return coursesWithCount;
 };
 
 // Get course details
@@ -112,7 +168,7 @@ const getCourseDetails = async (courseId, studentId) => {
   }
 
   const course = await Course.findById(courseId)
-    .populate('instructor', 'profile.firstName profile.lastName email');
+    .populate('faculty', 'firstName lastName email');
 
   if (!course) {
     throw new ApiError(404, 'Course not found');
@@ -176,7 +232,7 @@ const getStudentAssignments = async (studentId) => {
 // Get assignment details
 const getAssignmentDetails = async (assignmentId, studentId) => {
   const assignment = await Assignment.findById(assignmentId)
-    .populate('course', 'name code instructor');
+    .populate('course', 'courseName courseCode faculty');
 
   if (!assignment) {
     throw new ApiError(404, 'Assignment not found');
@@ -405,6 +461,8 @@ const markAllNotificationsAsRead = async (studentId) => {
 export default {
   getDashboardData,
   getEnrolledCourses,
+  getAvailableCourses,
+  getCourseSuggestions,
   getCourseDetails,
   getStudentAssignments,
   getAssignmentDetails,

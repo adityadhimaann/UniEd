@@ -13,7 +13,8 @@ export const instructorService = {
     name: string;
     description: string;
     credits: number;
-    semester: string;
+    semester: number;
+    department: string;
     schedule?: Array<{ day: string; startTime: string; endTime: string; room: string }>;
   }) {
     const response = await api.post('/instructor/courses', courseData);
@@ -145,6 +146,25 @@ export const instructorService = {
   // Get course grades
   async getCourseGrades(courseId: string) {
     const response = await api.get(`/instructor/courses/${courseId}/grades`);
+    return response.data;
+  },
+
+  // Get enrollment requests
+  async getEnrollmentRequests(status?: string, courseId?: string) {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (courseId) params.append('courseId', courseId);
+    
+    const response = await api.get(`/course-enrollment-requests?${params}`);
+    return response.data;
+  },
+
+  // Respond to enrollment request
+  async respondToEnrollmentRequest(requestId: string, status: 'approved' | 'rejected', responseMessage?: string) {
+    const response = await api.patch(`/course-enrollment-requests/${requestId}`, {
+      status,
+      responseMessage,
+    });
     return response.data;
   },
 };

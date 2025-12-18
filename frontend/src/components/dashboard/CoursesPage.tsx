@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { Search, Filter, Grid, List, Users, Clock, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, Grid, List, Users, Clock, ChevronRight, BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -13,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CourseDetailModal } from "./CourseDetailModal";
+import { studentService } from "@/services/studentService";
 
 const courses = [
   {
@@ -105,11 +106,62 @@ const itemVariants = {
 export function CoursesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"all" | "enrolled">("all");
 
-  const filteredCourses = courses.filter(course =>
-    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.code.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchAvailableCourses();
+  }, []);
+
+  const fetchAvailableCourses = async () => {
+    try {
+      setLoading(true);
+      const response = await studentService.getAvailableCourses();
+      console.log('Available courses response:', response);
+      // API returns { success, data, message } - data contains the courses array
+      const coursesData = response?.data || response || [];
+      console.log('Courses data:', coursesData);
+      setAvailableCourses(Array.isArray(coursesData) ? coursesData : []);
+    } catch (error) {
+      console.error('Error fetching available courses:', error);
+      setAvailableCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCourses = availableCourses.filter(course =>
+    course.courseName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.courseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.faculty?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.faculty?.lastName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const enrolledCourses = filteredCourses.filter(course => course.isEnrolled);
+  const notEnrolledCourses = filteredCourses.filter(course => !course.isEnrolled);
+  
+  const displayCourses = activeTab === "enrolled" ? enrolledCourses : filteredCourses;
+
+  const handleCourseClick = (course: typeof courses[0]) => {
+    setSelectedCourse(course);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedCourse(null), 300);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <img src="/loadicon.gif" alt="Loading..." className="h-48 w-48" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -121,10 +173,22 @@ export function CoursesPage() {
       {/* Header */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">My Courses</h1>
-          <p className="text-muted-foreground">Manage and access your enrolled courses</p>
+          <h1 className="font-display text-2xl font-bold">Courses</h1>
+          <p className="text-muted-foreground">Browse and manage all courses created by faculty</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={activeTab === "all" ? "default" : "outline"}
+            onClick={() => setActiveTab("all")}
+          >
+            All Courses ({filteredCourses.length})
+          </Button>
+          <Button
+            variant={activeTab === "enrolled" ? "default" : "outline"}
+            onClick={() => setActiveTab("enrolled")}
+          >
+            My Enrolled ({enrolledCourses.length})
+          </Button>
           <Button
             variant={viewMode === "grid" ? "default" : "outline"}
             size="icon"
@@ -167,73 +231,103 @@ export function CoursesPage() {
       </motion.div>
 
       {/* Courses grid/list */}
-      {viewMode === "grid" ? (
-        <motion.div variants={itemVariants} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course, index) => (
+      {displayCourses.length === 0 ? (
+        <motion.div variants={itemVariants}>
+          <Card className="border-gray-700 bg-gray-800">
+            <CardContent className="text-center py-12">
+              <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {activeTab === "enrolled" ? "No courses enrolled" : "No courses available"}
+              </h3>
+              <p className="text-gray-400">
+                {activeTab === "enrolled" 
+                  ? "Start exploring and enroll in courses to begin your learning journey"
+                  : "Check back later for new courses"}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : viewMode === "grid" ? (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {displayCourses.map((course, index) => (
             <motion.div
-              key={course.id}
+              key={course._id || course.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
               <Card className="group glass border-border/50 overflow-hidden hover:border-primary/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
-                <div className="aspect-video relative overflow-hidden">
-                  <img
-                    src={course.image}
-                    alt={course.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
+                <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600">
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                  <Badge
-                    className={`absolute top-3 right-3 ${
-                      course.status === "Completed" 
-                        ? "bg-accent text-accent-foreground" 
-                        : "bg-primary text-primary-foreground"
-                    }`}
-                  >
-                    {course.status}
-                  </Badge>
+                  <div className="absolute top-3 left-3 right-3 flex justify-between">
+                    <Badge className="bg-primary text-primary-foreground">
+                      {course.courseCode}
+                    </Badge>
+                    {course.isEnrolled && (
+                      <Badge className="bg-green-600 text-white">
+                        Enrolled
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h3 className="text-white font-bold text-lg line-clamp-1">
+                      {course.courseName}
+                    </h3>
+                  </div>
                 </div>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">{course.code}</p>
-                      <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
-                        {course.name}
-                      </h3>
+                    <div className="w-full">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {course.credits} Credits • Semester {course.semester}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {course.department}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 mb-4">
-                    <img
-                      src={course.instructorImage}
-                      alt={course.instructor}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="text-sm text-muted-foreground">{course.instructor}</span>
+                  <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-secondary/50">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
+                      <span className="text-xs text-white font-bold">
+                        {course.faculty?.firstName?.[0]}{course.faculty?.lastName?.[0]}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Instructor</p>
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {course.faculty?.firstName} {course.faculty?.lastName}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
                     <span className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      {course.students} students
+                      {course.maxStudents} Max
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {course.nextClass}
+                    <span>
+                      {course.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">{course.progress}%</span>
-                    </div>
-                    <Progress value={course.progress} className="h-1.5" />
-                  </div>
+                  {course.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4">
+                      {course.description}
+                    </p>
+                  )}
 
-                  <Button className="w-full mt-4 group/btn" variant="outline">
-                    Enter Course
+                  <Button 
+                    className="w-full mt-4 group/btn" 
+                    variant={course.isEnrolled ? "outline" : "default"}
+                    onClick={() => handleCourseClick(course)}
+                  >
+                    {course.isEnrolled ? "View Course" : "View Details"}
                     <ChevronRight className="w-4 h-4 ml-1 transition-transform group-hover/btn:translate-x-1" />
                   </Button>
                 </CardContent>
@@ -242,54 +336,80 @@ export function CoursesPage() {
           ))}
         </motion.div>
       ) : (
-        <motion.div variants={itemVariants} className="space-y-3">
-          {filteredCourses.map((course, index) => (
+        <motion.div variants={itemVariants} className="space-y-4">
+          {displayCourses.map((course, index) => (
             <motion.div
-              key={course.id}
+              key={course._id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className="glass border-border/50 hover:border-primary/50 transition-all">
+              <Card className="glass border-border/50 overflow-hidden hover:border-primary/50 transition-all">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={course.image}
-                      alt={course.name}
-                      className="w-20 h-14 rounded-lg object-cover"
-                    />
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-8 h-8 text-white" />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs text-muted-foreground">{course.code}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {course.status}
-                        </Badge>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-base mb-1 line-clamp-1">
+                            {course.courseName}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            {course.courseCode} • {course.credits} Credits • Semester {course.semester}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {course.department}
+                          </p>
+                        </div>
+                        {course.isEnrolled && (
+                          <Badge className="bg-green-600 text-white">
+                            Enrolled
+                          </Badge>
+                        )}
                       </div>
-                      <h3 className="font-semibold truncate">{course.name}</h3>
-                      <p className="text-sm text-muted-foreground">{course.instructor}</p>
+                      <div className="flex items-center gap-2 mb-2 p-2 rounded bg-secondary/30">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                          <span className="text-xs text-white font-bold">
+                            {course.faculty?.firstName?.[0]}{course.faculty?.lastName?.[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Instructor</p>
+                          <p className="text-sm font-medium">
+                            {course.faculty?.firstName} {course.faculty?.lastName}
+                          </p>
+                        </div>
+                      </div>
+                      {course.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                          {course.description}
+                        </p>
+                      )}
+                      <Button 
+                        size="sm" 
+                        variant={course.isEnrolled ? "outline" : "default"}
+                        onClick={() => handleCourseClick(course)}
+                      >
+                        {course.isEnrolled ? "View Course" : "View Details"}
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </div>
-                    <div className="hidden sm:flex items-center gap-6">
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Students</p>
-                        <p className="font-medium">{course.students}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Progress</p>
-                        <p className="font-medium">{course.progress}%</p>
-                      </div>
-                      <div className="w-24">
-                        <Progress value={course.progress} className="h-2" />
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                      <ChevronRight className="w-5 h-5" />
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </motion.div>
+      )}
+
+      {selectedCourse && (
+        <CourseDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          course={selectedCourse}
+        />
       )}
     </motion.div>
   );

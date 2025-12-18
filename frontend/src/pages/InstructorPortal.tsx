@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBell } from '@/components/dashboard/NotificationBell';
 import {
   LayoutDashboard,
   BookOpen,
@@ -16,11 +17,22 @@ import {
   Settings,
   User,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function InstructorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { user, logout } = useAuth();
 
   const navigation = [
@@ -164,7 +176,7 @@ export default function InstructorLayout() {
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
-                    logout();
+                    setShowLogoutDialog(true);
                   }}
                   className="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-600 hover:text-red-300 w-full text-left"
                 >
@@ -190,6 +202,7 @@ export default function InstructorLayout() {
             </button>
             <div className="flex-1"></div>
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <a
                 href="/dashboard"
                 className="text-sm text-blue-400 hover:text-blue-300 font-medium"
@@ -205,6 +218,24 @@ export default function InstructorLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be logged out of your account and redirected to the home page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { logout(); setShowLogoutDialog(false); }} className="bg-destructive hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

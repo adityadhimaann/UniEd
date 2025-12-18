@@ -37,6 +37,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
 
@@ -174,6 +175,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    try {
+      setIsLoading(true);
+      await authService.deleteAccount();
+      
+      // Clear local state after successful deletion
+      setUser(null);
+      localStorage.removeItem("edu_user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      disconnectSocket();
+    } catch (error: any) {
+      console.error("Delete account error:", error);
+      throw new Error(error.response?.data?.message || "Failed to delete account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
@@ -183,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout, deleteAccount, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

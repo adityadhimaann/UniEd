@@ -24,6 +24,7 @@ export interface Message {
     _id: string;
     firstName: string;
     lastName: string;
+    name?: string;
     email: string;
     avatar?: string;
   };

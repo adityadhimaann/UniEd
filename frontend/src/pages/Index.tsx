@@ -1,10 +1,13 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { PremiumSection } from "@/components/landing/PremiumSection";
+import { PricingSection } from "@/components/landing/PricingSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { IntegrationsSection } from "@/components/landing/IntegrationsSection";
 import { StatsSection } from "@/components/landing/StatsSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { CTASection } from "@/components/landing/CTASection";
+import { NewsletterSection } from "@/components/landing/NewsletterSection";
 import { Footer } from "@/components/landing/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -55,11 +58,14 @@ const Index = () => {
         <Navbar />
         <main>
           <HeroSection />
+          <PremiumSection />
+          <PricingSection />
           <FeaturesSection />
           <IntegrationsSection />
           <StatsSection />
           <TestimonialsSection />
           <CTASection />
+          <NewsletterSection />
         </main>
         <Footer />
       </div>

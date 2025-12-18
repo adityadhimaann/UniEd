@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><title>Check User</title></head>
+<body>
+<h3>User Info from localStorage:</h3>
+<pre id="output"></pre>
+<script>
+const user = localStorage.getItem('user');
+const accessToken = localStorage.getItem('accessToken');
+document.getElementById('output').textContent = 
+  'User: ' + user + '\n\n' +
+  'Has Token: ' + (accessToken ? 'Yes' : 'No');
+</script>
+</body>
+</html>

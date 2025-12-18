@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
-import { User, Bell, Shield, Palette, Globe, LogOut, Camera, Mail, Phone, MapPin } from "lucide-react";
+import { User, Bell, Shield, Palette, Globe, LogOut, Camera, Mail, Phone, MapPin, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,16 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -27,12 +37,14 @@ const itemVariants = {
 };
 
 export function SettingsPage() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, deleteAccount, updateUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -67,6 +79,29 @@ export function SettingsPage() {
       title: "Logged out",
       description: "You have been logged out successfully",
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteAccount();
+      
+      toast({
+        title: "Account deleted",
+        description: "Your account has been permanently deleted",
+      });
+      
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   const handleUploadClick = () => {
@@ -516,20 +551,66 @@ export function SettingsPage() {
             {/* Danger zone */}
             <div className="glass rounded-xl p-6 border border-destructive/50">
               <h3 className="font-semibold text-destructive mb-4">Danger Zone</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Log Out</p>
-                  <p className="text-sm text-muted-foreground">Sign out of your account</p>
+              <div className="space-y-4">
+                {/* Log Out */}
+                <div className="flex items-center justify-between py-4 border-b border-destructive/20">
+                  <div>
+                    <p className="font-medium">Log Out</p>
+                    <p className="text-sm text-muted-foreground">Sign out of your account</p>
+                  </div>
+                  <Button variant="destructive" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </Button>
                 </div>
-                <Button variant="destructive" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Log Out
-                </Button>
+
+                {/* Delete Account */}
+                <div className="flex items-center justify-between py-4">
+                  <div>
+                    <p className="font-medium">Delete Account</p>
+                    <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data</p>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Account
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>
         </TabsContent>
       </Tabs>
-    </motion.div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="border border-destructive/50 bg-card/95 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Delete Account Permanently?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              This action cannot be undone. Your account and all associated data will be permanently deleted, including:
+              <ul className="mt-3 ml-4 space-y-1 text-sm">
+                <li>• Your profile information</li>
+                <li>• Course enrollments</li>
+                <li>• Grades and assignments</li>
+                <li>• Messages and notifications</li>
+                <li>• All other account data</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAccount} 
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {isDeleting ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>    </motion.div>
   );
 }

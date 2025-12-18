@@ -1,22 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { studentService } from '@/services/studentService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, FileText, CheckCircle, TrendingUp, Bell, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  BookOpen, 
+  FileText, 
+  CheckCircle, 
+  TrendingUp, 
+  Bell, 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  Users, 
+  Clock 
+} from 'lucide-react';
 
+// Animation Variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
@@ -27,9 +37,18 @@ const itemVariants = {
 export default function StudentDashboard() {
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [courseSuggestions, setCourseSuggestions] = useState<any[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchDashboard();
+    fetchCourseSuggestions();
+    fetchEnrolledCourses();
+    
+    // Smooth scroll setup for the body
+    document.body.style.overflowX = 'hidden';
+    return () => { document.body.style.overflowX = 'auto'; };
   }, []);
 
   const fetchDashboard = async () => {
@@ -43,87 +62,100 @@ export default function StudentDashboard() {
     }
   };
 
+  const fetchCourseSuggestions = async () => {
+    try {
+      const response = await studentService.getCourseSuggestions();
+      const suggestionsData = response?.data || response || [];
+      setCourseSuggestions(Array.isArray(suggestionsData) ? suggestionsData : []);
+    } catch (error) {
+      console.error('Error fetching course suggestions:', error);
+      setCourseSuggestions([]);
+    }
+  };
+
+  const fetchEnrolledCourses = async () => {
+    try {
+      const response = await studentService.getMyCourses();
+      const coursesData = response?.data || response || [];
+      setEnrolledCourses(Array.isArray(coursesData) ? coursesData : []);
+    } catch (error) {
+      console.error('Error fetching enrolled courses:', error);
+      setEnrolledCourses([]);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    // If the user is scrolling vertically (deltaY), 
+    // we move the container horizontally
+    if (e.deltaY !== 0) {
+      e.currentTarget.scrollLeft += e.deltaY;
+      
+      // Optional: Prevent the entire page from scrolling 
+      // while the mouse is over this specific section
+      // e.preventDefault(); 
+    }
+  };
+
+  // FIXED SCROLL LOGIC: Uses Ref and Container width for precision
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const { current } = scrollContainerRef;
+      const scrollAmount = 350; // Width of one card + gap
+      const target = direction === 'left' 
+        ? current.scrollLeft - scrollAmount 
+        : current.scrollLeft + scrollAmount;
+      
+      current.scrollTo({
+        left: target,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-screen bg-[#0f172a]">
         <img src="/loadicon.gif" alt="Loading..." className="h-48 w-48" />
       </div>
     );
   }
 
   const statsCards = [
-    {
-      title: 'Enrolled Courses',
-      value: dashboard?.enrolledCourses || 0,
-      description: 'Active courses',
-      icon: BookOpen,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'Total Assignments',
-      value: dashboard?.totalAssignments || 0,
-      description: `${dashboard?.pendingAssignments || 0} pending`,
-      icon: FileText,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      title: 'Average Grade',
-      value: `${dashboard?.averageGrade || 0}%`,
-      description: 'Overall performance',
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: 'Attendance',
-      value: `${dashboard?.attendancePercentage || 0}%`,
-      description: 'Attendance rate',
-      icon: CheckCircle,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
+    { title: 'Enrolled Courses', value: dashboard?.enrolledCourses || 0, description: 'Active courses', icon: BookOpen, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    { title: 'Total Assignments', value: dashboard?.totalAssignments || 0, description: `${dashboard?.pendingAssignments || 0} pending`, icon: FileText, color: 'text-purple-600', bgColor: 'bg-purple-100' },
+    { title: 'Average Grade', value: `${dashboard?.averageGrade || 0}%`, description: 'Overall performance', icon: TrendingUp, color: 'text-green-600', bgColor: 'bg-green-100' },
+    { title: 'Attendance', value: `${dashboard?.attendancePercentage || 0}%`, description: 'Attendance rate', icon: CheckCircle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
   ];
 
   return (
     <motion.div 
-      className="space-y-6"
+      className="p-6 space-y-8 max-w-[1600px] mx-auto min-h-screen"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      <motion.div 
-        className="flex items-center justify-between"
-        variants={itemVariants}
-      >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Student Dashboard</h1>
-          <p className="text-gray-400 mt-1">Welcome back! Here's your overview</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">Student Dashboard</h1>
+          <p className="text-gray-400 mt-2 text-lg">Welcome back! Here's your academic overview.</p>
         </div>
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-        variants={containerVariants}
-      >
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" variants={containerVariants}>
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <motion.div key={index} variants={itemVariants}>
-              <Card className="border-gray-700 bg-gray-800">
+            <motion.div key={index} variants={itemVariants} whileHover={{ y: -5 }}>
+              <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-300">
-                    {stat.title}
-                  </CardTitle>
-                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                    <Icon className={`h-5 w-5 ${stat.color}`} />
-                  </div>
+                  <CardTitle className="text-sm font-semibold text-gray-400 uppercase tracking-wider">{stat.title}</CardTitle>
+                  <div className={`p-2 rounded-xl ${stat.bgColor}`}><Icon className={`h-5 w-5 ${stat.color}`} /></div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-white">{stat.value}</div>
-                  <p className="text-sm text-gray-400 mt-1">{stat.description}</p>
+                  <div className="text-4xl font-bold text-white">{stat.value}</div>
+                  <p className="text-sm text-gray-500 mt-2">{stat.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -131,55 +163,145 @@ export default function StudentDashboard() {
         })}
       </motion.div>
 
-      {/* Recent Announcements */}
-      {dashboard?.recentAnnouncements && dashboard.recentAnnouncements.length > 0 && (
+      {/* Enrolled Courses Progress */}
+      {enrolledCourses.length > 0 && (
         <motion.div variants={itemVariants}>
-          <Card className="border-gray-700 bg-gray-800">
+          <Card className="border-gray-700 bg-gray-800 shadow-2xl">
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-white">Recent Announcements</CardTitle>
-              </div>
-              <CardDescription className="text-gray-400">
-                Latest updates from your courses
-              </CardDescription>
+              <CardTitle className="text-2xl text-white">My Enrolled Courses</CardTitle>
+              <CardDescription className="text-gray-400">Track your progress and upcoming deadlines</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {dashboard.recentAnnouncements.map((announcement: any) => (
-                  <div
-                    key={announcement._id}
-                    className="flex items-start gap-4 p-4 rounded-lg border border-gray-700 bg-gray-900"
+            <CardContent className="space-y-4">
+              {enrolledCourses.map((enrollment: any) => {
+                const course = enrollment.course;
+                if (!course) return null;
+                
+                return (
+                  <Card key={enrollment._id} className="border-gray-700 bg-gray-900/50 overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-bold text-blue-400 px-2 py-0.5 bg-blue-900/30 rounded">{course.courseCode}</span>
+                            <span className="text-xs text-green-400">Active</span>
+                          </div>
+                          <h3 className="text-white font-bold text-lg">{course.courseName}</h3>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {course.faculty?.firstName} {course.faculty?.lastName} • {course.credits} Credits
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white">0%</div>
+                          <p className="text-xs text-gray-500">Progress</p>
+                        </div>
+                      </div>
+                      
+                      <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
+                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full" style={{ width: '0%' }}></div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="bg-gray-800 rounded-lg p-2">
+                          <div className="text-sm font-bold text-white">0</div>
+                          <p className="text-[10px] text-gray-500">Assignments</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-2">
+                          <div className="text-sm font-bold text-white">0%</div>
+                          <p className="text-[10px] text-gray-500">Attendance</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-2">
+                          <div className="text-sm font-bold text-white">0</div>
+                          <p className="text-[10px] text-gray-500">Grade</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-3 border-t border-gray-800">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1 text-gray-400">
+                            <Calendar className="h-3 w-3" />
+                            <span>Enrolled: {new Date(enrollment.enrolledAt).toLocaleDateString()}</span>
+                          </div>
+                          <Button size="sm" variant="outline" className="h-7 text-xs">
+                            View Course
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Recommended Courses Carousel */}
+      {courseSuggestions.length > 0 && (
+        <motion.div variants={itemVariants} className="relative overflow-hidden">
+          <Card className="border-gray-700 bg-gray-800 shadow-2xl">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-2xl text-white">Recommended for You</CardTitle>
+                <CardDescription className="text-gray-400">Expand your skills with these top-rated courses</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full" onClick={() => scroll('left')}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full" onClick={() => scroll('right')}>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="px-6 pb-6 overflow-hidden">
+              <div 
+                ref={scrollContainerRef}
+                onWheel={handleWheel}
+                className="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth pt-2 pb-2 -mx-6 px-6"
+                style={{ WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}
+              >
+                {courseSuggestions.map((course) => (
+                  <motion.div 
+                    key={course._id} 
+                    className="flex-none w-[240px]"
+                    style={{ scrollSnapAlign: 'start' }}
+                    whileHover={{ y: -8 }}
                   >
-                    <div className="flex-shrink-0">
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${
-                        announcement.priority === 'high'
-                          ? 'bg-red-900 text-red-300'
-                          : announcement.priority === 'medium'
-                          ? 'bg-yellow-900 text-yellow-300'
-                          : 'bg-blue-900 text-blue-300'
-                      }`}>
-                        {announcement.priority?.toUpperCase() || 'NORMAL'}
+                    <Card className="border-gray-700 bg-gray-900 h-full flex flex-col overflow-hidden group">
+                      <div className="relative h-24 bg-gradient-to-br from-indigo-600 to-purple-700 p-2.5 flex flex-col justify-end">
+                        <div className="absolute top-2 right-2 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-white font-bold">
+                          {course.credits} CR
+                        </div>
+                        <span className="text-[9px] font-bold text-blue-200 uppercase mb-0.5">{course.courseCode}</span>
+                        <h3 className="text-white font-bold text-sm leading-tight line-clamp-2">{course.courseName}</h3>
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-white">
-                        {announcement.title}
-                      </h4>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {announcement.content}
-                      </p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span className="font-medium">
-                          {announcement.course?.name} ({announcement.course?.code})
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(announcement.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                      
+                      <CardContent className="p-3 flex-1 flex flex-col">
+                        <p className="text-[11px] text-gray-400 line-clamp-2 mb-2 leading-relaxed">
+                          {course.description || "Dive deep into the core concepts of this subject with expert faculty guidance."}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-800">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] text-gray-500 uppercase">Instructor</span>
+                            <span className="text-[11px] text-gray-200 font-medium">
+                              {course.faculty?.firstName && course.faculty?.lastName 
+                                ? `${course.faculty.firstName} ${course.faculty.lastName}`
+                                : 'TBA'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-400">
+                            <Users className="h-3 w-3" />
+                            <span className="text-[11px]">{course.enrollmentCount || 0}</span>
+                          </div>
+                        </div>
+                        <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all py-1.5">
+                          Course Details
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 ))}
               </div>
             </CardContent>
@@ -187,51 +309,71 @@ export default function StudentDashboard() {
         </motion.div>
       )}
 
-      {/* Quick Actions */}
-      <motion.div variants={itemVariants}>
-        <Card className="border-gray-700 bg-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
-            <CardDescription className="text-gray-400">
-              Manage your courses and assignments
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <a
-                href="/dashboard/courses"
-                className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-gray-600 hover:border-blue-500 hover:bg-blue-900/20 transition-colors"
-              >
-                <BookOpen className="h-6 w-6 text-blue-600" />
-                <div>
-                  <h4 className="font-medium text-white">View Courses</h4>
-                  <p className="text-sm text-gray-400">Browse enrolled courses</p>
-                </div>
-              </a>
-              <a
-                href="/dashboard/assignments"
-                className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500 hover:bg-purple-900/20 transition-colors"
-              >
-                <FileText className="h-6 w-6 text-purple-600" />
-                <div>
-                  <h4 className="font-medium text-white">Assignments</h4>
-                  <p className="text-sm text-gray-400">View and submit work</p>
-                </div>
-              </a>
-              <a
-                href="/dashboard/announcements"
-                className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-gray-600 hover:border-orange-500 hover:bg-orange-900/20 transition-colors"
-              >
-                <Bell className="h-6 w-6 text-orange-600" />
-                <div>
-                  <h4 className="font-medium text-white">Announcements</h4>
-                  <p className="text-sm text-gray-400">Read updates</p>
-                </div>
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* Announcements & Quick Actions Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Announcements */}
+        <motion.div variants={itemVariants} className="lg:col-span-2">
+          <Card className="border-gray-700 bg-gray-800 h-full">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-blue-500" />
+                <CardTitle className="text-white">Recent Announcements</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {dashboard?.recentAnnouncements?.length > 0 ? (
+                dashboard.recentAnnouncements.map((announcement: any) => (
+                  <div key={announcement._id} className="p-4 rounded-xl border border-gray-700 bg-gray-900/50 hover:bg-gray-900 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white">{announcement.title}</h4>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${announcement.priority === 'high' ? 'bg-red-900/50 text-red-400' : 'bg-blue-900/50 text-blue-400'}`}>
+                        {announcement.priority?.toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 line-clamp-2">{announcement.content}</p>
+                    <div className="flex items-center gap-4 mt-3 text-[11px] text-gray-500">
+                      <span className="font-medium text-blue-400">{announcement.course?.name}</span>
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(announcement.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 italic">No recent announcements</div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div variants={itemVariants}>
+          <Card className="border-gray-700 bg-gray-800 h-full">
+            <CardHeader>
+              <CardTitle className="text-white">Quick Access</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {[
+                { label: 'My Courses', sub: 'Manage learning', icon: BookOpen, color: 'text-blue-500', href: '/dashboard/courses' },
+                { label: 'Assignments', sub: 'Submit work', icon: FileText, color: 'text-purple-500', href: '/dashboard/assignments' },
+                { label: 'Announcements', sub: 'Stay updated', icon: Bell, color: 'text-orange-500', href: '/dashboard/announcements' }
+              ].map((action, i) => (
+                <a key={i} href={action.href} className="flex items-center gap-4 p-4 rounded-xl border border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
+                  <action.icon className={`h-6 w-6 ${action.color}`} />
+                  <div>
+                    <h4 className="font-semibold text-white group-hover:text-blue-400">{action.label}</h4>
+                    <p className="text-xs text-gray-500">{action.sub}</p>
+                  </div>
+                </a>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Inline styles for scrollbar and utilities */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </motion.div>
   );
 }

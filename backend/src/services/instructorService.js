@@ -129,9 +129,31 @@ class InstructorService {
       title,
       description,
       dueDate,
-      totalPoints,
+      totalMarks: totalPoints, // Map totalPoints to totalMarks
       attachments,
+      createdBy: instructorId,
     });
+
+    // Get all enrolled students in this course
+    const enrollments = await Enrollment.find({ course, status: 'active' });
+    
+    // Create notifications for all enrolled students
+    const notifications = enrollments.map(enrollment => ({
+      user: enrollment.student,
+      type: 'assignment',
+      title: 'New Assignment Posted',
+      message: `New assignment "${title}" has been posted for ${courseDoc.courseName}. Due: ${new Date(dueDate).toLocaleDateString()}`,
+      metadata: {
+        assignmentId: assignment._id,
+        courseId: course,
+        courseName: courseDoc.courseName,
+        dueDate: dueDate,
+      },
+    }));
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
 
     return await assignment.populate('course', 'courseCode courseName');
   }

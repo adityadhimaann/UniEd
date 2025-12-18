@@ -23,6 +23,26 @@ const getMyCourses = asyncHandler(async (req, res) => {
   );
 });
 
+// Get all available courses created by faculty
+const getAvailableCourses = asyncHandler(async (req, res) => {
+  const studentId = req.user._id;
+  const courses = await studentService.getAvailableCourses(studentId);
+
+  res.status(200).json(
+    ApiResponse.success(courses, 'Available courses retrieved successfully')
+  );
+});
+
+// Get course suggestions for student
+const getCourseSuggestions = asyncHandler(async (req, res) => {
+  const studentId = req.user._id;
+  const suggestions = await studentService.getCourseSuggestions(studentId);
+
+  res.status(200).json(
+    ApiResponse.success(suggestions, 'Course suggestions retrieved successfully')
+  );
+});
+
 // Get course details
 const getCourseDetails = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
@@ -174,6 +194,8 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
 export default {
   getDashboard,
   getMyCourses,
+  getAvailableCourses,
+  getCourseSuggestions,
   getCourseDetails,
   getMyAssignments,
   getAssignmentDetails,

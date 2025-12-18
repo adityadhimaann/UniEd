@@ -14,6 +14,8 @@ router.get('/dashboard', studentController.getDashboard);
 
 // Courses
 router.get('/courses', studentController.getMyCourses);
+router.get('/available-courses', studentController.getAvailableCourses);
+router.get('/course-suggestions', studentController.getCourseSuggestions);
 router.get('/courses/:courseId', studentController.getCourseDetails);
 
 // Assignments
