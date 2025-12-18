@@ -263,8 +263,18 @@ export function CoursesPage() {
             >
               <Card className="group glass border-border/50 overflow-hidden hover:border-primary/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
                 <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600">
+                  {course.titleImage && (
+                    <img 
+                      src={course.titleImage} 
+                      alt={course.courseName}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                  <div className="absolute top-3 left-3 right-3 flex justify-between">
+                  <div className="absolute top-3 left-3 right-3 flex justify-between z-10">
                     <Badge className="bg-primary text-primary-foreground">
                       {course.courseCode}
                     </Badge>
@@ -274,8 +284,8 @@ export function CoursesPage() {
                       </Badge>
                     )}
                   </div>
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-white font-bold text-lg line-clamp-1">
+                  <div className="absolute bottom-3 left-3 right-3 z-10">
+                    <h3 className="text-white font-bold text-lg line-clamp-1 drop-shadow-lg">
                       {course.courseName}
                     </h3>
                   </div>
@@ -347,8 +357,19 @@ export function CoursesPage() {
               <Card className="glass border-border/50 overflow-hidden hover:border-primary/50 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shrink-0 overflow-hidden relative">
+                      {course.titleImage ? (
+                        <img 
+                          src={course.titleImage} 
+                          alt={course.courseName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <BookOpen className="w-8 h-8 text-white" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-2">

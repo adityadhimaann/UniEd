@@ -20,9 +20,9 @@ class InstructorService {
 
   // Create a new course
   async createCourse(instructorId, courseData) {
-    const { code, name, description, credits, semester, department, schedule, maxStudents } = courseData;
+    const { code, name, description, credits, semester, department, schedule, maxStudents, titleImage } = courseData;
 
-    console.log('Service received:', { code, name, description, credits, semester, department, schedule, maxStudents });
+    console.log('Service received:', { code, name, description, credits, semester, department, schedule, maxStudents, titleImage });
 
     // Check if course code already exists
     const existingCourse = await Course.findOne({ courseCode: code });
@@ -40,6 +40,7 @@ class InstructorService {
       faculty: instructorId,
       schedule: schedule || {},
       maxStudents: maxStudents || 60,
+      titleImage: titleImage || null,
     };
 
     console.log('Creating course with:', newCourse);
@@ -61,6 +62,11 @@ class InstructorService {
       throw ApiError.forbidden('You are not authorized to update this course');
     }
 
+    console.log('=== UPDATE COURSE SERVICE ===');
+    console.log('Updates received:', updates);
+    console.log('Current titleImage:', course.titleImage);
+    console.log('New titleImage:', updates.titleImage);
+    
     // Map frontend fields to model fields
     if (updates.name) course.courseName = updates.name;
     if (updates.description) course.description = updates.description;
@@ -70,8 +76,13 @@ class InstructorService {
     if (updates.schedule) course.schedule = updates.schedule;
     if (updates.maxStudents) course.maxStudents = updates.maxStudents;
     if (updates.isActive !== undefined) course.isActive = updates.isActive;
+    if (updates.titleImage !== undefined) {
+      console.log('Setting titleImage to:', updates.titleImage);
+      course.titleImage = updates.titleImage;
+    }
 
     await course.save();
+    console.log('Course saved with titleImage:', course.titleImage);
     return await course.populate('faculty', 'firstName lastName email');
   }
 
@@ -114,6 +125,8 @@ class InstructorService {
   async createAssignment(instructorId, assignmentData) {
     const { course, title, description, dueDate, totalPoints, attachments } = assignmentData;
 
+    console.log('Creating assignment with data:', { course, title, description, dueDate, totalPoints, attachments });
+
     // Verify instructor teaches this course
     const courseDoc = await Course.findById(course);
     if (!courseDoc) {
@@ -124,15 +137,26 @@ class InstructorService {
       throw ApiError.forbidden('You are not authorized to create assignments for this course');
     }
 
-    const assignment = await Assignment.create({
+    // Prepare assignment data
+    const assignmentToCreate = {
       course,
       title,
-      description,
       dueDate,
       totalMarks: totalPoints, // Map totalPoints to totalMarks
-      attachments,
       createdBy: instructorId,
-    });
+    };
+
+    // Only add optional fields if they exist
+    if (description) {
+      assignmentToCreate.description = description;
+    }
+    if (attachments && attachments.length > 0) {
+      assignmentToCreate.attachments = attachments;
+    }
+
+    console.log('Creating assignment with:', assignmentToCreate);
+
+    const assignment = await Assignment.create(assignmentToCreate);
 
     // Get all enrolled students in this course
     const enrollments = await Enrollment.find({ course, status: 'active' });

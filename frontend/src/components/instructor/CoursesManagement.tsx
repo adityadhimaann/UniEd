@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit2, Trash2, Users, BookOpen, UserPlus, Check, X, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, BookOpen, UserPlus, Check, X, Clock, Upload, Image as ImageIcon } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -43,7 +43,10 @@ export default function CoursesManagement() {
     credits: 3,
     semester: 1,
     department: '',
+    titleImage: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   useEffect(() => {
     fetchCourses();
@@ -58,6 +61,7 @@ export default function CoursesManagement() {
       // API returns { success, data, message } - data contains the courses array
       const coursesData = response?.data || response || [];
       console.log('Instructor courses data:', coursesData);
+      console.log('First course titleImage:', coursesData[0]?.titleImage);
       setCourses(Array.isArray(coursesData) ? coursesData : []);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -83,8 +87,14 @@ export default function CoursesManagement() {
       console.log('Approving request:', requestId);
       const response = await instructorService.respondToEnrollmentRequest(requestId, 'approved');
       console.log('Approve response:', response);
-      await fetchEnrollmentRequests();
-      alert('✅ Enrollment request approved successfully!');
+      
+      // Check if response indicates success
+      if (response?.success || response?.data?.success || response?.status === 200) {
+        await fetchEnrollmentRequests();
+        alert('✅ Enrollment request approved successfully! The student has been notified.');
+      } else {
+        throw new Error(response?.message || response?.data?.message || 'Approval failed');
+      }
     } catch (error: any) {
       console.error('Error approving request:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Error approving request';
@@ -94,12 +104,20 @@ export default function CoursesManagement() {
 
   const handleRejectRequest = async (requestId: string) => {
     const responseMessage = prompt('Enter rejection reason (optional):');
+    if (responseMessage === null) return; // User cancelled
+    
     try {
       console.log('Rejecting request:', requestId);
       const response = await instructorService.respondToEnrollmentRequest(requestId, 'rejected', responseMessage || undefined);
       console.log('Reject response:', response);
-      await fetchEnrollmentRequests();
-      alert('Enrollment request rejected.');
+      
+      // Check if response indicates success
+      if (response?.success || response?.data?.success || response?.status === 200) {
+        await fetchEnrollmentRequests();
+        alert('✅ Enrollment request rejected. The student has been notified.');
+      } else {
+        throw new Error(response?.message || response?.data?.message || 'Rejection failed');
+      }
     } catch (error: any) {
       console.error('Error rejecting request:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Error rejecting request';
@@ -107,13 +125,91 @@ export default function CoursesManagement() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      setImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    setFormData({ ...formData, titleImage: '' });
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await instructorService.createCourse(formData);
+      // If there's an image, upload it first
+      let imageUrl = formData.titleImage;
+      if (imageFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', imageFile);
+        
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        if (!token) {
+          alert('Authentication token not found. Please login again.');
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Upload image to server
+        const uploadResponse = await fetch(`${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001'}/api/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formDataUpload,
+        });
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          console.log('Upload response:', uploadData);
+          imageUrl = uploadData.data.url;
+          console.log('Image URL to save:', imageUrl);
+        } else {
+          const errorText = await uploadResponse.text();
+          console.error('Upload failed:', errorText);
+          
+          // Check if it's an auth error
+          if (uploadResponse.status === 401) {
+            alert('⚠️ Your session has expired. Please logout and login again to upload images.');
+            return;
+          }
+          
+          alert(`Image upload failed: ${errorText}`);
+          return;
+        }
+      }
+
+      console.log('Creating course with data:', { ...formData, titleImage: imageUrl });
+      await instructorService.createCourse({
+        ...formData,
+        titleImage: imageUrl,
+      });
       setShowCreateForm(false);
-      setFormData({ code: '', name: '', description: '', credits: 3, semester: 1, department: '' });
+      setFormData({ code: '', name: '', description: '', credits: 3, semester: 1, department: '', titleImage: '' });
+      setImageFile(null);
+      setImagePreview('');
       fetchCourses();
+      alert('Course created successfully!');
     } catch (error: any) {
       alert(error.response?.data?.message || 'Error creating course');
     }
@@ -128,7 +224,10 @@ export default function CoursesManagement() {
       credits: course.credits,
       semester: course.semester,
       department: course.department || '',
+      titleImage: course.titleImage || '',
     });
+    setImagePreview(course.titleImage || '');
+    setImageFile(null);
     setShowCreateForm(false);
   };
 
@@ -137,24 +236,92 @@ export default function CoursesManagement() {
     if (!editingCourse) return;
 
     try {
-      await instructorService.updateCourse(editingCourse._id, {
+      // If there's a new image, upload it first
+      let imageUrl = formData.titleImage;
+      
+      console.log('=== UPDATE COURSE DEBUG ===');
+      console.log('Has new image file?', !!imageFile);
+      console.log('Current titleImage:', formData.titleImage);
+      
+      if (imageFile) {
+        console.log('Uploading new image...');
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', imageFile);
+        
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        console.log('Token exists?', !!token);
+        console.log('Token from:', localStorage.getItem('accessToken') ? 'accessToken' : 'token');
+        
+        if (!token) {
+          alert('Authentication token not found. Please login again.');
+          window.location.href = '/login';
+          return;
+        }
+        
+        const uploadResponse = await fetch(`${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001'}/api/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formDataUpload,
+        });
+        
+        console.log('Upload response status:', uploadResponse.status);
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          console.log('Upload response data:', uploadData);
+          imageUrl = uploadData.data.url;
+          console.log('New image URL:', imageUrl);
+        } else {
+          const errorText = await uploadResponse.text();
+          console.error('Upload failed:', errorText);
+          
+          // Check if it's an auth error
+          if (uploadResponse.status === 401) {
+            alert('⚠️ Your session has expired. Please logout and login again to upload images.');
+            return;
+          }
+          
+          alert(`Image upload failed: ${errorText}`);
+          return; // Don't proceed if upload fails
+        }
+      } else {
+        console.log('No new image file, keeping existing:', imageUrl);
+      }
+
+      const updateData = {
         name: formData.name,
         description: formData.description,
         credits: formData.credits,
         semester: formData.semester,
         department: formData.department,
-      });
+        titleImage: imageUrl,
+      };
+      
+      console.log('Updating course with data:', updateData);
+      
+      const response = await instructorService.updateCourse(editingCourse._id, updateData);
+      console.log('Update response:', response);
+      
       setEditingCourse(null);
-      setFormData({ code: '', name: '', description: '', credits: 3, semester: 1, department: '' });
-      fetchCourses();
+      setFormData({ code: '', name: '', description: '', credits: 3, semester: 1, department: '', titleImage: '' });
+      setImageFile(null);
+      setImagePreview('');
+      
+      await fetchCourses();
+      alert('✅ Course updated successfully with image!');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error updating course');
+      console.error('Update error:', error);
+      alert(error.response?.data?.message || error.message || 'Error updating course');
     }
   };
 
   const handleCancelEdit = () => {
     setEditingCourse(null);
-    setFormData({ code: '', name: '', description: '', credits: 3, semester: 1, department: '' });
+    setFormData({ code: '', name: '', description: '', credits: 3, semester: 1, department: '', titleImage: '' });
+    setImageFile(null);
+    setImagePreview('');
   };
 
   const handleDeleteCourse = async (courseId: string) => {
@@ -265,6 +432,55 @@ export default function CoursesManagement() {
                     rows={3}
                   />
                 </div>
+                
+                {/* Image Upload Section for Edit */}
+                <div className="space-y-2">
+                  <Label htmlFor="editTitleImage">Course Title Image</Label>
+                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                    {imagePreview ? (
+                      <div className="space-y-3">
+                        <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-900">
+                          <img 
+                            src={imagePreview} 
+                            alt="Course preview" 
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-2 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-400 text-center">
+                          {imageFile ? `${imageFile.name} (${(imageFile.size / 1024).toFixed(2)} KB)` : 'Current image'}
+                        </p>
+                      </div>
+                    ) : (
+                      <label 
+                        htmlFor="editTitleImage" 
+                        className="flex flex-col items-center justify-center cursor-pointer py-8"
+                      >
+                        <Upload className="h-12 w-12 text-gray-500 mb-3" />
+                        <p className="text-sm font-medium text-gray-300 mb-1">
+                          Click to upload course image
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF up to 5MB
+                        </p>
+                        <input
+                          id="editTitleImage"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="credits">Credits *</Label>
@@ -361,6 +577,54 @@ export default function CoursesManagement() {
                   required
                   rows={3}
                 />
+              </div>
+              
+              {/* Image Upload Section */}
+              <div className="space-y-2">
+                <Label htmlFor="titleImage">Course Title Image</Label>
+                <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                  {imagePreview ? (
+                    <div className="space-y-3">
+                      <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-900">
+                        <img 
+                          src={imagePreview} 
+                          alt="Course preview" 
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-2 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-400 text-center">
+                        {imageFile?.name} ({(imageFile!.size / 1024).toFixed(2)} KB)
+                      </p>
+                    </div>
+                  ) : (
+                    <label 
+                      htmlFor="titleImage" 
+                      className="flex flex-col items-center justify-center cursor-pointer py-8"
+                    >
+                      <Upload className="h-12 w-12 text-gray-500 mb-3" />
+                      <p className="text-sm font-medium text-gray-300 mb-1">
+                        Click to upload course image
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                      <input
+                        id="titleImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -526,7 +790,27 @@ export default function CoursesManagement() {
       >
         {filteredCourses.map((course) => (
           <motion.div key={course._id} variants={itemVariants}>
-            <Card className="bg-gray-800 border-gray-700 hover:shadow-lg transition-shadow">
+            <Card className="bg-gray-800 border-gray-700 hover:shadow-lg transition-shadow overflow-hidden">
+              {/* Course Image */}
+              {course.titleImage ? (
+                <div className="w-full h-40 overflow-hidden bg-gray-900">
+                  <img 
+                    src={course.titleImage} 
+                    alt={course.courseName}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      console.error('Image failed to load:', course.titleImage);
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center"><svg class="h-16 w-16 text-blue-300 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div>';
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-40 bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
+                  <BookOpen className="h-16 w-16 text-blue-300 opacity-50" />
+                </div>
+              )}
+              
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>

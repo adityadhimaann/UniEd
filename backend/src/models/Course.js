@@ -67,6 +67,11 @@ const courseSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    titleImage: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: true,

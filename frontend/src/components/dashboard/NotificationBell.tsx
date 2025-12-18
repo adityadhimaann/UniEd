@@ -51,11 +51,20 @@ export function NotificationBell() {
   const fetchNotifications = async () => {
     try {
       const basePath = getApiBasePath();
-      const response = await api.get<NotificationData>(`${basePath}/notifications?limit=10`);
-      setNotifications(response.data.notifications);
-      setUnreadCount(response.data.unreadCount);
+      const response = await api.get(`${basePath}/notifications?limit=10`);
+      
+      // Handle different response structures
+      const data = response.data?.data || response.data;
+      
+      if (data) {
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
+      // Set empty state on error
+      setNotifications([]);
+      setUnreadCount(0);
     }
   };
 
@@ -66,7 +75,7 @@ export function NotificationBell() {
         const basePath = getApiBasePath();
         await api.patch(`${basePath}/notifications/${notification._id}/read`);
         setNotifications(
-          notifications.map((n) =>
+          (notifications || []).map((n) =>
             n._id === notification._id ? { ...n, isRead: true } : n
           )
         );
@@ -100,7 +109,7 @@ export function NotificationBell() {
       const basePath = getApiBasePath();
       await api.patch(`${basePath}/notifications/${notificationId}/read`);
       setNotifications(
-        notifications.map((n) =>
+        (notifications || []).map((n) =>
           n._id === notificationId ? { ...n, isRead: true } : n
         )
       );
@@ -118,7 +127,7 @@ export function NotificationBell() {
     try {
       const basePath = getApiBasePath();
       await api.patch(`${basePath}/notifications/mark-all-read`);
-      setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
+      setNotifications((notifications || []).map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast({
         title: "Success",
@@ -210,14 +219,14 @@ export function NotificationBell() {
 
                 <ScrollArea className="h-[400px]">
                   <CardContent className="p-0">
-                    {notifications.length === 0 ? (
+                    {!notifications || notifications.length === 0 ? (
                       <div className="p-8 text-center text-muted-foreground">
                         <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
                         <p>No notifications yet</p>
                       </div>
                     ) : (
                       <div className="divide-y divide-border/50">
-                        {notifications.map((notification) => (
+                        {(notifications || []).map((notification) => (
                           <motion.div
                             key={notification._id}
                             initial={{ opacity: 0 }}

@@ -119,28 +119,42 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
       // Use _id if available, fallback to id
       const courseId = (course as any)._id || course.id;
       
-      await api.post('/course-enrollment-requests', {
+      console.log('Submitting enrollment request:', { courseId, enrollmentType, message: message.trim() });
+      
+      const response = await api.post('/course-enrollment-requests', {
         courseId,
         enrollmentType,
         message: message.trim(),
       });
 
-      toast.success("🎉 Congratulations! Successfully enrolled in the course!", {
-        description: "Check your calendar for upcoming classes and assignments.",
+      console.log('Enrollment response:', response);
+
+      // Check if the response indicates success
+      if (response.data?.success || response.status === 200 || response.status === 201) {
+        toast.success("🎉 Enrollment request submitted successfully!", {
+          description: "Your request is pending instructor approval. You'll be notified once approved.",
+          duration: 5000,
+        });
+        
+        setMessage("");
+        setEnrollmentType("");
+        
+        // Refresh the page after a short delay to show updated enrollment status
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+        
+        onClose();
+      } else {
+        throw new Error(response.data?.message || 'Enrollment request failed');
+      }
+    } catch (error: any) {
+      console.error('Enrollment error:', error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to submit enrollment request";
+      toast.error(errorMessage, {
+        description: "Please try again or contact support if the issue persists.",
         duration: 5000,
       });
-      
-      setMessage("");
-      setEnrollmentType("");
-      
-      // Refresh the page after a short delay to show updated enrollment status
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-      
-      onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to submit enrollment request");
     } finally {
       setIsSubmitting(false);
     }

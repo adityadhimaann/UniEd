@@ -33,8 +33,8 @@ export const PERMISSIONS = {
 };
 
 export const TOKEN_EXPIRY = {
-  ACCESS_TOKEN: '15m',
-  REFRESH_TOKEN: '7d',
+  ACCESS_TOKEN: '30d', // 30 days - much longer session
+  REFRESH_TOKEN: '90d', // 90 days - extended refresh period
 };
 
 export const ENROLLMENT_STATUS = {

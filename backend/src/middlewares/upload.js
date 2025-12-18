@@ -6,6 +6,8 @@ import { FILE_UPLOAD } from '../config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Named export for upload
+export { upload };
 
 // Configure storage
 const storage = multer.diskStorage({
