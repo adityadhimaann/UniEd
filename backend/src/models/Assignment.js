@@ -20,8 +20,17 @@ const submissionSchema = new mongoose.Schema({
   },
   grade: {
     type: Number,
-    min: 0,
+    min: [0, 'Grade cannot be negative'],
     default: null,
+    validate: {
+      validator: function(value) {
+        // Allow null or undefined
+        if (value === null || value === undefined) return true;
+        // Must be a number >= 0
+        return typeof value === 'number' && value >= 0;
+      },
+      message: 'Grade must be a positive number or null'
+    }
   },
   feedback: {
     type: String,

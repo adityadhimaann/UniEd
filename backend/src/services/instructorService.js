@@ -252,6 +252,12 @@ class InstructorService {
 
   // Grade a submission
   async gradeSubmission(assignmentId, studentId, instructorId, gradeData) {
+    console.log('=== GRADE SUBMISSION SERVICE ===');
+    console.log('Assignment ID:', assignmentId);
+    console.log('Student ID:', studentId);
+    console.log('Instructor ID:', instructorId);
+    console.log('Grade Data:', gradeData);
+
     const assignment = await Assignment.findById(assignmentId)
       .populate('course', 'faculty courseName');
 
@@ -269,21 +275,48 @@ class InstructorService {
       return subStudentId === studentId.toString();
     });
 
+    console.log('Found submission:', submission ? 'Yes' : 'No');
+    if (submission) {
+      console.log('Current submission status:', submission.status);
+      console.log('Current submission grade:', submission.grade);
+    }
+
     if (!submission) {
       throw ApiError.notFound('Submission not found');
     }
 
     // Validate grade
-    if (gradeData.grade < 0 || gradeData.grade > assignment.totalMarks) {
+    const gradeValue = Number(gradeData.grade);
+    console.log('Grade value (converted):', gradeValue);
+    console.log('Total marks:', assignment.totalMarks);
+
+    if (isNaN(gradeValue)) {
+      throw ApiError.badRequest('Grade must be a valid number');
+    }
+
+    if (gradeValue < 0 || gradeValue > assignment.totalMarks) {
       throw ApiError.badRequest(`Grade must be between 0 and ${assignment.totalMarks}`);
     }
 
     // Update grade and feedback
-    submission.grade = gradeData.grade;
+    submission.grade = gradeValue;
     submission.feedback = gradeData.feedback || '';
     submission.status = 'graded';
 
-    await assignment.save();
+    console.log('Updated submission:', {
+      grade: submission.grade,
+      feedback: submission.feedback,
+      status: submission.status
+    });
+
+    try {
+      await assignment.save();
+      console.log('✅ Assignment saved successfully');
+    } catch (saveError) {
+      console.error('❌ Error saving assignment:', saveError);
+      console.error('Validation errors:', saveError.errors);
+      throw ApiError.badRequest(`Failed to save grade: ${saveError.message}`);
+    }
 
     // Send notification to student
     try {
