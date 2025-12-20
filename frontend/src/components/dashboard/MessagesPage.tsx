@@ -781,10 +781,7 @@ export function MessagesPage() {
                                     size="icon"
                                     variant="ghost"
                                     className={`h-8 w-8 ${isMe ? 'hover:bg-white/20' : 'hover:bg-secondary'}`}
-                                    onClick={() => {
-                                      setViewerImageUrl(message.fileUrl);
-                                      setShowImageViewer(true);
-                                    }}
+                                    onClick={() => window.open(message.fileUrl, '_blank')}
                                   >
                                     <Eye className="w-4 h-4" />
                                   </Button>
