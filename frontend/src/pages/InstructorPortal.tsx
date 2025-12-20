@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/dashboard/NotificationBell';
@@ -29,12 +29,19 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function InstructorLayout() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showTopProfileMenu, setShowTopProfileMenu] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    setShowLogoutDialog(false);
+    navigate('/');
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/instructor', icon: LayoutDashboard },
@@ -285,7 +292,7 @@ export default function InstructorLayout() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { logout(); setShowLogoutDialog(false); }} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
               Logout
             </AlertDialogAction>
           </AlertDialogFooter>
