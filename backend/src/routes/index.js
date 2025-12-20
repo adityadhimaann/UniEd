@@ -39,7 +39,7 @@ router.use('/api/v1/materials', courseMaterialRoutes);
 router.use('/api/v1/quizzes', quizRoutes);
 router.use('/api/v1/live-sessions', liveSessionRoutes);
 router.use('/api/v1/discussions', discussionRoutes);
-router.use('/api/upload', uploadRoutes);
+router.use('/api/v1/upload', uploadRoutes);
 
 // 404 handler for API routes
 router.use('*', (req, res) => {

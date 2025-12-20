@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen, Image as ImageIcon, Camera, File, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -59,7 +59,15 @@ export function MessagesPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
   // Load conversations on mount
@@ -93,6 +101,11 @@ export function MessagesPage() {
           return [...prev, message];
         });
         scrollToBottom();
+      } else if (message.sender._id !== user?.id) {
+        // Show notification for messages from other users when not in their chat
+        toast.info(`New message from ${message.sender.firstName} ${message.sender.lastName}`, {
+          duration: 3000,
+        });
       }
     };
 
@@ -125,6 +138,128 @@ export function MessagesPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFilePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
+      setShowAttachmentMenu(false);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false 
+      });
+      setStream(mediaStream);
+      setShowCamera(true);
+      setShowAttachmentMenu(false);
+      
+      // Wait for dialog to render, then set video source
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play();
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Failed to access camera. Please check permissions.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const captureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            // Create a File-like object from blob
+            const file = new Blob([blob], { type: 'image/jpeg' });
+            // Add file properties
+            Object.defineProperty(file, 'name', {
+              value: `capture-${Date.now()}.jpg`,
+              writable: false
+            });
+            Object.defineProperty(file, 'lastModified', {
+              value: Date.now(),
+              writable: false
+            });
+            
+            setSelectedFile(file as File);
+            setFilePreview(canvas.toDataURL('image/jpeg'));
+            stopCamera();
+          }
+        }, 'image/jpeg', 0.95);
+      }
+    }
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      return data.data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
   };
 
   const loadConversations = async () => {
@@ -171,36 +306,78 @@ export function MessagesPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || isSending) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedConversation || isSending) return;
 
     const content = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
     setNewMessage("");
     setIsSending(true);
 
-    // Optimistically add message to UI
-    const optimisticMessage: Message = {
-      _id: tempId,
-      sender: {
-        _id: user!.id,
-        firstName: user!.firstName,
-        lastName: user!.lastName,
-        email: user!.email,
-        avatar: user?.avatar,
-      },
-      content,
-      createdAt: new Date().toISOString(),
-    };
-
-    setMessages(prev => [...prev, optimisticMessage]);
-    scrollToBottom();
+    let fileUrl = null;
+    let fileType = null;
 
     try {
+      // Upload file if present
+      if (selectedFile) {
+        toast.info('Uploading file...');
+        fileUrl = await uploadFile(selectedFile);
+        
+        // Determine file type
+        if (selectedFile.type.startsWith('image/')) {
+          fileType = 'image';
+        } else if (selectedFile.type.startsWith('video/')) {
+          fileType = 'video';
+        } else if (selectedFile.type.startsWith('audio/')) {
+          fileType = 'audio';
+        } else if (selectedFile.type.includes('pdf') || selectedFile.type.includes('document')) {
+          fileType = 'document';
+        } else {
+          fileType = 'other';
+        }
+        
+        clearFile();
+      }
+
+      // Optimistically add message to UI
+      const optimisticMessage: any = {
+        _id: tempId,
+        sender: {
+          _id: user!.id,
+          firstName: user!.firstName,
+          lastName: user!.lastName,
+          email: user!.email,
+          avatar: user?.avatar,
+        },
+        content: content || (fileUrl ? '📎 File attachment' : ''),
+        fileUrl,
+        fileType,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, optimisticMessage]);
+      scrollToBottom();
+
       // Send message via HTTP (backend will handle Socket.IO broadcast)
-      const message = await messageService.sendMessage(
-        selectedConversation.user._id,
-        content
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({
+          receiverId: selectedConversation.user._id,
+          content: content || '',
+          fileUrl,
+          fileType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const result = await response.json();
+      const message = result.data;
 
       // Replace temp message with real message
       setMessages(prev => prev.map(m => 
@@ -536,7 +713,7 @@ export function MessagesPage() {
                       No messages yet. Start the conversation!
                     </div>
                   ) : (
-                    messages.map((message) => {
+                    messages.map((message: any) => {
                       const isMe = message.sender._id === user?.id || message.sender._id.toString() === user?.id;
                       return (
                         <motion.div
@@ -546,14 +723,35 @@ export function MessagesPage() {
                           className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-[70%] p-3 rounded-2xl ${
+                            className={`max-w-[70%] rounded-2xl ${
                               isMe
                                 ? "bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-br-sm"
                                 : "bg-secondary rounded-bl-sm"
                             }`}
                           >
-                            <p className="text-sm">{message.content}</p>
-                            <span className={`text-xs mt-1 block ${
+                            {message.fileUrl && message.fileType === 'image' && (
+                              <img 
+                                src={message.fileUrl} 
+                                alt="Attachment" 
+                                className="rounded-t-2xl max-w-full h-auto cursor-pointer"
+                                onClick={() => window.open(message.fileUrl, '_blank')}
+                              />
+                            )}
+                            {message.fileUrl && message.fileType !== 'image' && (
+                              <a 
+                                href={message.fileUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-3 hover:opacity-80"
+                              >
+                                <File className="w-5 h-5" />
+                                <span className="text-sm">View File</span>
+                              </a>
+                            )}
+                            {message.content && (
+                              <p className="text-sm p-3">{message.content}</p>
+                            )}
+                            <span className={`text-xs px-3 pb-2 block ${
                               isMe ? "text-primary-foreground/70" : "text-muted-foreground"
                             }`}>
                               {formatTime(message.createdAt)}
@@ -591,10 +789,79 @@ export function MessagesPage() {
                 variants={messageInputVariants}
                 className="p-4 border-t border-border/50 shrink-0"
               >
+                {/* File Preview */}
+                {(filePreview || selectedFile) && (
+                  <div className="mb-3 p-3 bg-secondary/50 rounded-lg flex items-center gap-3">
+                    {filePreview ? (
+                      <img src={filePreview} alt="Preview" className="h-20 w-20 object-cover rounded" />
+                    ) : (
+                      <div className="h-20 w-20 bg-secondary rounded flex items-center justify-center">
+                        <File className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{selectedFile?.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedFile && (selectedFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={clearFile}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Paperclip className="w-4 h-4" />
-                  </Button>
+                  <div className="relative">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Attachment Menu */}
+                    {showAttachmentMenu && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-popover border border-border rounded-lg shadow-lg p-2 min-w-[200px] z-50">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-md transition-colors text-left"
+                        >
+                          <ImageIcon className="w-4 h-4 text-primary" />
+                          <span className="text-sm">Send Picture</span>
+                        </button>
+                        <button
+                          onClick={startCamera}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-md transition-colors text-left"
+                        >
+                          <Camera className="w-4 h-4 text-primary" />
+                          <span className="text-sm">Capture Image</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (fileInputRef.current) {
+                              fileInputRef.current.accept = '*/*';
+                              fileInputRef.current.click();
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-md transition-colors text-left"
+                        >
+                          <File className="w-4 h-4 text-primary" />
+                          <span className="text-sm">Send File</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
                   <Input
                     placeholder="Type a message..."
                     value={newMessage}
@@ -611,7 +878,7 @@ export function MessagesPage() {
                   <Button 
                     size="icon" 
                     className="bg-gradient-to-r from-primary to-accent"
-                    disabled={!newMessage.trim() || isSending}
+                    disabled={(!newMessage.trim() && !selectedFile) || isSending}
                     onClick={handleSendMessage}
                   >
                     <Send className="w-4 h-4" />
@@ -676,6 +943,36 @@ export function MessagesPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Camera Dialog */}
+      <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Capture Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={captureImage} className="bg-gradient-to-r from-primary to-accent">
+                <Camera className="w-4 h-4 mr-2" />
+                Capture
+              </Button>
+              <Button variant="outline" onClick={stopCamera}>
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </motion.div>

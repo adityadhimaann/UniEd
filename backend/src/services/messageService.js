@@ -6,7 +6,7 @@ import ApiError from '../utils/ApiError.js';
  * Create and save a message
  */
 export const createMessage = async (messageData) => {
-  const { sender, receiver, content } = messageData;
+  const { sender, receiver, content, fileUrl, fileType } = messageData;
 
   // Verify both users exist
   const [senderUser, receiverUser] = await Promise.all([
@@ -22,7 +22,9 @@ export const createMessage = async (messageData) => {
   const message = await Message.create({
     sender,
     receiver,
-    content: content.trim(),
+    content: content?.trim() || '',
+    fileUrl: fileUrl || null,
+    fileType: fileType || null,
     isRead: false,
   });
 
@@ -41,6 +43,8 @@ export const createMessage = async (messageData) => {
     },
     receiver: message.receiver,
     content: message.content,
+    fileUrl: message.fileUrl,
+    fileType: message.fileType,
     isRead: message.isRead,
     createdAt: message.createdAt,
   };

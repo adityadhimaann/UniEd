@@ -1,12 +1,13 @@
 import express from 'express';
 import { authenticate } from '../middlewares/auth.js';
-import upload from '../middlewares/upload.js';
+import { upload } from '../middlewares/upload.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiResponse from '../utils/ApiResponse.js';
+import { uploadToCloudinary } from '../config/cloudinary.js';
 
 const router = express.Router();
 
-// General file upload endpoint
+// Upload single file
 router.post(
   '/',
   authenticate,
@@ -14,24 +15,20 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!req.file) {
       return res.status(400).json(
-        ApiResponse.error('No file uploaded', 400)
+        new ApiResponse(400, null, 'No file uploaded')
       );
     }
 
-    // Return the file URL
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // Upload to Cloudinary
+    const result = await uploadToCloudinary(req.file.path, 'messages');
 
     res.status(200).json(
-      ApiResponse.success(
-        {
-          url: fileUrl,
-          filename: req.file.filename,
-          originalName: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size,
-        },
-        'File uploaded successfully'
-      )
+      new ApiResponse(200, {
+        url: result.url,
+        publicId: result.publicId,
+        format: result.format,
+        size: result.size,
+      }, 'File uploaded successfully')
     );
   })
 );

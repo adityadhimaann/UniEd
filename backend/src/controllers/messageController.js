@@ -75,16 +75,18 @@ export const getMessages = asyncHandler(async (req, res) => {
  */
 export const sendMessageHTTP = asyncHandler(async (req, res) => {
   const senderId = req.user._id;
-  const { receiverId, content } = req.body;
+  const { receiverId, content, fileUrl, fileType } = req.body;
 
-  if (!receiverId || !content?.trim()) {
-    throw new ApiError(400, 'Receiver and message content are required');
+  if (!receiverId || (!content?.trim() && !fileUrl)) {
+    throw new ApiError(400, 'Receiver and message content or file are required');
   }
 
   const message = await messageService.createMessage({
     sender: senderId,
     receiver: receiverId,
-    content: content.trim(),
+    content: content?.trim() || '',
+    fileUrl: fileUrl || null,
+    fileType: fileType || null,
   });
 
   // Send real-time notification via Socket.IO to receiver
