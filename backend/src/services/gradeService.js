@@ -1,6 +1,5 @@
 import Enrollment from '../models/Enrollment.js';
 import Assignment from '../models/Assignment.js';
-import Submission from '../models/Submission.js';
 import Course from '../models/Course.js';
 import Attendance from '../models/Attendance.js';
 
@@ -19,19 +18,17 @@ class GradeService {
     // Get all assignments for the course
     const assignments = await Assignment.find({ course: courseId });
     
-    // Get all submissions for the student
-    const submissions = await Submission.find({
-      student: studentId,
-      assignment: { $in: assignments.map(a => a._id) }
-    });
-
-    // Calculate assignment average
+    // Calculate assignment average from embedded submissions
     let totalAssignmentPoints = 0;
     let earnedAssignmentPoints = 0;
     let gradedSubmissions = 0;
 
     for (const assignment of assignments) {
-      const submission = submissions.find(s => s.assignment.toString() === assignment._id.toString());
+      // Find student's submission in the embedded submissions array
+      const submission = assignment.submissions?.find(
+        s => s.student.toString() === studentId.toString()
+      );
+      
       if (submission && submission.grade !== undefined && submission.grade !== null) {
         totalAssignmentPoints += assignment.totalMarks || assignment.totalPoints || 100;
         earnedAssignmentPoints += submission.grade;
@@ -46,7 +43,7 @@ class GradeService {
     // Get attendance percentage
     const attendanceRecords = await Attendance.find({ course: courseId });
     const studentAttendance = attendanceRecords.filter(record => 
-      record.attendance.some(a => a.student.toString() === studentId.toString() && a.status === 'present')
+      record.records && record.records.some(a => a.student.toString() === studentId.toString() && a.status === 'present')
     );
     const attendancePercentage = attendanceRecords.length > 0
       ? (studentAttendance.length / attendanceRecords.length) * 100
@@ -128,14 +125,10 @@ class GradeService {
     const assignments = await Assignment.find({ course: courseId })
       .sort({ dueDate: -1 });
 
-    const submissions = await Submission.find({
-      student: studentId,
-      assignment: { $in: assignments.map(a => a._id) }
-    });
-
     const assignmentGrades = assignments.map(assignment => {
-      const submission = submissions.find(s => 
-        s.assignment.toString() === assignment._id.toString()
+      // Find student's submission in embedded submissions array
+      const submission = assignment.submissions?.find(
+        s => s.student.toString() === studentId.toString()
       );
 
       return {

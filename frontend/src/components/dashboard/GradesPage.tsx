@@ -73,10 +73,12 @@ export function GradesPage() {
   const [gradesData, setGradesData] = useState<any>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [courseBreakdown, setCourseBreakdown] = useState<any>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 
   useEffect(() => {
     if (isStudent) {
       fetchGrades();
+      fetchUpcomingEvents();
     }
   }, [isStudent]);
 
@@ -104,6 +106,15 @@ export function GradesPage() {
     }
   };
 
+  const fetchUpcomingEvents = async () => {
+    try {
+      const response = await studentService.getUpcomingEvents();
+      setUpcomingEvents(response.data);
+    } catch (error) {
+      console.error('Error fetching upcoming events:', error);
+    }
+  };
+
   const getGradeColor = (letterGrade: string) => {
     if (letterGrade.startsWith('A')) return 'text-green-500';
     if (letterGrade.startsWith('B')) return 'text-blue-500';
@@ -113,9 +124,65 @@ export function GradesPage() {
   };
 
   const getTrendIcon = (percentage: number) => {
-    if (percentage >= 85) return <TrendingUp className="w-5 h-5 text-success" />;
-    if (percentage >= 70) return null;
-    return <TrendingDown className="w-5 h-5 text-destructive" />;
+    if (percentage >= 90) return <TrendingUp className="w-5 h-5 text-green-500" />;
+    if (percentage >= 70) return <TrendingUp className="w-5 h-5 text-blue-500" />;
+    return <TrendingDown className="w-5 h-5 text-orange-500" />;
+  };
+
+  const exportTranscript = () => {
+    if (!gradesData) return;
+
+    // Create transcript content
+    const transcriptContent = `
+OFFICIAL ACADEMIC TRANSCRIPT
+UniEd - Unified Education Platform
+=====================================
+
+Student Information:
+Name: ${user?.name || 'Student'}
+Email: ${user?.email || ''}
+Student ID: ${user?.id || ''}
+
+Academic Summary:
+Cumulative GPA: ${gradesData.gpa.toFixed(2)} / 4.0
+Total Credits: ${gradesData.totalCredits}
+Total Courses: ${gradesData.totalCourses}
+Average Score: ${gradesData.avgScore.toFixed(1)}%
+
+Course Grades:
+${gradesData.grades.map((grade: any, index: number) => `
+${index + 1}. ${grade.course.code} - ${grade.course.name}
+   Credits: ${grade.course.credits}
+   Grade: ${grade.letterGrade} (${grade.overallPercentage.toFixed(1)}%)
+   GPA Points: ${grade.gradePoint.toFixed(2)}
+   Instructor: ${grade.course.faculty?.firstName || ''} ${grade.course.faculty?.lastName || ''}
+   Enrolled: ${new Date(grade.enrolledAt).toLocaleDateString()}
+`).join('\n')}
+
+Grade Distribution:
+${gradesData.gradeDistribution.map((item: any) => 
+  `${item.grade}: ${item.count} course(s)`
+).join('\n')}
+
+Generated on: ${new Date().toLocaleString()}
+=====================================
+
+This is an unofficial transcript for reference purposes only.
+For official transcripts, please contact the registrar's office.
+    `.trim();
+
+    // Create and download as text file
+    const blob = new Blob([transcriptContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transcript_${user?.name?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('Transcript exported successfully');
   };
 
   if (loading) {
@@ -173,7 +240,7 @@ export function GradesPage() {
           <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
           <p className="text-muted-foreground">Track your academic performance</p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={exportTranscript}>
           <Download className="w-4 h-4 mr-2" />
           Export Transcript
         </Button>
@@ -365,6 +432,74 @@ export function GradesPage() {
             )}
           </TabsContent>
         </Tabs>
+      </motion.div>
+
+      {/* Academic Calendar */}
+      <motion.div variants={itemVariants} className="glass rounded-xl p-6 border border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-lg">Upcoming Events</h3>
+        </div>
+        {upcomingEvents.length > 0 ? (
+          <div className="space-y-3">
+            {upcomingEvents.map((event: any, index: number) => (
+              <motion.div
+                key={event._id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="flex items-start gap-4 p-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors"
+              >
+                <div className={`p-2 rounded-lg ${
+                  event.type === 'assignment' ? 'bg-blue-500/10' :
+                  event.type === 'exam' ? 'bg-red-500/10' :
+                  'bg-green-500/10'
+                }`}>
+                  {event.type === 'assignment' ? (
+                    <BookOpen className={`w-5 h-5 ${
+                      event.type === 'assignment' ? 'text-blue-500' :
+                      event.type === 'exam' ? 'text-red-500' :
+                      'text-green-500'
+                    }`} />
+                  ) : event.type === 'exam' ? (
+                    <Target className="w-5 h-5 text-red-500" />
+                  ) : (
+                    <Calendar className="w-5 h-5 text-green-500" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-medium">{event.title}</h4>
+                      <p className="text-sm text-muted-foreground">{event.courseName}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">
+                        {new Date(event.date).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {event.daysUntil === 0 ? 'Today' : 
+                         event.daysUntil === 1 ? 'Tomorrow' : 
+                         `${event.daysUntil} days`}
+                      </div>
+                    </div>
+                  </div>
+                  {event.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+            <p className="text-muted-foreground">No upcoming events</p>
+          </div>
+        )}
       </motion.div>
 
       {/* Achievements */}

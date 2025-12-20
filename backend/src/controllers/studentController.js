@@ -298,6 +298,34 @@ const getCourseGradeBreakdown = asyncHandler(async (req, res) => {
   });
 });
 
+// Calendar Controllers
+const getUpcomingEvents = asyncHandler(async (req, res) => {
+  const calendarService = (await import('../services/calendarService.js')).default;
+  
+  const events = await calendarService.getUpcomingEvents(req.user.id);
+  
+  res.json({
+    success: true,
+    data: events
+  });
+});
+
+const getMonthlyCalendar = asyncHandler(async (req, res) => {
+  const calendarService = (await import('../services/calendarService.js')).default;
+  const { year, month } = req.query;
+  
+  const calendar = await calendarService.getMonthlyCalendar(
+    req.user.id,
+    parseInt(year),
+    parseInt(month)
+  );
+  
+  res.json({
+    success: true,
+    data: calendar
+  });
+});
+
 export default {
   getDashboard,
   getMyCourses,
@@ -314,6 +342,8 @@ export default {
   getDetailedGrades,
   getSemesterGrades,
   getCourseGradeBreakdown,
+  getUpcomingEvents,
+  getMonthlyCalendar,
   getMyAttendance,
   getCourseAttendance,
   getMyAnnouncements,

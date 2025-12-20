@@ -123,4 +123,9 @@ export const studentService = {
     const response = await api.get(`/student/courses/${courseId}/grade-breakdown`);
     return response.data;
   },
+
+  async getUpcomingEvents() {
+    const response = await api.get('/student/upcoming-events');
+    return response.data;
+  },
 };

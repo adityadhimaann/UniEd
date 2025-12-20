@@ -34,6 +34,10 @@ router.get('/grades/semester', studentController.getSemesterGrades);
 router.get('/courses/:courseId/grades', studentController.getCourseGrades);
 router.get('/courses/:courseId/grade-breakdown', studentController.getCourseGradeBreakdown);
 
+// Calendar & Events
+router.get('/upcoming-events', studentController.getUpcomingEvents);
+router.get('/calendar', studentController.getMonthlyCalendar);
+
 // Attendance
 router.get('/attendance', studentController.getMyAttendance);
 router.get('/courses/:courseId/attendance', studentController.getCourseAttendance);
