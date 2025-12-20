@@ -10,6 +10,9 @@ router.use(authenticate);
 // Get all conversations
 router.get('/conversations', messageController.getConversations);
 
+// Get faculty by course (for students)
+router.get('/faculty-by-course', messageController.getFacultyByCourse);
+
 // Get all users (for starting new conversation)
 router.get('/users', messageController.getUsers);
 

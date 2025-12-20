@@ -18,6 +18,13 @@ export interface Conversation {
   lastMessageTime: string;
 }
 
+export interface FacultyByCourse {
+  courseId: string;
+  courseName: string;
+  courseCode: string;
+  faculty: User;
+}
+
 export interface Message {
   _id: string;
   sender: {
@@ -38,6 +45,15 @@ export interface Message {
  */
 const getConversations = async (): Promise<Conversation[]> => {
   const response = await api.get('/messages/conversations');
+  return response.data.data;
+};
+
+/**
+ * Get faculty members from student's enrolled courses
+ */
+const getFacultyByCourse = async (courseId?: string): Promise<FacultyByCourse[]> => {
+  const params = courseId ? `?courseId=${courseId}` : '';
+  const response = await api.get(`/messages/faculty-by-course${params}`);
   return response.data.data;
 };
 
@@ -92,6 +108,7 @@ const deleteConversation = async (otherUserId: string): Promise<void> => {
 
 export default {
   getConversations,
+  getFacultyByCourse,
   getUsers,
   getMessages,
   sendMessage,

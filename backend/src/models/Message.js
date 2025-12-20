@@ -5,35 +5,26 @@ const messageSchema = new mongoose.Schema(
     sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Sender is required'],
+      required: true,
+      index: true,
     },
     receiver: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Receiver is required'],
-    },
-    subject: {
-      type: String,
-      required: [true, 'Subject is required'],
-      trim: true,
+      required: true,
+      index: true,
     },
     content: {
       type: String,
-      required: [true, 'Content is required'],
+      required: true,
       trim: true,
     },
     isRead: {
       type: Boolean,
       default: false,
     },
-    attachments: {
-      type: [String],
-      default: [],
-    },
-    parentMessage: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Message',
-      default: null,
+    readAt: {
+      type: Date,
     },
   },
   {
@@ -41,21 +32,9 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
-messageSchema.index({ sender: 1 });
-messageSchema.index({ receiver: 1 });
-messageSchema.index({ isRead: 1 });
-messageSchema.index({ parentMessage: 1 });
-messageSchema.index({ createdAt: -1 });
-
-// Ensure virtuals are included in JSON
-messageSchema.set('toJSON', {
-  virtuals: true,
-  transform: function (doc, ret) {
-    delete ret.__v;
-    return ret;
-  },
-});
+// Compound index for efficient querying of conversations
+messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
+messageSchema.index({ receiver: 1, isRead: 1 });
 
 const Message = mongoose.model('Message', messageSchema);
 

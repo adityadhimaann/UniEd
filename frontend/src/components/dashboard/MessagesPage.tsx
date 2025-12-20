@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
-import messageService, { Conversation, Message } from "@/services/messageService";
+import messageService, { Conversation, Message, FacultyByCourse } from "@/services/messageService";
 import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -46,7 +46,10 @@ const messageInputVariants = {
 
 export function MessagesPage() {
   const { user } = useAuth();
+  const isStudent = user?.role === "student";
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [facultyByCourse, setFacultyByCourse] = useState<FacultyByCourse[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -60,8 +63,12 @@ export function MessagesPage() {
 
   // Load conversations on mount
   useEffect(() => {
-    loadConversations();
-  }, []);
+    if (isStudent) {
+      loadFacultyByCourse();
+    } else {
+      loadConversations();
+    }
+  }, [isStudent]);
 
   // Socket.IO listeners
   useEffect(() => {
@@ -72,16 +79,23 @@ export function MessagesPage() {
     socket.emit('join:chat');
 
     // Listen for new messages
-    socket.on('new:message', (message: Message) => {
-      // Add message to current conversation if it matches
-      if (selectedConversation && message.sender._id === selectedConversation.user._id) {
-        setMessages(prev => [...prev, message]);
+    const handleNewMessage = (message: Message) => {
+      // Only add message if it's from the other person (not from us)
+      if (selectedConversation && 
+          message.sender._id === selectedConversation.user._id &&
+          message.sender._id !== user?._id) {
+        setMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          if (prev.some(m => m._id === message._id)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
         scrollToBottom();
       }
+    };
 
-      // Update conversation list
-      loadConversations();
-    });
+    socket.on('new:message', handleNewMessage);
 
     // Listen for online/offline status
     socket.on('user:online', ({ userId }) => {
@@ -97,11 +111,11 @@ export function MessagesPage() {
     });
 
     return () => {
-      socket.off('new:message');
+      socket.off('new:message', handleNewMessage);
       socket.off('user:online');
       socket.off('user:offline');
     };
-  }, [selectedConversation]);
+  }, [selectedConversation, user]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -125,6 +139,23 @@ export function MessagesPage() {
     }
   };
 
+  const loadFacultyByCourse = async () => {
+    try {
+      setIsLoading(true);
+      const data = await messageService.getFacultyByCourse();
+      setFacultyByCourse(data);
+    } catch (error: any) {
+      console.error('Failed to load faculty:', error);
+      // If it's a 403 error (not a student), just show empty state
+      if (error.response?.status !== 403) {
+        toast.error('Failed to load instructors');
+      }
+      setFacultyByCourse([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loadMessages = async (otherUserId: string) => {
     try {
       const data = await messageService.getMessages(otherUserId);
@@ -139,57 +170,66 @@ export function MessagesPage() {
     if (!newMessage.trim() || !selectedConversation || isSending) return;
 
     const content = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
     setNewMessage("");
     setIsSending(true);
 
+    // Optimistically add message to UI
+    const optimisticMessage: Message = {
+      _id: tempId,
+      sender: {
+        _id: user!._id,
+        firstName: user!.firstName,
+        lastName: user!.lastName,
+        email: user!.email,
+        avatar: user?.avatar,
+      },
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
+    scrollToBottom();
+
     try {
-      // Send message via HTTP
+      // Send message via HTTP (backend will handle Socket.IO broadcast)
       const message = await messageService.sendMessage(
         selectedConversation.user._id,
         content
       );
 
-      // Add to local state immediately
-      setMessages(prev => [...prev, {
-        _id: message._id,
-        sender: {
-          _id: user!._id,
-          firstName: user!.firstName,
-          lastName: user!.lastName,
-          email: user!.email,
-          avatar: user?.avatar,
-        },
-        content,
-        createdAt: new Date().toISOString(),
-      }]);
+      // Replace temp message with real message
+      setMessages(prev => prev.map(m => 
+        m._id === tempId ? { ...message, sender: optimisticMessage.sender } : m
+      ));
 
-      // Send via Socket.IO for real-time delivery
-      const socket = getSocket();
-      if (socket?.connected) {
-        socket.emit('message:send', {
-          receiverId: selectedConversation.user._id,
-          message: content,
-        });
-      }
-
-      scrollToBottom();
     } catch (error: any) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
+      // Remove failed message
+      setMessages(prev => prev.filter(m => m._id !== tempId));
       setNewMessage(content); // Restore message on error
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleConversationClick = async (conversation: Conversation) => {
+  const handleConversationClick = async (facultyUser: any) => {
+    const conversation: Conversation = {
+      _id: facultyUser._id,
+      user: facultyUser,
+      lastMessage: null,
+      unreadCount: 0,
+      lastMessageTime: new Date().toISOString(),
+    };
+    
     setSelectedConversation(conversation);
     setShowChat(true);
-    await loadMessages(conversation.user._id);
+    await loadMessages(facultyUser._id);
     
     // Mark as read
     try {
-      await messageService.markAsRead(conversation.user._id);
+      await messageService.markAsRead(facultyUser._id);
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }
@@ -218,6 +258,37 @@ export function MessagesPage() {
     c.user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Deduplicate faculty by faculty ID and group courses
+  const uniqueFacultyMap = new Map<string, { faculty: any; courses: Array<{ courseId: string; courseName: string; courseCode: string }> }>();
+  
+  facultyByCourse.forEach(item => {
+    if (uniqueFacultyMap.has(item.faculty._id)) {
+      // Add course to existing faculty entry
+      uniqueFacultyMap.get(item.faculty._id)!.courses.push({
+        courseId: item.courseId,
+        courseName: item.courseName,
+        courseCode: item.courseCode,
+      });
+    } else {
+      // Create new faculty entry
+      uniqueFacultyMap.set(item.faculty._id, {
+        faculty: item.faculty,
+        courses: [{
+          courseId: item.courseId,
+          courseName: item.courseName,
+          courseCode: item.courseCode,
+        }],
+      });
+    }
+  });
+
+  const filteredFaculty = Array.from(uniqueFacultyMap.values()).filter(item =>
+    (selectedCourse === "" || item.courses.some(c => c.courseId === selectedCourse)) &&
+    (item.faculty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     item.faculty.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     item.courses.some(c => c.courseName.toLowerCase().includes(searchQuery.toLowerCase())))
+  );
+
   const isOnline = (userId: string) => onlineUsers.has(userId);
 
   return (
@@ -232,6 +303,28 @@ export function MessagesPage() {
         <div className={`w-full md:w-96 border-r border-border/50 flex flex-col ${showChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-border/50">
             <h2 className="text-lg font-semibold mb-3">Messages</h2>
+            
+            {/* Course filter for students */}
+            {isStudent && facultyByCourse.length > 0 && (
+              <div className="mb-3">
+                <select
+                  value={selectedCourse}
+                  onChange={(e) => setSelectedCourse(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">All Courses</option>
+                  {[...new Set(facultyByCourse.map(f => f.courseId))].map(courseId => {
+                    const course = facultyByCourse.find(f => f.courseId === courseId);
+                    return (
+                      <option key={courseId} value={courseId}>
+                        {course?.courseCode} - {course?.courseName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -245,61 +338,118 @@ export function MessagesPage() {
 
           <ScrollArea className="flex-1">
             {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">
-                Loading conversations...
+              <div className="p-8 text-center">
+                <img src="/loadicon.gif" alt="Loading" className="h-16 w-16 mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">Loading...</p>
               </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                {searchQuery ? 'No conversations found' : 'No conversations yet. Start chatting with other users!'}
-              </div>
-            ) : (
-              <div className="p-2">
-                {filteredConversations.map((conversation) => (
-                  <motion.button
-                    key={conversation._id}
-                    variants={itemVariants}
-                    onClick={() => handleConversationClick(conversation)}
-                    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
-                      selectedConversation?._id === conversation._id
-                        ? "bg-primary/10"
-                        : "hover:bg-secondary/50"
-                    }`}
-                  >
-                    <div className="relative">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={conversation.user.avatar} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                          {conversation.user.firstName?.[0] || conversation.user.email?.[0]?.toUpperCase() || 'U'}
-                          {conversation.user.lastName?.[0] || conversation.user.email?.[1]?.toUpperCase() || ''}
-                        </AvatarFallback>
-                      </Avatar>
-                      {isOnline(conversation.user._id) && (
-                        <Circle className="absolute bottom-0 right-0 w-3 h-3 fill-success text-success" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium truncate">{conversation.user.name}</span>
-                        {conversation.lastMessageTime && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatTime(conversation.lastMessageTime)}
-                          </span>
+            ) : isStudent ? (
+              // Student view - show faculty by course
+              filteredFaculty.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  {searchQuery || selectedCourse ? 'No instructors found' : 'No enrolled courses yet. Enroll in courses to chat with instructors!'}
+                </div>
+              ) : (
+                <div className="p-2">
+                  {filteredFaculty.map((item) => (
+                    <motion.button
+                      key={item.faculty._id}
+                      variants={itemVariants}
+                      onClick={() => handleConversationClick(item.faculty)}
+                      className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
+                        selectedConversation?.user._id === item.faculty._id
+                          ? "bg-primary/10"
+                          : "hover:bg-secondary/50"
+                      }`}
+                    >
+                      <div className="relative">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={item.faculty.avatar} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                            {item.faculty.firstName?.[0] || item.faculty.email?.[0]?.toUpperCase() || 'U'}
+                            {item.faculty.lastName?.[0] || item.faculty.email?.[1]?.toUpperCase() || ''}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isOnline(item.faculty._id) && (
+                          <Circle className="absolute bottom-0 right-0 w-3 h-3 fill-success text-success" />
                         )}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground truncate">
-                          {conversation.lastMessage || 'Start a conversation'}
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium truncate">{item.faculty.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <BookOpen className="w-3 h-3" />
+                          <span className="truncate">
+                            {item.courses.length === 1 
+                              ? item.courses[0].courseCode
+                              : `${item.courses.length} courses`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground/70 truncate">
+                          {item.courses.length === 1 
+                            ? item.courses[0].courseName
+                            : item.courses.map(c => c.courseCode).join(', ')}
                         </p>
-                        {conversation.unreadCount > 0 && (
-                          <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center shrink-0">
-                            {conversation.unreadCount}
-                          </span>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              )
+            ) : (
+              // Faculty/Admin view - show all conversations
+              filteredConversations.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                </div>
+              ) : (
+                <div className="p-2">
+                  {filteredConversations.map((conversation) => (
+                    <motion.button
+                      key={conversation._id}
+                      variants={itemVariants}
+                      onClick={() => handleConversationClick(conversation.user)}
+                      className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
+                        selectedConversation?._id === conversation._id
+                          ? "bg-primary/10"
+                          : "hover:bg-secondary/50"
+                      }`}
+                    >
+                      <div className="relative">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={conversation.user.avatar} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                            {conversation.user.firstName?.[0] || conversation.user.email?.[0]?.toUpperCase() || 'U'}
+                            {conversation.user.lastName?.[0] || conversation.user.email?.[1]?.toUpperCase() || ''}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isOnline(conversation.user._id) && (
+                          <Circle className="absolute bottom-0 right-0 w-3 h-3 fill-success text-success" />
                         )}
                       </div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium truncate">{conversation.user.name}</span>
+                          {conversation.lastMessageTime && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatTime(conversation.lastMessageTime)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-muted-foreground truncate">
+                            {conversation.lastMessage || 'Start a conversation'}
+                          </p>
+                          {conversation.unreadCount > 0 && (
+                            <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center shrink-0">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              )
             )}
           </ScrollArea>
         </div>

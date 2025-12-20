@@ -17,6 +17,26 @@ export const getConversations = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get faculty members from student's enrolled courses
+ */
+export const getFacultyByCourse = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const userRole = req.user.role;
+  const { courseId } = req.query;
+
+  // Only students can use this endpoint
+  if (userRole !== 'student') {
+    throw new ApiError(403, 'This endpoint is only available for students');
+  }
+
+  const facultyByCourse = await messageService.getFacultyByCourse(userId, courseId);
+
+  res.status(200).json(
+    new ApiResponse(200, facultyByCourse, 'Faculty fetched successfully')
+  );
+});
+
+/**
  * Get all users (for starting new conversation)
  */
 export const getUsers = asyncHandler(async (req, res) => {
@@ -67,19 +87,8 @@ export const sendMessageHTTP = asyncHandler(async (req, res) => {
     content: content.trim(),
   });
 
-  // Send real-time notification via Socket.IO
-  sendMessage(receiverId, {
-    _id: message._id,
-    sender: {
-      _id: message.sender._id,
-      firstName: message.sender.firstName,
-      lastName: message.sender.lastName,
-      email: message.sender.email,
-      avatar: message.sender.avatar,
-    },
-    content: message.content,
-    createdAt: message.createdAt,
-  });
+  // Send real-time notification via Socket.IO to receiver
+  sendMessage(receiverId, message);
 
   res.status(201).json(
     new ApiResponse(201, message, 'Message sent successfully')
@@ -116,6 +125,7 @@ export const deleteConversation = asyncHandler(async (req, res) => {
 
 export default {
   getConversations,
+  getFacultyByCourse,
   getUsers,
   getMessages,
   sendMessageHTTP,
