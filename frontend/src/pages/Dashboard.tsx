@@ -124,20 +124,20 @@ export default function Dashboard() {
       {/* Desktop Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: sidebarOpen ? 260 : 80 }}
+        animate={{ width: sidebarOpen ? 240 : 64 }}
         className="hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl fixed left-0 top-0 h-screen z-40"
       >
         {/* Logo */}
-        <Link to="/" className="p-4 flex items-center gap-3 border-b border-border hover:bg-secondary/50 transition-colors">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-            <GraduationCap className="w-6 h-6 text-primary-foreground" />
+        <Link to="/" className="p-3 flex items-center gap-2 border-b border-border hover:bg-secondary/50 transition-colors">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
+            <GraduationCap className="w-5 h-5 text-primary-foreground" />
           </div>
           {sidebarOpen && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="font-display text-xl font-bold"
+              className="font-display text-lg font-bold"
             >
               UniEd
             </motion.span>
@@ -145,7 +145,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {sidebarItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
@@ -154,18 +154,18 @@ export default function Dashboard() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all duration-200 group ${
                   isActive
                     ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary"
                     : "hover:bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
                 {sidebarOpen && (
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="font-medium"
+                    className="font-medium text-sm"
                   >
                     {item.label}
                   </motion.span>
@@ -180,13 +180,13 @@ export default function Dashboard() {
 
         {/* User card */}
         {sidebarOpen && (
-          <div className="p-4 border-t border-border">
+          <div className="p-2 border-t border-border">
             <Link 
               to="/dashboard/settings"
               className="block transition-all hover:scale-[0.98]"
             >
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
-                <Avatar className="w-10 h-10">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
+                <Avatar className="w-8 h-8">
                   <AvatarImage src={user.avatar} />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
                     {user.name.split(" ").map(n => n[0]).join("")}
@@ -203,7 +203,7 @@ export default function Dashboard() {
         )}
 
         {/* Toggle button */}
-        <div className="p-4 border-t border-border">
+        <div className="p-2 border-t border-border">
           <Button
             variant="ghost"
             size="sm"
@@ -270,10 +270,10 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* Main content */}
-      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[260px]" : "lg:ml-20"} transition-all duration-300`}>
+      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[240px]" : "lg:ml-16"} transition-all duration-300`}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
-          <div className="flex items-center justify-between px-4 lg:px-8 h-16">
+          <div className="flex items-center justify-between px-3 lg:px-6 h-14">
             {/* Mobile menu button */}
             <Button
               variant="ghost"
@@ -351,7 +351,7 @@ export default function Dashboard() {
         </header>
 
         {/* Page content */}
-        <div className="p-4 lg:p-8">
+        <div className="p-3 lg:p-6 max-w-[1600px] mx-auto">
           <Routes>
             <Route index element={<DashboardHome />} />
             <Route path="courses" element={<CoursesPage />} />

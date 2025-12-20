@@ -356,7 +356,7 @@ export default function CoursesManagement() {
 
   return (
     <motion.div 
-      className="space-y-6"
+      className="space-y-4"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -366,12 +366,12 @@ export default function CoursesManagement() {
         variants={itemVariants}
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">My Courses</h1>
-          <p className="text-gray-400 mt-1">Manage your courses</p>
+          <h1 className="text-2xl font-bold text-white">My Courses</h1>
+          <p className="text-gray-400 mt-0.5 text-sm">Manage your courses</p>
         </div>
         <Button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 text-sm"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Course
@@ -689,60 +689,60 @@ export default function CoursesManagement() {
           animate="visible"
         >
           <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5 text-orange-600" />
-                  <CardTitle className="text-white">Pending Enrollment Requests</CardTitle>
+                  <UserPlus className="h-4 w-4 text-orange-600" />
+                  <CardTitle className="text-white text-lg">Pending Enrollment Requests</CardTitle>
                 </div>
-                <Badge variant="secondary" className="bg-orange-900 text-orange-300">
+                <Badge variant="secondary" className="bg-orange-900 text-orange-300 text-xs">
                   {enrollmentRequests.length} pending
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {enrollmentRequests.map((request: any, index: number) => (
                   <motion.div 
                     key={request._id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-900 rounded-lg p-4 flex items-center justify-between gap-4 hover:bg-gray-850 transition-colors"
+                    className="bg-gray-900 rounded-lg p-3 flex items-center justify-between gap-3 hover:bg-gray-850 transition-colors"
                   >
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-center gap-2 flex-1">
                       {request.student?.avatar ? (
                         <img 
                           src={request.student.avatar} 
                           alt={request.student?.firstName} 
-                          className="h-10 w-10 rounded-full object-cover"
+                          className="h-8 w-8 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                        <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
                           {request.student?.firstName?.[0]}{request.student?.lastName?.[0]}
                         </div>
                       )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-white">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-semibold text-white text-sm">
                             {request.student?.firstName} {request.student?.lastName}
                           </h4>
-                          <span className="text-xs text-gray-400">{request.student?.email}</span>
+                          <span className="text-[10px] text-gray-400 truncate">{request.student?.email}</span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm text-gray-300">{request.course?.name || request.course?.courseName}</span>
-                          <span className="text-xs text-gray-500">•</span>
-                          <span className="text-xs text-blue-400">{request.course?.code || request.course?.courseCode}</span>
-                          <span className="text-xs text-gray-500">•</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900 text-purple-300">
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-xs text-gray-300">{request.course?.name || request.course?.courseName}</span>
+                          <span className="text-[10px] text-gray-500">•</span>
+                          <span className="text-[10px] text-blue-400">{request.course?.code || request.course?.courseCode}</span>
+                          <span className="text-[10px] text-gray-500">•</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-900 text-purple-300">
                             {request.enrollmentType}
                           </span>
                         </div>
                         {request.message && (
-                          <p className="text-xs text-gray-400 mt-1 line-clamp-1">{request.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{request.message}</p>
                         )}
-                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                          <Clock className="h-3 w-3" />
+                        <div className="flex items-center gap-0.5 text-[10px] text-gray-500 mt-0.5">
+                          <Clock className="h-2.5 w-2.5" />
                           {new Date(request.createdAt).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric',
@@ -752,14 +752,14 @@ export default function CoursesManagement() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                           size="sm"
                           onClick={() => handleApproveRequest(request._id)}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 h-7 text-xs px-2"
                         >
-                          <Check className="h-4 w-4 mr-1" />
+                          <Check className="h-3 w-3 mr-1" />
                           Approve
                         </Button>
                       </motion.div>
@@ -768,9 +768,9 @@ export default function CoursesManagement() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleRejectRequest(request._id)}
-                          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white h-7 text-xs px-2"
                         >
-                          <X className="h-4 w-4 mr-1" />
+                          <X className="h-3 w-3 mr-1" />
                           Reject
                         </Button>
                       </motion.div>
@@ -785,7 +785,7 @@ export default function CoursesManagement() {
 
       {/* Courses List */}
       <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
         variants={containerVariants}
       >
         {filteredCourses.map((course) => (
@@ -793,7 +793,7 @@ export default function CoursesManagement() {
             <Card className="bg-gray-800 border-gray-700 hover:shadow-lg transition-shadow overflow-hidden">
               {/* Course Image */}
               {course.titleImage ? (
-                <div className="w-full h-40 overflow-hidden bg-gray-900">
+                <div className="w-full h-32 overflow-hidden bg-gray-900">
                   <img 
                     src={course.titleImage} 
                     alt={course.courseName}
@@ -806,21 +806,21 @@ export default function CoursesManagement() {
                   />
                 </div>
               ) : (
-                <div className="w-full h-40 bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
-                  <BookOpen className="h-16 w-16 text-blue-300 opacity-50" />
+                <div className="w-full h-32 bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
+                  <BookOpen className="h-12 w-12 text-blue-300 opacity-50" />
                 </div>
               )}
               
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-600">{course.courseCode}</span>
+                    <div className="flex items-center gap-1.5">
+                      <BookOpen className="h-4 w-4 text-blue-600" />
+                      <span className="text-xs font-semibold text-blue-600">{course.courseCode}</span>
                     </div>
-                    <CardTitle className="mt-2 text-white">{course.courseName}</CardTitle>
+                    <CardTitle className="mt-1 text-white text-base">{course.courseName}</CardTitle>
                   </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <div className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                     course.isActive
                       ? 'bg-green-900 text-green-300'
                       : 'bg-gray-700 text-gray-300'
@@ -829,9 +829,9 @@ export default function CoursesManagement() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-400 mb-4 line-clamp-2">{course.description}</p>
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+              <CardContent className="pt-0">
+                <p className="text-xs text-gray-400 mb-3 line-clamp-2">{course.description}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                 <span>{course.credits} Credits</span>
                 <span>{course.semester}</span>
               </div>
@@ -839,25 +839,27 @@ export default function CoursesManagement() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 text-xs h-8"
                   onClick={() => window.location.href = `/instructor/courses/${course._id}`}
                 >
-                  <Users className="h-4 w-4 mr-1" />
+                  <Users className="h-3 w-3 mr-1" />
                   View
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8 w-8 p-0"
                   onClick={() => handleEditCourse(course)}
                 >
-                  <Edit2 className="h-4 w-4 text-blue-600" />
+                  <Edit2 className="h-3 w-3 text-blue-600" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8 w-8 p-0"
                   onClick={() => handleDeleteCourse(course._id)}
                 >
-                  <Trash2 className="h-4 w-4 text-red-600" />
+                  <Trash2 className="h-3 w-3 text-red-600" />
                 </Button>
               </div>
             </CardContent>

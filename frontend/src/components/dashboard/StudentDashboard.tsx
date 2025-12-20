@@ -129,33 +129,33 @@ export default function StudentDashboard() {
 
   return (
     <motion.div 
-      className="p-6 space-y-8 max-w-[1600px] mx-auto min-h-screen"
+      className="p-3 lg:p-6 space-y-6 max-w-[1600px] mx-auto min-h-screen"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-4xl font-extrabold text-white tracking-tight">Student Dashboard</h1>
-          <p className="text-gray-400 mt-2 text-lg">Welcome back! Here's your academic overview.</p>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Student Dashboard</h1>
+          <p className="text-gray-400 mt-1 text-sm lg:text-base">Welcome back! Here's your academic overview.</p>
         </div>
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" variants={containerVariants}>
+      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" variants={containerVariants}>
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div key={index} variants={itemVariants} whileHover={{ y: -5 }}>
               <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm shadow-xl">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-semibold text-gray-400 uppercase tracking-wider">{stat.title}</CardTitle>
-                  <div className={`p-2 rounded-xl ${stat.bgColor}`}><Icon className={`h-5 w-5 ${stat.color}`} /></div>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{stat.title}</CardTitle>
+                  <div className={`p-1.5 rounded-lg ${stat.bgColor}`}><Icon className={`h-4 w-4 ${stat.color}`} /></div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-white">{stat.value}</div>
-                  <p className="text-sm text-gray-500 mt-2">{stat.description}</p>
+                <CardContent className="pt-2">
+                  <div className="text-2xl lg:text-3xl font-bold text-white">{stat.value}</div>
+                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -167,61 +167,61 @@ export default function StudentDashboard() {
       {enrolledCourses.length > 0 && (
         <motion.div variants={itemVariants}>
           <Card className="border-gray-700 bg-gray-800 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-2xl text-white">My Enrolled Courses</CardTitle>
-              <CardDescription className="text-gray-400">Track your progress and upcoming deadlines</CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl text-white">My Enrolled Courses</CardTitle>
+              <CardDescription className="text-gray-400 text-sm">Track your progress and upcoming deadlines</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {enrolledCourses.map((enrollment: any) => {
                 const course = enrollment.course;
                 if (!course) return null;
                 
                 return (
                   <Card key={enrollment._id} className="border-gray-700 bg-gray-900/50 overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-bold text-blue-400 px-2 py-0.5 bg-blue-900/30 rounded">{course.courseCode}</span>
-                            <span className="text-xs text-green-400">Active</span>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-[10px] font-bold text-blue-400 px-1.5 py-0.5 bg-blue-900/30 rounded">{course.courseCode}</span>
+                            <span className="text-[10px] text-green-400">Active</span>
                           </div>
-                          <h3 className="text-white font-bold text-lg">{course.courseName}</h3>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <h3 className="text-white font-bold text-base">{course.courseName}</h3>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
                             {course.faculty?.firstName} {course.faculty?.lastName} • {course.credits} Credits
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-white">0%</div>
-                          <p className="text-xs text-gray-500">Progress</p>
+                          <div className="text-xl font-bold text-white">0%</div>
+                          <p className="text-[10px] text-gray-500">Progress</p>
                         </div>
                       </div>
                       
-                      <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
-                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full" style={{ width: '0%' }}></div>
+                      <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2">
+                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-1.5 rounded-full" style={{ width: '0%' }}></div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 text-center">
-                        <div className="bg-gray-800 rounded-lg p-2">
-                          <div className="text-sm font-bold text-white">0</div>
-                          <p className="text-[10px] text-gray-500">Assignments</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-gray-800 rounded-lg p-1.5">
+                          <div className="text-xs font-bold text-white">0</div>
+                          <p className="text-[9px] text-gray-500">Assignments</p>
                         </div>
-                        <div className="bg-gray-800 rounded-lg p-2">
-                          <div className="text-sm font-bold text-white">0%</div>
-                          <p className="text-[10px] text-gray-500">Attendance</p>
+                        <div className="bg-gray-800 rounded-lg p-1.5">
+                          <div className="text-xs font-bold text-white">0%</div>
+                          <p className="text-[9px] text-gray-500">Attendance</p>
                         </div>
-                        <div className="bg-gray-800 rounded-lg p-2">
-                          <div className="text-sm font-bold text-white">0</div>
-                          <p className="text-[10px] text-gray-500">Grade</p>
+                        <div className="bg-gray-800 rounded-lg p-1.5">
+                          <div className="text-xs font-bold text-white">0</div>
+                          <p className="text-[9px] text-gray-500">Grade</p>
                         </div>
                       </div>
 
-                      <div className="mt-3 pt-3 border-t border-gray-800">
-                        <div className="flex items-center justify-between text-xs">
+                      <div className="mt-2 pt-2 border-t border-gray-800">
+                        <div className="flex items-center justify-between text-[10px]">
                           <div className="flex items-center gap-1 text-gray-400">
                             <Calendar className="h-3 w-3" />
                             <span>Enrolled: {new Date(enrollment.enrolledAt).toLocaleDateString()}</span>
                           </div>
-                          <Button size="sm" variant="outline" className="h-7 text-xs">
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2">
                             View Course
                           </Button>
                         </div>
@@ -239,64 +239,64 @@ export default function StudentDashboard() {
       {courseSuggestions.length > 0 && (
         <motion.div variants={itemVariants} className="relative overflow-hidden">
           <Card className="border-gray-700 bg-gray-800 shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
-                <CardTitle className="text-2xl text-white">Recommended for You</CardTitle>
-                <CardDescription className="text-gray-400">Expand your skills with these top-rated courses</CardDescription>
+                <CardTitle className="text-xl text-white">Recommended for You</CardTitle>
+                <CardDescription className="text-gray-400 text-sm">Expand your skills with these top-rated courses</CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full" onClick={() => scroll('left')}>
-                  <ChevronLeft className="h-5 w-5" />
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full h-8 w-8" onClick={() => scroll('left')}>
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full" onClick={() => scroll('right')}>
-                  <ChevronRight className="h-5 w-5" />
+                <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full h-8 w-8" onClick={() => scroll('right')}>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
             
-            <CardContent className="px-6 pb-6 overflow-hidden">
+            <CardContent className="px-4 pb-4 overflow-hidden">
               <div 
                 ref={scrollContainerRef}
                 onWheel={handleWheel}
-                className="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth pt-2 pb-2 -mx-6 px-6"
+                className="flex gap-2.5 overflow-x-auto no-scrollbar scroll-smooth pt-1 pb-1 -mx-4 px-4"
                 style={{ WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}
               >
                 {courseSuggestions.map((course) => (
                   <motion.div 
                     key={course._id} 
-                    className="flex-none w-[240px]"
+                    className="flex-none w-[220px]"
                     style={{ scrollSnapAlign: 'start' }}
                     whileHover={{ y: -8 }}
                   >
                     <Card className="border-gray-700 bg-gray-900 h-full flex flex-col overflow-hidden group">
-                      <div className="relative h-24 bg-gradient-to-br from-indigo-600 to-purple-700 p-2.5 flex flex-col justify-end">
-                        <div className="absolute top-2 right-2 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] text-white font-bold">
+                      <div className="relative h-20 bg-gradient-to-br from-indigo-600 to-purple-700 p-2 flex flex-col justify-end">
+                        <div className="absolute top-1.5 right-1.5 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] text-white font-bold">
                           {course.credits} CR
                         </div>
-                        <span className="text-[9px] font-bold text-blue-200 uppercase mb-0.5">{course.courseCode}</span>
-                        <h3 className="text-white font-bold text-sm leading-tight line-clamp-2">{course.courseName}</h3>
+                        <span className="text-[8px] font-bold text-blue-200 uppercase mb-0.5">{course.courseCode}</span>
+                        <h3 className="text-white font-bold text-xs leading-tight line-clamp-2">{course.courseName}</h3>
                       </div>
                       
-                      <CardContent className="p-3 flex-1 flex flex-col">
-                        <p className="text-[11px] text-gray-400 line-clamp-2 mb-2 leading-relaxed">
+                      <CardContent className="p-2.5 flex-1 flex flex-col">
+                        <p className="text-[10px] text-gray-400 line-clamp-2 mb-1.5 leading-relaxed">
                           {course.description || "Dive deep into the core concepts of this subject with expert faculty guidance."}
                         </p>
                         
-                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-800">
+                        <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-gray-800">
                           <div className="flex flex-col">
-                            <span className="text-[8px] text-gray-500 uppercase">Instructor</span>
-                            <span className="text-[11px] text-gray-200 font-medium">
+                            <span className="text-[7px] text-gray-500 uppercase">Instructor</span>
+                            <span className="text-[10px] text-gray-200 font-medium">
                               {course.faculty?.firstName && course.faculty?.lastName 
                                 ? `${course.faculty.firstName} ${course.faculty.lastName}`
                                 : 'TBA'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-gray-400">
-                            <Users className="h-3 w-3" />
-                            <span className="text-[11px]">{course.enrollmentCount || 0}</span>
+                          <div className="flex items-center gap-0.5 text-gray-400">
+                            <Users className="h-2.5 w-2.5" />
+                            <span className="text-[10px]">{course.enrollmentCount || 0}</span>
                           </div>
                         </div>
-                        <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all py-1.5">
+                        <Button className="w-full mt-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-semibold transition-all py-1 h-7">
                           Course Details
                         </Button>
                       </CardContent>
@@ -310,35 +310,35 @@ export default function StudentDashboard() {
       )}
 
       {/* Announcements & Quick Actions Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Announcements */}
         <motion.div variants={itemVariants} className="lg:col-span-2">
           <Card className="border-gray-700 bg-gray-800 h-full">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-blue-500" />
-                <CardTitle className="text-white">Recent Announcements</CardTitle>
+                <Bell className="h-4 w-4 text-blue-500" />
+                <CardTitle className="text-white text-lg">Recent Announcements</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {dashboard?.recentAnnouncements?.length > 0 ? (
                 dashboard.recentAnnouncements.map((announcement: any) => (
-                  <div key={announcement._id} className="p-4 rounded-xl border border-gray-700 bg-gray-900/50 hover:bg-gray-900 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-white">{announcement.title}</h4>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${announcement.priority === 'high' ? 'bg-red-900/50 text-red-400' : 'bg-blue-900/50 text-blue-400'}`}>
+                  <div key={announcement._id} className="p-3 rounded-lg border border-gray-700 bg-gray-900/50 hover:bg-gray-900 transition-colors">
+                    <div className="flex justify-between items-start mb-1.5">
+                      <h4 className="font-bold text-white text-sm">{announcement.title}</h4>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${announcement.priority === 'high' ? 'bg-red-900/50 text-red-400' : 'bg-blue-900/50 text-blue-400'}`}>
                         {announcement.priority?.toUpperCase()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-400 line-clamp-2">{announcement.content}</p>
-                    <div className="flex items-center gap-4 mt-3 text-[11px] text-gray-500">
+                    <p className="text-xs text-gray-400 line-clamp-2">{announcement.content}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500">
                       <span className="font-medium text-blue-400">{announcement.course?.name}</span>
-                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(announcement.createdAt).toLocaleDateString()}</span>
+                      <span className="flex items-center gap-0.5"><Calendar className="h-2.5 w-2.5" /> {new Date(announcement.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500 italic">No recent announcements</div>
+                <div className="text-center py-6 text-gray-500 italic text-sm">No recent announcements</div>
               )}
             </CardContent>
           </Card>
@@ -347,20 +347,20 @@ export default function StudentDashboard() {
         {/* Quick Actions */}
         <motion.div variants={itemVariants}>
           <Card className="border-gray-700 bg-gray-800 h-full">
-            <CardHeader>
-              <CardTitle className="text-white">Quick Access</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg">Quick Access</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            <CardContent className="flex flex-col gap-2">
               {[
                 { label: 'My Courses', sub: 'Manage learning', icon: BookOpen, color: 'text-blue-500', href: '/dashboard/courses' },
                 { label: 'Assignments', sub: 'Submit work', icon: FileText, color: 'text-purple-500', href: '/dashboard/assignments' },
                 { label: 'Announcements', sub: 'Stay updated', icon: Bell, color: 'text-orange-500', href: '/dashboard/announcements' }
               ].map((action, i) => (
-                <a key={i} href={action.href} className="flex items-center gap-4 p-4 rounded-xl border border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
-                  <action.icon className={`h-6 w-6 ${action.color}`} />
+                <a key={i} href={action.href} className="flex items-center gap-3 p-3 rounded-lg border border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
+                  <action.icon className={`h-5 w-5 ${action.color}`} />
                   <div>
-                    <h4 className="font-semibold text-white group-hover:text-blue-400">{action.label}</h4>
-                    <p className="text-xs text-gray-500">{action.sub}</p>
+                    <h4 className="font-semibold text-white group-hover:text-blue-400 text-sm">{action.label}</h4>
+                    <p className="text-[10px] text-gray-500">{action.sub}</p>
                   </div>
                 </a>
               ))}
