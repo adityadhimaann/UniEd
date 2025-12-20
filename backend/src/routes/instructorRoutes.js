@@ -9,6 +9,16 @@ const router = express.Router();
 router.use(authenticate);
 router.use(checkRole('faculty', 'admin'));
 
+// Health check
+router.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    version: '2.0.0-grade-fix', // Updated version to verify new code is running
+    message: 'Instructor routes loaded with grade submission fixes'
+  });
+});
+
 // Course routes
 router.get('/courses', instructorController.getMyCourses);
 router.post('/courses', instructorController.createCourse);

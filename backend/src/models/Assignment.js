@@ -34,7 +34,7 @@ const submissionSchema = new mongoose.Schema({
   },
   feedback: {
     type: String,
-    default: null,
+    default: '',
   },
   status: {
     type: String,
@@ -54,8 +54,9 @@ const submissionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null,
+    required: false,
   },
-});
+}, { _id: false });
 
 const assignmentSchema = new mongoose.Schema(
   {

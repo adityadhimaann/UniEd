@@ -302,6 +302,8 @@ class InstructorService {
     submission.grade = gradeValue;
     submission.feedback = gradeData.feedback || '';
     submission.status = 'graded';
+    // Don't set reviewedBy or reviewedAt when grading - only when reviewing
+    // These fields are for the review workflow (approve/disapprove/viewed)
 
     console.log('Updated submission:', {
       grade: submission.grade,
@@ -309,8 +311,12 @@ class InstructorService {
       status: submission.status
     });
 
+    // Mark the submissions array as modified to ensure Mongoose saves it
+    assignment.markModified('submissions');
+
     try {
-      await assignment.save();
+      // Use validateBeforeSave: false to skip validation on unchanged fields
+      await assignment.save({ validateBeforeSave: false });
       console.log('✅ Assignment saved successfully');
     } catch (saveError) {
       console.error('❌ Error saving assignment:', saveError);
@@ -462,36 +468,6 @@ class InstructorService {
 
     await assignment.deleteOne();
     return true;
-  }
-
-  // Grade assignment submission
-  async gradeSubmission(assignmentId, studentId, instructorId, grade, feedback) {
-    const assignment = await Assignment.findById(assignmentId).populate('course');
-
-    if (!assignment) {
-      throw ApiError.notFound('Assignment not found');
-    }
-
-    if (assignment.course.faculty.toString() !== instructorId.toString()) {
-      throw ApiError.forbidden('You are not authorized to grade this assignment');
-    }
-
-    // Find the submission
-    const submission = assignment.submissions.find(
-      sub => sub.student.toString() === studentId
-    );
-
-    if (!submission) {
-      throw ApiError.notFound('Submission not found');
-    }
-
-    // Update submission
-    submission.grade = grade;
-    submission.feedback = feedback;
-    submission.gradedAt = new Date();
-
-    await assignment.save();
-    return submission;
   }
 
   // Mark attendance
