@@ -524,15 +524,12 @@ export function MessagesPage() {
                 <div className="space-y-4">
                   {messagesLoading ? (
                     <div className="flex flex-col items-center justify-center h-full py-12">
-                      <div className="relative">
-                        <img 
-                          src="/UniEdlogoo.png" 
-                          alt="Loading" 
-                          className="h-16 w-16 animate-pulse"
-                        />
-                        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                      </div>
-                      <p className="text-muted-foreground text-sm mt-4 animate-pulse">Loading messages...</p>
+                      <img 
+                        src="/loadicon.gif" 
+                        alt="Loading" 
+                        className="h-20 w-20"
+                      />
+                      <p className="text-muted-foreground text-sm mt-4">Loading messages...</p>
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
