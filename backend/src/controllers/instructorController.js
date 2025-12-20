@@ -138,7 +138,16 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
   const instructorId = req.user._id;
   const { grade, feedback } = req.body;
 
-  if (grade === undefined) {
+  console.log('=== GRADE SUBMISSION REQUEST ===');
+  console.log('Assignment ID:', assignmentId);
+  console.log('Student ID:', studentId);
+  console.log('Instructor ID:', instructorId);
+  console.log('Grade:', grade);
+  console.log('Feedback:', feedback);
+  console.log('Request body:', req.body);
+
+  if (grade === undefined || grade === null || grade === '') {
+    console.error('Grade validation failed: grade is', grade);
     throw ApiError.badRequest('Grade is required');
   }
 
@@ -146,7 +155,7 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
     assignmentId,
     studentId,
     instructorId,
-    { grade, feedback }
+    { grade: Number(grade), feedback }
   );
 
   res.status(200).json(
