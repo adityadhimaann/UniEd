@@ -64,7 +64,9 @@ export function MessagesPage() {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showFileViewer, setShowFileViewer] = useState(false);
   const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
+  const [viewerFileUrl, setViewerFileUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -781,7 +783,10 @@ export function MessagesPage() {
                                     size="icon"
                                     variant="ghost"
                                     className={`h-8 w-8 ${isMe ? 'hover:bg-white/20' : 'hover:bg-secondary'}`}
-                                    onClick={() => window.open(message.fileUrl, '_blank')}
+                                    onClick={() => {
+                                      setViewerFileUrl(message.fileUrl);
+                                      setShowFileViewer(true);
+                                    }}
                                   >
                                     <Eye className="w-4 h-4" />
                                   </Button>
@@ -1034,7 +1039,7 @@ export function MessagesPage() {
 
       {/* Image Viewer Dialog */}
       <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0" hideClose>
           <div className="relative">
             <div className="absolute top-2 right-2 z-10 flex gap-2">
               <Button
@@ -1071,6 +1076,94 @@ export function MessagesPage() {
                 className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* File Viewer Dialog */}
+      <Dialog open={showFileViewer} onOpenChange={setShowFileViewer}>
+        <DialogContent className="sm:max-w-6xl h-[90vh] flex flex-col p-0" hideClose>
+          <div className="flex items-center justify-between p-4 border-b border-border/50">
+            <DialogTitle>File Viewer</DialogTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (viewerFileUrl) {
+                    window.open(viewerFileUrl, '_blank');
+                  }
+                }}
+                className="bg-gradient-to-r from-primary to-accent"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Open in New Tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (viewerFileUrl) {
+                    const link = document.createElement('a');
+                    link.href = viewerFileUrl;
+                    link.download = 'file';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFileViewer(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden bg-secondary/20 flex items-center justify-center">
+            <div className="text-center p-8 max-w-md">
+              <File className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">File Ready to View</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Click "Open in New Tab" to view the file, or download it to your device.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={() => {
+                    if (viewerFileUrl) {
+                      window.open(viewerFileUrl, '_blank');
+                    }
+                  }}
+                  className="bg-gradient-to-r from-primary to-accent"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Open in New Tab
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (viewerFileUrl) {
+                      const link = document.createElement('a');
+                      link.href = viewerFileUrl;
+                      link.download = 'file';
+                      link.target = '_blank';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

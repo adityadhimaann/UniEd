@@ -1,7 +1,6 @@
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { NotificationBell } from '@/components/dashboard/NotificationBell';
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -9,14 +8,25 @@ import {
   Calendar,
   Bell,
   BarChart3,
-  Menu,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
+  MessageSquare,
   Settings,
   User,
-} from 'lucide-react';
+  LogOut,
+  Search,
+  Menu,
+  X,
+  ChevronRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,260 +36,287 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import sidebarIcon from "@/assets/sidebar.png";
+import logo from "@/assets/UniEdlogoo.png";
 
-export default function InstructorLayout() {
-  const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showTopProfileMenu, setShowTopProfileMenu] = useState(false);
+const instructorNavItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/instructor" },
+  { icon: BookOpen, label: "Courses", path: "/instructor/courses" },
+  { icon: FileText, label: "Assignments", path: "/instructor/assignments" },
+  { icon: Calendar, label: "Attendance", path: "/instructor/attendance" },
+  { icon: MessageSquare, label: "Messages", path: "/instructor/messages" },
+  { icon: Bell, label: "Announcements", path: "/instructor/announcements" },
+  { icon: BarChart3, label: "Analytics", path: "/instructor/analytics" },
+  { icon: Settings, label: "Settings", path: "/instructor/settings" },
+];
+
+export default function InstructorPortal() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
 
-  const handleLogout = async () => {
-    await logout();
-    setShowLogoutDialog(false);
-    navigate('/');
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      toast.error("Please login to access the instructor portal");
+    } else if (user?.role !== "faculty") {
+      navigate("/dashboard");
+      toast.error("Access denied. Faculty only.");
+    }
+  }, [isAuthenticated, navigate, user]);
+
+  if (!isAuthenticated || !user || user.role !== "faculty") {
+    return null;
+  }
+
+  const handleLogout = () => {
+    setShowLogoutDialog(true);
   };
 
-  const navigation = [
-    { name: 'Dashboard', href: '/instructor', icon: LayoutDashboard },
-    { name: 'Courses', href: '/instructor/courses', icon: BookOpen },
-    { name: 'Assignments', href: '/instructor/assignments', icon: FileText },
-    { name: 'Attendance', href: '/instructor/attendance', icon: Calendar },
-    { name: 'Announcements', href: '/instructor/announcements', icon: Bell },
-    { name: 'Analytics', href: '/instructor/analytics', icon: BarChart3 },
-  ];
+  const confirmLogout = async () => {
+    await logout();
+    navigate("/");
+    toast.success("Logged out successfully");
+    setShowLogoutDialog(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+    <div className="min-h-screen bg-background flex">
+      {/* Desktop Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarOpen ? 240 : 64 }}
+        className="hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl fixed left-0 top-0 h-screen z-40"
+      >
+        {/* Logo */}
+        <Link to="/" className="p-3 flex items-center gap-2 border-b border-border hover:bg-secondary/50 transition-colors">
+          <img 
+            src={logo} 
+            alt="UniEd Logo" 
+            className="w-10 h-10 object-contain shrink-0"
+          />
+          {sidebarOpen && (
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-display text-xl font-bold"
+            >
+              UniEd
+            </motion.span>
+          )}
+        </Link>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
+          {instructorNavItems.map((item) => {
+            const isActive = location.pathname === item.path || 
+              (item.path !== "/instructor" && location.pathname.startsWith(item.path));
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary"
+                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                {sidebarOpen && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="font-medium text-base"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+                {isActive && sidebarOpen && (
+                  <ChevronRight className="w-5 h-5 ml-auto" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* User card */}
+        {sidebarOpen && (
+          <div className="p-2 border-t border-border">
+            <Link 
+              to="/instructor/profile"
+              className="block transition-all hover:scale-[0.98]"
+            >
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={user.avatar} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{user.firstName} {user.lastName}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                </div>
+                <User className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Link>
+          </div>
+        )}
+
+        {/* Toggle button */}
+        <div className="p-2 border-t border-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-full justify-center group"
+          >
+            <img 
+              src={sidebarIcon} 
+              alt="Toggle Sidebar" 
+              className="w-5 h-5 object-contain transition-all duration-200 group-hover:brightness-0" 
+            />
+          </Button>
+        </div>
+      </motion.aside>
+
+      {/* Mobile sidebar overlay */}
+      {mobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 bg-gray-800 border-r border-gray-700 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${sidebarCollapsed ? 'w-16' : 'w-60'}`}
+      {/* Mobile sidebar */}
+      <motion.aside
+        initial={{ x: "-100%" }}
+        animate={{ x: mobileMenuOpen ? 0 : "-100%" }}
+        className="fixed left-0 top-0 h-full w-72 bg-card border-r border-border z-50 lg:hidden"
       >
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {/* Logo */}
-              <img 
-                src="/UniEd.png" 
-                alt="UniEd Logo" 
-                className={`transition-all duration-300 ${sidebarCollapsed ? 'h-6 w-6' : 'h-8 w-8'} object-contain`}
-                onError={(e) => {
-                  // Fallback to gradient if logo doesn't load
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg items-center justify-center hidden">
-                <span className="text-white font-bold text-lg">U</span>
-              </div>
-              {!sidebarCollapsed && (
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-bold text-white truncate">UniEd</h2>
-                  <p className="text-[10px] text-gray-400 truncate">Instructor Portal</p>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-400 hover:text-white flex-shrink-0"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            {/* Toggle Collapse Button (Desktop only) */}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:block text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg p-1 flex-shrink-0"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {sidebarCollapsed ? (
-                <ChevronRight className="h-5 w-5" />
-              ) : (
-                <ChevronLeft className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = window.location.pathname === item.href;
-              return (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                    isActive
-                      ? 'bg-blue-600 text-white font-medium'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  } ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  title={sidebarCollapsed ? item.name : ''}
-                >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </a>
-              );
-            })}
-          </nav>
-
-          {/* User Info */}
-          <div className="p-2 border-t border-gray-700 relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className={`flex items-center gap-2 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg w-full text-left transition-colors ${
-                sidebarCollapsed ? 'justify-center' : ''
-              }`}
-            >
-              <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-xs">
-                  {user?.profile?.firstName?.[0] || user?.firstName?.[0]}
-                  {user?.profile?.lastName?.[0] || user?.lastName?.[0]}
-                </span>
-              </div>
-              {!sidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white truncate">
-                    {user?.profile?.firstName || user?.firstName} {user?.profile?.lastName || user?.lastName}
-                  </p>
-                  <p className="text-[10px] text-gray-400 truncate">{user?.email}</p>
-                </div>
-              )}
-            </button>
-
-            {/* User Dropdown Menu */}
-            {showUserMenu && (
-              <div className={`absolute bottom-full mb-2 bg-gray-700 rounded-lg shadow-lg border border-gray-600 py-2 ${
-                sidebarCollapsed ? 'left-4 right-4' : 'left-4 right-4'
-              }`}>
-                <a
-                  href="/instructor/profile"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 hover:text-white"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <User className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Profile</span>}
-                </a>
-                <a
-                  href="/instructor/settings"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 hover:text-white"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <Settings className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Settings</span>}
-                </a>
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    setShowLogoutDialog(true);
-                  }}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-600 hover:text-red-300 w-full text-left"
-                >
-                  <LogOut className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Logout</span>}
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="p-3 flex items-center justify-center border-b border-border relative">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={() => setMobileMenuOpen(false)}>
+            <img 
+              src={logo} 
+              alt="UniEd Logo" 
+              className="w-12 h-12 object-contain"
+            />
+            <span className="font-display text-xl font-bold">UniEd</span>
+          </Link>
+          <Button variant="ghost" size="icon" className="absolute right-3" onClick={() => setMobileMenuOpen(false)}>
+            <X className="w-5 h-5" />
+          </Button>
         </div>
-      </div>
+        <nav className="p-4 space-y-2">
+          {instructorNavItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
+                  isActive
+                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary"
+                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium text-base">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </motion.aside>
 
-      {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-60'}`}>
-        {/* Top Bar */}
-        <div className="sticky top-0 z-30 bg-gray-800 border-b border-gray-700">
-          <div className="flex items-center justify-between px-4 py-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-400 hover:text-white"
+      {/* Main content */}
+      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[240px]" : "lg:ml-16"} transition-all duration-300`}>
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
+          <div className="flex items-center justify-between px-3 lg:px-6 h-14">
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileMenuOpen(true)}
             >
-              <Menu className="h-6 w-6" />
-            </button>
-            <div className="flex-1"></div>
-            <div className="flex items-center gap-4">
-              <NotificationBell />
-              {/* Faculty Profile Section with Dropdown */}
+              <Menu className="w-5 h-5" />
+            </Button>
+
+            {/* Search */}
+            <div className="flex-1 max-w-xl mx-4 hidden md:block">
               <div className="relative">
-                <button
-                  onClick={() => setShowTopProfileMenu(!showTopProfileMenu)}
-                  className="flex items-center gap-3 px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-xs">
-                      {user?.profile?.firstName?.[0] || user?.firstName?.[0]}
-                      {user?.profile?.lastName?.[0] || user?.lastName?.[0]}
-                    </span>
-                  </div>
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-white">
-                      {user?.profile?.firstName || user?.firstName} {user?.profile?.lastName || user?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
-                  </div>
-                </button>
-
-                {/* Profile Dropdown Menu */}
-                {showTopProfileMenu && (
-                  <>
-                    {/* Backdrop to close menu */}
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowTopProfileMenu(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-56 bg-gray-700 rounded-lg shadow-lg border border-gray-600 py-2 z-50">
-                      <a
-                        href="/instructor/profile"
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 hover:text-white transition-colors"
-                        onClick={() => setShowTopProfileMenu(false)}
-                      >
-                        <User className="h-4 w-4" />
-                        <span>Profile</span>
-                      </a>
-                      <a
-                        href="/instructor/settings"
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 hover:text-white transition-colors"
-                        onClick={() => setShowTopProfileMenu(false)}
-                      >
-                        <Settings className="h-4 w-4" />
-                        <span>Settings</span>
-                      </a>
-                      <div className="border-t border-gray-600 my-2"></div>
-                      <button
-                        onClick={() => {
-                          setShowTopProfileMenu(false);
-                          setShowLogoutDialog(true);
-                        }}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-600 hover:text-red-300 w-full text-left transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Logout</span>
-                      </button>
-                    </div>
-                  </>
-                )}
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search courses, students, assignments..."
+                  className="pl-10 bg-secondary/50 border-border/50"
+                />
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Page Content */}
-        <main className="p-4 bg-gray-900 min-h-screen max-w-[1600px] mx-auto">
+            {/* Right side */}
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <NotificationBell />
+
+              {/* Profile dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-3 px-2 hover:bg-gradient-to-r from-primary to-accent hover:backdrop-blur-sm transition-all duration-200 group">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                        {user.firstName?.[0]}{user.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:block text-left">
+                      <div className="text-sm font-medium group-hover:text-white transition-colors">{user.firstName} {user.lastName}</div>
+                      <div className="text-xs text-muted-foreground/80 capitalize group-hover:text-white transition-colors">{user.role}</div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-md border-border/50 shadow-xl">
+                  <DropdownMenuItem asChild>
+                    <Link to="/instructor/profile" className="hover:bg-secondary/40 transition-colors">
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/instructor/settings" className="hover:bg-secondary/40 transition-colors">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <div className="p-3 lg:p-6 max-w-[1600px]">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
@@ -292,7 +329,7 @@ export default function InstructorLayout() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={confirmLogout} className="bg-destructive hover:bg-destructive/90">
               Logout
             </AlertDialogAction>
           </AlertDialogFooter>

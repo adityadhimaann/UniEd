@@ -15,13 +15,26 @@ const configureCloudinary = () => {
 
 const uploadToCloudinary = async (filePath, folder = 'unied') => {
   try {
+    // Determine resource type based on file
     const result = await cloudinary.uploader.upload(filePath, {
       folder,
       resource_type: 'auto',
+      access_mode: 'public',
+      type: 'upload',
+      flags: 'attachment',
     });
 
+    // For PDFs and documents, create a direct download URL
+    let url = result.secure_url;
+    
+    // If it's a PDF or document, modify URL to force inline display
+    if (result.format === 'pdf' || result.resource_type === 'raw') {
+      // Use fl_attachment flag to allow direct viewing
+      url = url.replace('/upload/', '/upload/fl_attachment/');
+    }
+
     return {
-      url: result.secure_url,
+      url: url,
       publicId: result.public_id,
       format: result.format,
       size: result.bytes,

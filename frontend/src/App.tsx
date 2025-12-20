@@ -25,6 +25,7 @@ import AnnouncementsManagement from "./components/instructor/AnnouncementsManage
 import AnalyticsDashboard from "./components/instructor/AnalyticsDashboard";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
 import InstructorSettings from "./pages/instructor/InstructorSettings";
+import InstructorMessages from "./components/instructor/InstructorMessages";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="courses/:courseId/content" element={<CourseContentPage />} />
               <Route path="assignments" element={<AssignmentsManagement />} />
               <Route path="attendance" element={<AttendanceManagement />} />
+              <Route path="messages" element={<InstructorMessages />} />
               <Route path="announcements" element={<AnnouncementsManagement />} />
               <Route path="analytics" element={<AnalyticsDashboard />} />
               <Route path="profile" element={<InstructorProfile />} />
