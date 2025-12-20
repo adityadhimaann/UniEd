@@ -43,9 +43,25 @@ export const createMessage = async (messageData) => {
  * Get all conversations for a user
  */
 export const getConversations = async (userId) => {
-  // Get all users except the current user
+  // Get current user to check their role
+  const currentUser = await User.findById(userId, 'role').lean();
+  if (!currentUser) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  // Build query based on user role
+  const query = { _id: { $ne: userId } };
+  
+  // If user is a student, only show faculty members
+  if (currentUser.role === 'student') {
+    query.role = 'faculty';
+  }
+  // If user is faculty, show all users (students and other faculty)
+  // If user is admin, show all users
+
+  // Get all users based on query
   const users = await User.find(
-    { _id: { $ne: userId } },
+    query,
     'firstName lastName email avatar role lastSeen'
   )
     .sort({ lastSeen: -1 })
@@ -79,7 +95,18 @@ export const getConversations = async (userId) => {
  * Get users for starting new conversation
  */
 export const getUsers = async (currentUserId, filters = {}) => {
+  // Get current user to check their role
+  const currentUser = await User.findById(currentUserId, 'role').lean();
+  if (!currentUser) {
+    throw new ApiError(404, 'User not found');
+  }
+
   const query = { _id: { $ne: currentUserId } };
+
+  // If user is a student, only show faculty members
+  if (currentUser.role === 'student') {
+    query.role = 'faculty';
+  }
 
   // Apply search filter
   if (filters.search) {
@@ -91,8 +118,8 @@ export const getUsers = async (currentUserId, filters = {}) => {
     ];
   }
 
-  // Apply role filter
-  if (filters.role) {
+  // Apply role filter (only if not a student, or if it's faculty)
+  if (filters.role && (currentUser.role !== 'student' || filters.role === 'faculty')) {
     query.role = filters.role;
   }
 
