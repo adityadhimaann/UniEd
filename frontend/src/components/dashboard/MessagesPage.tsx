@@ -56,6 +56,7 @@ export function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -158,11 +159,14 @@ export function MessagesPage() {
 
   const loadMessages = async (otherUserId: string) => {
     try {
+      setMessagesLoading(true);
       const data = await messageService.getMessages(otherUserId);
       setMessages(data.messages);
     } catch (error: any) {
       console.error('Failed to load messages:', error);
       toast.error('Failed to load messages');
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -518,7 +522,19 @@ export function MessagesPage() {
               <motion.div variants={chatVariants} className="flex-1 overflow-hidden">
               <ScrollArea className="h-full p-4">
                 <div className="space-y-4">
-                  {messages.length === 0 ? (
+                  {messagesLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full py-12">
+                      <div className="relative">
+                        <img 
+                          src="/UniEdlogoo.png" 
+                          alt="Loading" 
+                          className="h-16 w-16 animate-pulse"
+                        />
+                        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                      </div>
+                      <p className="text-muted-foreground text-sm mt-4 animate-pulse">Loading messages...</p>
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
                       No messages yet. Start the conversation!
                     </div>
@@ -549,6 +565,24 @@ export function MessagesPage() {
                         </motion.div>
                       );
                     })
+                  )}
+                  {isSending && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex justify-end"
+                    >
+                      <div className="max-w-[70%] p-3 rounded-2xl bg-gradient-to-r from-primary/50 to-accent/50 text-primary-foreground rounded-br-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                          <span className="text-xs">Sending...</span>
+                        </div>
+                      </div>
+                    </motion.div>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
