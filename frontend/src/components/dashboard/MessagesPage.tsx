@@ -83,7 +83,7 @@ export function MessagesPage() {
       // Only add message if it's from the other person (not from us)
       if (selectedConversation && 
           message.sender._id === selectedConversation.user._id &&
-          message.sender._id !== user?._id) {
+          message.sender._id !== user?.id) {
         setMessages(prev => {
           // Check if message already exists to prevent duplicates
           if (prev.some(m => m._id === message._id)) {
@@ -178,7 +178,7 @@ export function MessagesPage() {
     const optimisticMessage: Message = {
       _id: tempId,
       sender: {
-        _id: user!._id,
+        _id: user!.id,
         firstName: user!.firstName,
         lastName: user!.lastName,
         email: user!.email,
@@ -524,7 +524,7 @@ export function MessagesPage() {
                     </div>
                   ) : (
                     messages.map((message) => {
-                      const isMe = message.sender._id === user?._id;
+                      const isMe = message.sender._id === user?.id || message.sender._id.toString() === user?.id;
                       return (
                         <motion.div
                           key={message._id}
