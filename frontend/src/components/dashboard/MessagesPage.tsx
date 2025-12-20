@@ -63,6 +63,8 @@ export function MessagesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -733,20 +735,24 @@ export function MessagesPage() {
                               <img 
                                 src={message.fileUrl} 
                                 alt="Attachment" 
-                                className="rounded-t-2xl max-w-full h-auto cursor-pointer"
-                                onClick={() => window.open(message.fileUrl, '_blank')}
+                                className="rounded-t-2xl max-w-xs h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => {
+                                  setViewerImageUrl(message.fileUrl);
+                                  setShowImageViewer(true);
+                                }}
                               />
                             )}
                             {message.fileUrl && message.fileType !== 'image' && (
-                              <a 
-                                href={message.fileUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 p-3 hover:opacity-80"
+                              <div 
+                                className="flex items-center gap-2 p-3 hover:opacity-80 cursor-pointer"
+                                onClick={() => {
+                                  setViewerImageUrl(message.fileUrl);
+                                  setShowImageViewer(true);
+                                }}
                               >
                                 <File className="w-5 h-5" />
                                 <span className="text-sm">View File</span>
-                              </a>
+                              </div>
                             )}
                             {message.content && (
                               <p className="text-sm p-3">{message.content}</p>
@@ -972,6 +978,29 @@ export function MessagesPage() {
                 Cancel
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Viewer Dialog */}
+      <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0">
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white"
+              onClick={() => setShowImageViewer(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            {viewerImageUrl && (
+              <img
+                src={viewerImageUrl}
+                alt="Full size"
+                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
