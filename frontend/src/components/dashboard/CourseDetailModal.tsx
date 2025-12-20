@@ -37,6 +37,7 @@ interface Course {
   instructor?: string;
   instructorImage?: string;
   image?: string;
+  titleImage?: string;
   maxStudents?: number;
   students?: number;
   progress?: number;
@@ -182,7 +183,20 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
           >
             {/* Header with Image */}
             <div className="relative h-48 overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600" />
+              {course.titleImage || course.image ? (
+                <img 
+                  src={course.titleImage || course.image} 
+                  alt={course.courseName || course.name || 'Course'} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to gradient if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.style.background = 'linear-gradient(to bottom right, rgb(37, 99, 235), rgb(147, 51, 234))';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
               
               <Button
