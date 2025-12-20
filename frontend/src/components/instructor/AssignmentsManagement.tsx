@@ -278,15 +278,15 @@ export default function AssignmentsManagement() {
 
   return (
     <motion.div 
-      className="space-y-6" 
+      className="space-y-4 sm:space-y-6 p-2 sm:p-4" 
       initial="hidden" 
       animate="visible" 
       variants={containerVariants}
     >
-      <motion.div className="flex items-center justify-between" variants={itemVariants}>
+      <motion.div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4" variants={itemVariants}>
         <div>
-          <h1 className="text-3xl font-bold text-white">Assignments</h1>
-          <p className="text-gray-400 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Assignments</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">
             Create and manage assignments
             {viewingAssignment && <span className="ml-2 text-blue-400 font-semibold">• Viewing: {viewingAssignment.title}</span>}
           </p>
@@ -297,7 +297,7 @@ export default function AssignmentsManagement() {
             setFormData({ course: courseId || '', title: '', description: '', dueDate: '', totalPoints: 100 });
             setShowCreateForm(!showCreateForm);
           }}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Assignment
@@ -331,9 +331,9 @@ export default function AssignmentsManagement() {
               </div>
             </CardHeader>
             <CardContent className="space-y-5 pt-6">
-              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-base font-semibold text-purple-400 mb-2">Assignment Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
+              <div className="bg-gray-800/50 p-3 sm:p-4 rounded-lg border border-gray-700">
+                <h3 className="text-sm sm:text-base font-semibold text-purple-400 mb-2">Assignment Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-white text-sm sm:text-base">
                   <div>
                     <span className="text-gray-400">Course:</span> {viewingSubmissions.course?.courseCode}
                   </div>
@@ -425,7 +425,7 @@ export default function AssignmentsManagement() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-4">
                       <Button
                         onClick={() => handleReviewSubmission(selectedSubmission.student._id, 'viewed')}
                         className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold"
@@ -563,9 +563,9 @@ export default function AssignmentsManagement() {
                   {viewingAssignment.description || 'No description provided'}
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                  <h3 className="text-base font-semibold text-blue-400 mb-2">Due Date</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-gray-800/50 p-3 sm:p-4 rounded-lg border border-gray-700">
+                  <h3 className="text-sm sm:text-base font-semibold text-blue-400 mb-2">Due Date</h3>
                   <p className="text-white text-lg font-medium flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-blue-400" />
                     {new Date(viewingAssignment.dueDate).toLocaleString()}
@@ -683,7 +683,7 @@ export default function AssignmentsManagement() {
                   className="bg-gray-900 border-gray-700 text-white"
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dueDate" className="text-gray-200">Due Date *</Label>
                   <Input
@@ -728,7 +728,7 @@ export default function AssignmentsManagement() {
       )}
 
       {assignments.length > 0 ? (
-        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={containerVariants}>
+        <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" variants={containerVariants}>
           {assignments.map((assignment) => (
             <motion.div key={assignment._id} variants={itemVariants}>
             <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-600 hover:border-blue-500 hover:shadow-2xl transition-all duration-300">

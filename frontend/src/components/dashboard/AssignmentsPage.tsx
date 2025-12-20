@@ -333,10 +333,10 @@ export function AssignmentsPage() {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold">Assignments</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">Assignments</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             {isStudent ? "Track and submit your assignments" : "Manage and grade assignments"}
           </p>
         </div>
