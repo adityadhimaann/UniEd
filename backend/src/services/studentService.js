@@ -195,36 +195,47 @@ const getCourseDetails = async (courseId, studentId) => {
 
 // Get student assignments
 const getStudentAssignments = async (studentId) => {
+  console.log('=== GET STUDENT ASSIGNMENTS ===');
+  console.log('Student ID:', studentId);
+  
   const enrollments = await Enrollment.find({ 
     student: studentId,
     status: 'active'
   }).select('course');
   
   const courseIds = enrollments.map(e => e.course);
+  console.log('Course IDs:', courseIds);
   
   const assignments = await Assignment.find({
     course: { $in: courseIds }
   })
-    .populate('course', 'name code')
+    .populate('course', 'courseName courseCode')
+    .populate('submissions.student', 'firstName lastName email')
     .sort({ dueDate: -1 });
 
-  // Get submission status for each assignment
-  const assignmentsWithStatus = await Promise.all(
-    assignments.map(async (assignment) => {
-      const grade = await Grade.findOne({
-        assignment: assignment._id,
-        student: studentId
-      });
+  console.log('Found assignments:', assignments.length);
 
-      return {
-        ...assignment.toObject(),
-        submitted: !!grade,
-        grade: grade ? grade.points : null,
-        feedback: grade ? grade.feedback : null,
-        submittedAt: grade ? grade.submittedAt : null,
-      };
-    })
-  );
+  // Map assignments with student's submission data
+  const assignmentsWithStatus = assignments.map(assignment => {
+    const assignmentObj = assignment.toObject();
+    
+    // Find student's submission
+    const studentSubmission = assignmentObj.submissions?.find(
+      sub => sub.student._id.toString() === studentId.toString()
+    );
+
+    console.log(`Assignment "${assignmentObj.title}":`, {
+      totalSubmissions: assignmentObj.submissions?.length || 0,
+      hasStudentSubmission: !!studentSubmission,
+      studentSubmissionStatus: studentSubmission?.status
+    });
+
+    return {
+      ...assignmentObj,
+      submitted: !!studentSubmission,
+      studentSubmission: studentSubmission || null,
+    };
+  });
 
   return assignmentsWithStatus;
 };
@@ -232,7 +243,8 @@ const getStudentAssignments = async (studentId) => {
 // Get assignment details
 const getAssignmentDetails = async (assignmentId, studentId) => {
   const assignment = await Assignment.findById(assignmentId)
-    .populate('course', 'courseName courseCode faculty');
+    .populate('course', 'courseName courseCode faculty')
+    .populate('submissions.student', 'firstName lastName email');
 
   if (!assignment) {
     throw new ApiError(404, 'Assignment not found');
@@ -249,29 +261,34 @@ const getAssignmentDetails = async (assignmentId, studentId) => {
     throw new ApiError(403, 'You are not enrolled in this course');
   }
 
-  // Get submission
-  const grade = await Grade.findOne({
-    assignment: assignmentId,
-    student: studentId
-  });
+  const assignmentObj = assignment.toObject();
+  
+  // Find student's submission
+  const studentSubmission = assignmentObj.submissions?.find(
+    sub => sub.student._id.toString() === studentId.toString()
+  );
 
   return {
-    ...assignment.toObject(),
-    submitted: !!grade,
-    grade: grade ? grade.points : null,
-    feedback: grade ? grade.feedback : null,
-    submittedAt: grade ? grade.submittedAt : null,
-    submissionUrl: grade ? grade.submissionUrl : null,
+    ...assignmentObj,
+    submitted: !!studentSubmission,
+    studentSubmission: studentSubmission || null,
   };
 };
 
 // Submit assignment
 const submitAssignment = async (assignmentId, studentId, submissionData) => {
+  console.log('=== SUBMIT ASSIGNMENT DEBUG ===');
+  console.log('Assignment ID:', assignmentId);
+  console.log('Student ID:', studentId);
+  console.log('Submission Data:', JSON.stringify(submissionData, null, 2));
+
   const assignment = await Assignment.findById(assignmentId);
 
   if (!assignment) {
     throw new ApiError(404, 'Assignment not found');
   }
+
+  console.log('Assignment found:', assignment.title);
 
   // Verify enrollment
   const enrollment = await Enrollment.findOne({
@@ -284,27 +301,83 @@ const submitAssignment = async (assignmentId, studentId, submissionData) => {
     throw new ApiError(403, 'You are not enrolled in this course');
   }
 
-  // Check if already submitted
-  const existingGrade = await Grade.findOne({
-    assignment: assignmentId,
-    student: studentId
-  });
+  console.log('Enrollment verified');
 
-  if (existingGrade) {
-    throw new ApiError(400, 'Assignment already submitted');
+  // Check if already submitted
+  const existingSubmission = assignment.submissions.find(
+    sub => sub.student.toString() === studentId.toString()
+  );
+
+  if (existingSubmission) {
+    throw new ApiError(400, 'Assignment already submitted. Contact your instructor to resubmit.');
   }
 
-  // Create grade entry (submission)
-  const grade = await Grade.create({
-    student: studentId,
-    course: assignment.course,
-    assignment: assignmentId,
-    submittedAt: new Date(),
-    submissionUrl: submissionData.submissionUrl || '',
-    comments: submissionData.comments || '',
-  });
+  console.log('No existing submission found');
 
-  return grade;
+  // Check if submission is late
+  const isLate = new Date() > new Date(assignment.dueDate);
+  
+  // Prepare files array
+  const files = [];
+  if (submissionData.submissionUrl) {
+    files.push(submissionData.submissionUrl);
+  }
+
+  // Create submission object
+  const submission = {
+    student: studentId,
+    submittedAt: new Date(),
+    submissionText: submissionData.submissionText || submissionData.comments || '',
+    files: files,
+    status: isLate ? 'late' : 'submitted',
+    feedback: null,
+    grade: null,
+  };
+
+  console.log('=== SUBMISSION OBJECT DETAILS ===');
+  console.log('submissionData.submissionText:', submissionData.submissionText);
+  console.log('submissionData.comments:', submissionData.comments);
+  console.log('Final submissionText value:', submission.submissionText);
+  console.log('submissionText length:', submission.submissionText.length);
+  console.log('Full submission object:', JSON.stringify(submission, null, 2));
+
+  try {
+    // Add submission to assignment
+    assignment.submissions.push(submission);
+    await assignment.save();
+    console.log('Assignment saved successfully');
+  } catch (saveError) {
+    console.error('Error saving assignment:', saveError);
+    throw new ApiError(500, `Failed to save submission: ${saveError.message}`);
+  }
+
+  // Send notification to instructor
+  try {
+    const course = await Course.findById(assignment.course).populate('faculty');
+    if (course && course.faculty) {
+      await Notification.create({
+        user: course.faculty._id,
+        type: 'assignment',
+        title: 'New Assignment Submission',
+        content: `A student has submitted "${assignment.title}"`,
+        link: `/instructor/assignments/${assignment._id}/submissions`,
+      });
+    }
+  } catch (notifError) {
+    console.error('Error sending notification:', notifError);
+    // Don't fail the submission if notification fails
+  }
+
+  // Return the updated assignment with populated data
+  const updatedAssignment = await Assignment.findById(assignmentId)
+    .populate('course', 'courseName courseCode')
+    .populate('submissions.student', 'firstName lastName email');
+
+  return {
+    assignment: updatedAssignment,
+    submission: submission,
+    message: isLate ? 'Assignment submitted late' : 'Assignment submitted successfully'
+  };
 };
 
 // Get student grades

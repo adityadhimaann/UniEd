@@ -10,6 +10,10 @@ const submissionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  submissionText: {
+    type: String,
+    default: '',
+  },
   files: {
     type: [String],
     default: [],
@@ -25,8 +29,22 @@ const submissionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['submitted', 'graded', 'late'],
+    enum: ['submitted', 'graded', 'late', 'approved', 'disapproved'],
     default: 'submitted',
+  },
+  reviewStatus: {
+    type: String,
+    enum: ['pending', 'viewed', 'approved', 'disapproved'],
+    default: 'pending',
+  },
+  reviewedAt: {
+    type: Date,
+    default: null,
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
   },
 });
 

@@ -7,7 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Plus, Calendar, FileText, Eye, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,6 +47,17 @@ export default function AssignmentsManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<any>(null);
   const [viewingAssignment, setViewingAssignment] = useState<any>(null);
+  const [viewingSubmissions, setViewingSubmissions] = useState<any>(null);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  
+  // Dialog states
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showDisapproveDialog, setShowDisapproveDialog] = useState(false);
+  const [showGradeDialog, setShowGradeDialog] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [gradeValue, setGradeValue] = useState('');
+  
   const [formData, setFormData] = useState({
     course: courseId || '',
     title: '',
@@ -66,6 +86,25 @@ export default function AssignmentsManagement() {
         setFormData(prev => ({ ...prev, course: courseId }));
         const assignmentsRes = await instructorService.getCourseAssignments(courseId);
         setAssignments(assignmentsRes.data);
+      } else {
+        // Fetch assignments for ALL courses
+        const allAssignments: any[] = [];
+        const coursesList = Array.isArray(coursesData) ? coursesData : [];
+        
+        for (const course of coursesList) {
+          try {
+            const assignmentsRes = await instructorService.getCourseAssignments(course._id);
+            const courseAssignments = assignmentsRes.data || [];
+            allAssignments.push(...courseAssignments);
+          } catch (error) {
+            console.error(`Error fetching assignments for course ${course._id}:`, error);
+          }
+        }
+        
+        // Sort by due date (most recent first)
+        allAssignments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+        setAssignments(allAssignments);
+        console.log('Fetched all assignments:', allAssignments.length);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -79,19 +118,19 @@ export default function AssignmentsManagement() {
     
     // Validate form data
     if (!formData.course) {
-      alert('Please select a course');
+      toast.error('Please select a course');
       return;
     }
     if (!formData.title || formData.title.trim() === '') {
-      alert('Please enter a title');
+      toast.error('Please enter a title');
       return;
     }
     if (!formData.dueDate) {
-      alert('Please select a due date');
+      toast.error('Please select a due date');
       return;
     }
     if (!formData.totalPoints || formData.totalPoints < 1) {
-      alert('Total points must be at least 1');
+      toast.error('Total points must be at least 1');
       return;
     }
     
@@ -113,12 +152,12 @@ export default function AssignmentsManagement() {
       
       if (editingAssignment) {
         await instructorService.updateAssignment(editingAssignment._id, assignmentData);
-        alert('Assignment updated successfully!');
+        toast.success('Assignment updated successfully!');
         setEditingAssignment(null);
       } else {
         const response = await instructorService.createAssignment(assignmentData);
         console.log('Assignment created:', response);
-        alert('Assignment created successfully!');
+        toast.success('Assignment created successfully!');
       }
       
       setShowCreateForm(false);
@@ -128,10 +167,7 @@ export default function AssignmentsManagement() {
       console.error('Full error object:', error);
       console.error('Error response:', error.response);
       const errorMessage = error.response?.data?.message || error.message || 'Error creating assignment';
-      const errorDetails = error.response?.data?.errors 
-        ? '\n' + error.response.data.errors.map((e: any) => `${e.field}: ${e.message}`).join('\n')
-        : '';
-      alert(errorMessage + errorDetails);
+      toast.error(errorMessage);
     }
   };
 
@@ -154,11 +190,11 @@ export default function AssignmentsManagement() {
     
     try {
       await instructorService.deleteAssignment(assignmentId);
-      alert('Assignment deleted successfully!');
+      toast.success('Assignment deleted successfully!');
       fetchData();
     } catch (error: any) {
       console.error('Error deleting assignment:', error);
-      alert(error.response?.data?.message || 'Error deleting assignment');
+      toast.error(error.response?.data?.message || 'Error deleting assignment');
     }
   };
 
@@ -169,10 +205,58 @@ export default function AssignmentsManagement() {
     setViewingAssignment(assignment);
     setShowCreateForm(false); // Close create form if open
     setEditingAssignment(null); // Close edit mode
+    setViewingSubmissions(null); // Close submissions view
     console.log('Scrolling to top...');
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
+  };
+
+  const handleViewSubmissions = async (assignment: any) => {
+    try {
+      setLoading(true);
+      const response = await instructorService.getAssignmentSubmissions(assignment._id);
+      console.log('Submissions response:', response);
+      setSubmissions(response.data.submissions || []);
+      setViewingSubmissions(assignment);
+      setViewingAssignment(null);
+      setShowCreateForm(false);
+      setEditingAssignment(null);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    } catch (error: any) {
+      console.error('Error fetching submissions:', error);
+      toast.error(error.response?.data?.message || 'Error fetching submissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReviewSubmission = async (studentId: string, reviewStatus: 'viewed' | 'approved' | 'disapproved', feedback?: string) => {
+    try {
+      await instructorService.reviewSubmission(viewingSubmissions._id, studentId, reviewStatus, feedback);
+      toast.success(`Submission ${reviewStatus} successfully!`);
+      // Refresh submissions
+      handleViewSubmissions(viewingSubmissions);
+      setSelectedSubmission(null);
+    } catch (error: any) {
+      console.error('Error reviewing submission:', error);
+      toast.error(error.response?.data?.message || 'Error reviewing submission');
+    }
+  };
+
+  const handleGradeSubmission = async (studentId: string, grade: number, feedback: string) => {
+    try {
+      await instructorService.gradeSubmission(viewingSubmissions._id, studentId, grade, feedback);
+      toast.success('Submission graded successfully!');
+      // Refresh submissions
+      handleViewSubmissions(viewingSubmissions);
+      setSelectedSubmission(null);
+    } catch (error: any) {
+      console.error('Error grading submission:', error);
+      toast.error(error.response?.data?.message || 'Error grading submission');
+    }
   };
 
   const handleCancelForm = () => {
@@ -219,6 +303,229 @@ export default function AssignmentsManagement() {
           Create Assignment
         </Button>
       </motion.div>
+
+      {viewingSubmissions && (
+        <motion.div 
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative z-50"
+        >
+          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-purple-500 shadow-2xl ring-4 ring-purple-500/20">
+            <CardHeader className="bg-purple-600/10 border-b border-purple-500/30">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl font-bold text-white flex items-center gap-3">
+                  <FileText className="h-7 w-7 text-purple-400" />
+                  Submissions: {viewingSubmissions.title}
+                </CardTitle>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setViewingSubmissions(null);
+                    setSelectedSubmission(null);
+                  }}
+                  className="bg-gray-700 hover:bg-gray-600 text-white"
+                >
+                  Close
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-6">
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-base font-semibold text-purple-400 mb-2">Assignment Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
+                  <div>
+                    <span className="text-gray-400">Course:</span> {viewingSubmissions.course?.courseCode}
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Total Points:</span> {viewingSubmissions.totalMarks}
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Total Submissions:</span> {submissions.length}
+                  </div>
+                </div>
+              </div>
+
+              {selectedSubmission ? (
+                <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 p-6 rounded-lg border-2 border-blue-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white">
+                      Submission by {selectedSubmission.student?.firstName} {selectedSubmission.student?.lastName}
+                    </h3>
+                    <Button
+                      size="sm"
+                      onClick={() => setSelectedSubmission(null)}
+                      className="bg-gray-700 hover:bg-gray-600"
+                    >
+                      Back to List
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-gray-800/70 p-4 rounded-lg">
+                      <h4 className="text-sm font-semibold text-blue-400 mb-2">Student Info</h4>
+                      <p className="text-white">{selectedSubmission.student?.email}</p>
+                      <p className="text-gray-400 text-sm">Student ID: {selectedSubmission.student?.studentId}</p>
+                    </div>
+
+                    <div className="bg-gray-800/70 p-4 rounded-lg">
+                      <h4 className="text-sm font-semibold text-blue-400 mb-2">Submission Text</h4>
+                      <p className="text-white whitespace-pre-wrap">{selectedSubmission.submissionText || 'No text provided'}</p>
+                    </div>
+
+                    {selectedSubmission.files && selectedSubmission.files.length > 0 && (
+                      <div className="bg-gray-800/70 p-4 rounded-lg">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">Attached Files</h4>
+                        <div className="space-y-2">
+                          {selectedSubmission.files.map((file: string, index: number) => {
+                            const fileUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${file}`;
+                            return (
+                              <a
+                                key={index}
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 block underline"
+                              >
+                                📎 File {index + 1}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-gray-800/70 p-4 rounded-lg">
+                      <h4 className="text-sm font-semibold text-blue-400 mb-2">Submission Details</h4>
+                      <div className="grid grid-cols-2 gap-3 text-white">
+                        <div>
+                          <span className="text-gray-400">Submitted:</span> {new Date(selectedSubmission.submittedAt).toLocaleString()}
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Review Status:</span>{' '}
+                          <span className={`font-semibold ${
+                            selectedSubmission.reviewStatus === 'approved' ? 'text-green-400' :
+                            selectedSubmission.reviewStatus === 'disapproved' ? 'text-red-400' :
+                            selectedSubmission.reviewStatus === 'viewed' ? 'text-yellow-400' :
+                            'text-gray-400'
+                          }`}>
+                            {selectedSubmission.reviewStatus || 'pending'}
+                          </span>
+                        </div>
+                        {selectedSubmission.grade !== null && (
+                          <div>
+                            <span className="text-gray-400">Grade:</span> {selectedSubmission.grade}/{viewingSubmissions.totalMarks}
+                          </div>
+                        )}
+                        {selectedSubmission.feedback && (
+                          <div className="col-span-2">
+                            <span className="text-gray-400">Feedback:</span> {selectedSubmission.feedback}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4">
+                      <Button
+                        onClick={() => handleReviewSubmission(selectedSubmission.student._id, 'viewed')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold"
+                        disabled={selectedSubmission.reviewStatus === 'viewed'}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Mark Viewed
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setFeedbackText('');
+                          setShowApproveDialog(true);
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+                      >
+                        ✓ Approve
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setFeedbackText('');
+                          setShowDisapproveDialog(true);
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+                      >
+                        ✗ Disapprove
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setGradeValue('');
+                          setFeedbackText('');
+                          setShowGradeDialog(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                      >
+                        Grade
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {submissions.length > 0 ? (
+                    submissions.map((submission: any) => (
+                      <div
+                        key={submission._id}
+                        className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 hover:border-purple-500 transition-all cursor-pointer"
+                        onClick={() => setSelectedSubmission(submission)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-white">
+                              {submission.student?.firstName} {submission.student?.lastName}
+                            </h4>
+                            <p className="text-gray-400 text-sm">{submission.student?.email}</p>
+                            <p className="text-gray-500 text-xs mt-1">
+                              Submitted: {new Date(submission.submittedAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className={`text-sm font-semibold ${
+                                submission.reviewStatus === 'approved' ? 'text-green-400' :
+                                submission.reviewStatus === 'disapproved' ? 'text-red-400' :
+                                submission.reviewStatus === 'viewed' ? 'text-yellow-400' :
+                                'text-gray-400'
+                              }`}>
+                                {submission.reviewStatus === 'approved' ? '✓ Approved' :
+                                 submission.reviewStatus === 'disapproved' ? '✗ Disapproved' :
+                                 submission.reviewStatus === 'viewed' ? '👁 Viewed' :
+                                 '⏳ Pending'}
+                              </div>
+                              {submission.grade !== null && (
+                                <div className="text-blue-400 font-bold">
+                                  Grade: {submission.grade}/{viewingSubmissions.totalMarks}
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              View Details
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileText className="h-16 w-16 mx-auto text-gray-500 mb-4" />
+                      <h3 className="text-xl font-bold text-white mb-2">No submissions yet</h3>
+                      <p className="text-gray-400">Students haven't submitted this assignment yet</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {viewingAssignment && (
         <motion.div 
@@ -292,6 +599,13 @@ export default function AssignmentsManagement() {
                 </div>
               )}
               <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => handleViewSubmissions(viewingAssignment)}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 text-base"
+                >
+                  <Eye className="h-5 w-5 mr-2" />
+                  View Submissions ({viewingAssignment.submissions?.length || 0})
+                </Button>
                 <Button
                   onClick={() => {
                     handleEdit(viewingAssignment);
@@ -459,6 +773,20 @@ export default function AssignmentsManagement() {
                   </Button>
                   <Button
                     size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleViewSubmissions(assignment);
+                    }}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium"
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    Submissions
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
                     onClick={() => handleEdit(assignment)}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium"
                   >
@@ -490,6 +818,178 @@ export default function AssignmentsManagement() {
         </Card>
         </motion.div>
       )}
+
+      {/* Approve Dialog */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent className="bg-gray-900 border-green-500 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-green-400">Approve Submission</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Approve this submission and optionally provide feedback to the student.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="approve-feedback" className="text-gray-200">Feedback (Optional)</Label>
+              <Textarea
+                id="approve-feedback"
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Great work! Keep it up..."
+                className="bg-gray-800 border-gray-700 text-white min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowApproveDialog(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedSubmission) {
+                  handleReviewSubmission(
+                    selectedSubmission.student._id,
+                    'approved',
+                    feedbackText.trim() || undefined
+                  );
+                }
+                setShowApproveDialog(false);
+              }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Approve Submission
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Disapprove Dialog */}
+      <Dialog open={showDisapproveDialog} onOpenChange={setShowDisapproveDialog}>
+        <DialogContent className="bg-gray-900 border-red-500 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Disapprove Submission</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Provide feedback explaining why this submission needs revision.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="disapprove-feedback" className="text-gray-200">
+                Feedback (Required) <span className="text-red-400">*</span>
+              </Label>
+              <Textarea
+                id="disapprove-feedback"
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Please revise the following sections..."
+                className="bg-gray-800 border-gray-700 text-white min-h-[120px]"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDisapproveDialog(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!feedbackText.trim()) {
+                  toast.error('Feedback is required for disapproval');
+                  return;
+                }
+                if (selectedSubmission) {
+                  handleReviewSubmission(
+                    selectedSubmission.student._id,
+                    'disapproved',
+                    feedbackText.trim()
+                  );
+                }
+                setShowDisapproveDialog(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Disapprove Submission
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grade Dialog */}
+      <Dialog open={showGradeDialog} onOpenChange={setShowGradeDialog}>
+        <DialogContent className="bg-gray-900 border-blue-500 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-blue-400">Grade Submission</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Assign a grade and provide feedback for this submission.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="grade-value" className="text-gray-200">
+                Grade (out of {viewingSubmissions?.totalMarks || 100}) <span className="text-red-400">*</span>
+              </Label>
+              <Input
+                id="grade-value"
+                type="number"
+                min="0"
+                max={viewingSubmissions?.totalMarks || 100}
+                value={gradeValue}
+                onChange={(e) => setGradeValue(e.target.value)}
+                placeholder="Enter grade..."
+                className="bg-gray-800 border-gray-700 text-white"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="grade-feedback" className="text-gray-200">Feedback (Optional)</Label>
+              <Textarea
+                id="grade-feedback"
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Good work! Consider improving..."
+                className="bg-gray-800 border-gray-700 text-white min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowGradeDialog(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const grade = Number(gradeValue);
+                if (isNaN(grade) || grade < 0 || grade > (viewingSubmissions?.totalMarks || 100)) {
+                  toast.error(`Please enter a valid grade between 0 and ${viewingSubmissions?.totalMarks || 100}`);
+                  return;
+                }
+                if (selectedSubmission) {
+                  handleGradeSubmission(
+                    selectedSubmission.student._id,
+                    grade,
+                    feedbackText.trim()
+                  );
+                }
+                setShowGradeDialog(false);
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Submit Grade
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

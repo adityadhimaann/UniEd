@@ -70,6 +70,12 @@ export const createAssignment = asyncHandler(async (req, res) => {
   const instructorId = req.user._id;
   const assignmentData = req.body;
 
+  console.log('=== CREATE ASSIGNMENT DEBUG ===');
+  console.log('Instructor ID:', instructorId);
+  console.log('Request body:', JSON.stringify(assignmentData, null, 2));
+  console.log('Request URL:', req.originalUrl);
+  console.log('Request method:', req.method);
+
   const assignment = await instructorService.createAssignment(instructorId, assignmentData);
 
   res.status(201).json(
@@ -114,6 +120,18 @@ export const deleteAssignment = asyncHandler(async (req, res) => {
   );
 });
 
+// Get assignment submissions
+export const getAssignmentSubmissions = asyncHandler(async (req, res) => {
+  const { assignmentId } = req.params;
+  const instructorId = req.user._id;
+
+  const result = await instructorService.getAssignmentSubmissions(assignmentId, instructorId);
+
+  res.status(200).json(
+    ApiResponse.success(result, 'Submissions retrieved successfully')
+  );
+});
+
 // Grade assignment submission
 export const gradeSubmission = asyncHandler(async (req, res) => {
   const { assignmentId, studentId } = req.params;
@@ -128,12 +146,33 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
     assignmentId,
     studentId,
     instructorId,
-    grade,
-    feedback
+    { grade, feedback }
   );
 
   res.status(200).json(
     ApiResponse.success(result, 'Submission graded successfully')
+  );
+});
+
+// Review assignment submission (approve/disapprove/viewed)
+export const reviewSubmission = asyncHandler(async (req, res) => {
+  const { assignmentId, studentId } = req.params;
+  const instructorId = req.user._id;
+  const { reviewStatus, feedback } = req.body;
+
+  if (!reviewStatus || !['viewed', 'approved', 'disapproved'].includes(reviewStatus)) {
+    throw ApiError.badRequest('Valid review status is required (viewed, approved, or disapproved)');
+  }
+
+  const result = await instructorService.reviewSubmission(
+    assignmentId,
+    studentId,
+    instructorId,
+    { reviewStatus, feedback }
+  );
+
+  res.status(200).json(
+    ApiResponse.success(result, `Submission ${reviewStatus} successfully`)
   );
 });
 
@@ -311,9 +350,11 @@ export default {
   getCourseStudents,
   createAssignment,
   getCourseAssignments,
+  getAssignmentSubmissions,
   updateAssignment,
   deleteAssignment,
   gradeSubmission,
+  reviewSubmission,
   markAttendance,
   getCourseAttendance,
   createAnnouncement,

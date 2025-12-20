@@ -19,9 +19,11 @@ router.get('/courses/:courseId/students', instructorController.getCourseStudents
 // Assignment routes
 router.post('/assignments', instructorController.createAssignment);
 router.get('/courses/:courseId/assignments', instructorController.getCourseAssignments);
+router.get('/assignments/:assignmentId/submissions', instructorController.getAssignmentSubmissions);
 router.put('/assignments/:assignmentId', instructorController.updateAssignment);
 router.delete('/assignments/:assignmentId', instructorController.deleteAssignment);
 router.post('/assignments/:assignmentId/grade/:studentId', instructorController.gradeSubmission);
+router.post('/assignments/:assignmentId/review/:studentId', instructorController.reviewSubmission);
 
 // Attendance routes
 router.post('/attendance', instructorController.markAttendance);

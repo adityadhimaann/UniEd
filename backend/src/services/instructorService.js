@@ -125,7 +125,9 @@ class InstructorService {
   async createAssignment(instructorId, assignmentData) {
     const { course, title, description, dueDate, totalPoints, attachments } = assignmentData;
 
-    console.log('Creating assignment with data:', { course, title, description, dueDate, totalPoints, attachments });
+    console.log('=== CREATE ASSIGNMENT SERVICE DEBUG ===');
+    console.log('Full assignmentData:', JSON.stringify(assignmentData, null, 2));
+    console.log('Extracted fields:', { course, title, description, dueDate, totalPoints, attachments });
 
     // Verify instructor teaches this course
     const courseDoc = await Course.findById(course);
@@ -154,32 +156,34 @@ class InstructorService {
       assignmentToCreate.attachments = attachments;
     }
 
-    console.log('Creating assignment with:', assignmentToCreate);
+    console.log('Creating assignment with:', JSON.stringify(assignmentToCreate, null, 2));
 
-    const assignment = await Assignment.create(assignmentToCreate);
+    try {
+      const assignment = await Assignment.create(assignmentToCreate);
+      console.log('Assignment created successfully:', assignment._id);
 
-    // Get all enrolled students in this course
-    const enrollments = await Enrollment.find({ course, status: 'active' });
-    
-    // Create notifications for all enrolled students
-    const notifications = enrollments.map(enrollment => ({
-      user: enrollment.student,
-      type: 'assignment',
-      title: 'New Assignment Posted',
-      message: `New assignment "${title}" has been posted for ${courseDoc.courseName}. Due: ${new Date(dueDate).toLocaleDateString()}`,
-      metadata: {
-        assignmentId: assignment._id,
-        courseId: course,
-        courseName: courseDoc.courseName,
-        dueDate: dueDate,
-      },
-    }));
+      // Get all enrolled students in this course
+      const enrollments = await Enrollment.find({ course, status: 'active' });
+      
+      // Create notifications for all enrolled students
+      const notifications = enrollments.map(enrollment => ({
+        user: enrollment.student,
+        type: 'assignment',
+        title: 'New Assignment Posted',
+        content: `New assignment "${title}" has been posted for ${courseDoc.courseName}. Due: ${new Date(dueDate).toLocaleDateString()}`,
+        link: `/dashboard/assignments`,
+      }));
 
-    if (notifications.length > 0) {
-      await Notification.insertMany(notifications);
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+
+      return await assignment.populate('course', 'courseCode courseName');
+    } catch (createError) {
+      console.error('Error creating assignment:', createError);
+      console.error('Validation errors:', createError.errors);
+      throw createError;
     }
-
-    return await assignment.populate('course', 'courseCode courseName');
   }
 
   // Get course assignments
@@ -196,9 +200,196 @@ class InstructorService {
 
     const assignments = await Assignment.find({ course: courseId })
       .populate('course', 'courseCode courseName')
+      .populate('submissions.student', 'firstName lastName email studentId')
       .sort({ dueDate: -1 });
 
-    return assignments;
+    // Add submission statistics to each assignment
+    const assignmentsWithStats = assignments.map(assignment => {
+      const assignmentObj = assignment.toObject();
+      const totalSubmissions = assignmentObj.submissions?.length || 0;
+      const gradedSubmissions = assignmentObj.submissions?.filter(s => s.grade !== null && s.grade !== undefined).length || 0;
+      const pendingGrading = totalSubmissions - gradedSubmissions;
+
+      return {
+        ...assignmentObj,
+        submissionStats: {
+          total: totalSubmissions,
+          graded: gradedSubmissions,
+          pending: pendingGrading,
+        }
+      };
+    });
+
+    return assignmentsWithStats;
+  }
+
+  // Get assignment submissions for grading
+  async getAssignmentSubmissions(assignmentId, instructorId) {
+    const assignment = await Assignment.findById(assignmentId)
+      .populate('course', 'courseCode courseName faculty')
+      .populate('submissions.student', 'firstName lastName email studentId');
+
+    if (!assignment) {
+      throw ApiError.notFound('Assignment not found');
+    }
+
+    if (assignment.course.faculty.toString() !== instructorId.toString()) {
+      throw ApiError.forbidden('You are not authorized to view submissions for this assignment');
+    }
+
+    return {
+      assignment: {
+        _id: assignment._id,
+        title: assignment.title,
+        description: assignment.description,
+        totalMarks: assignment.totalMarks,
+        dueDate: assignment.dueDate,
+        course: assignment.course,
+      },
+      submissions: assignment.submissions || [],
+    };
+  }
+
+  // Grade a submission
+  async gradeSubmission(assignmentId, studentId, instructorId, gradeData) {
+    const assignment = await Assignment.findById(assignmentId)
+      .populate('course', 'faculty courseName');
+
+    if (!assignment) {
+      throw ApiError.notFound('Assignment not found');
+    }
+
+    if (assignment.course.faculty.toString() !== instructorId.toString()) {
+      throw ApiError.forbidden('You are not authorized to grade this assignment');
+    }
+
+    // Find the submission - handle both populated and non-populated student field
+    const submission = assignment.submissions.find(sub => {
+      const subStudentId = sub.student._id ? sub.student._id.toString() : sub.student.toString();
+      return subStudentId === studentId.toString();
+    });
+
+    if (!submission) {
+      throw ApiError.notFound('Submission not found');
+    }
+
+    // Validate grade
+    if (gradeData.grade < 0 || gradeData.grade > assignment.totalMarks) {
+      throw ApiError.badRequest(`Grade must be between 0 and ${assignment.totalMarks}`);
+    }
+
+    // Update grade and feedback
+    submission.grade = gradeData.grade;
+    submission.feedback = gradeData.feedback || '';
+    submission.status = 'graded';
+
+    await assignment.save();
+
+    // Send notification to student
+    try {
+      const notification = await Notification.create({
+        user: studentId,
+        type: 'grade',
+        title: 'Assignment Graded',
+        content: `Your assignment "${assignment.title}" has been graded. Score: ${gradeData.grade}/${assignment.totalMarks}`,
+        link: `/dashboard/assignments`,
+      });
+
+      // Send real-time notification via Socket.IO
+      const { sendNotification } = await import('../socket/socketHandler.js');
+      sendNotification(studentId.toString(), {
+        _id: notification._id,
+        type: notification.type,
+        title: notification.title,
+        content: notification.content,
+        link: notification.link,
+        isRead: false,
+        createdAt: notification.createdAt,
+      });
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError);
+    }
+
+    return {
+      assignment: assignment,
+      submission: submission,
+      message: 'Submission graded successfully'
+    };
+  }
+
+  // Review submission (approve/disapprove/viewed)
+  async reviewSubmission(assignmentId, studentId, instructorId, reviewData) {
+    const { reviewStatus, feedback } = reviewData;
+
+    const assignment = await Assignment.findById(assignmentId)
+      .populate('course', 'faculty courseName')
+      .populate('submissions.student', 'firstName lastName email');
+
+    if (!assignment) {
+      throw ApiError.notFound('Assignment not found');
+    }
+
+    if (assignment.course.faculty.toString() !== instructorId.toString()) {
+      throw ApiError.forbidden('You are not authorized to review this assignment');
+    }
+
+    // Find the submission - handle both populated and non-populated student field
+    const submission = assignment.submissions.find(sub => {
+      const subStudentId = sub.student._id ? sub.student._id.toString() : sub.student.toString();
+      return subStudentId === studentId.toString();
+    });
+
+    if (!submission) {
+      throw ApiError.notFound('Submission not found');
+    }
+
+    // Update review status
+    submission.reviewStatus = reviewStatus;
+    submission.reviewedAt = new Date();
+    submission.reviewedBy = instructorId;
+    
+    if (feedback) {
+      submission.feedback = feedback;
+    }
+
+    await assignment.save();
+
+    // Send notification to student
+    const notificationMessages = {
+      viewed: `Your submission for "${assignment.title}" has been viewed by the instructor.`,
+      approved: `Your submission for "${assignment.title}" has been approved! Great work!`,
+      disapproved: `Your submission for "${assignment.title}" needs revision. Please check the feedback.`,
+    };
+
+    try {
+      const notification = await Notification.create({
+        user: studentId,
+        type: 'submission-reviewed',
+        title: `Submission ${reviewStatus.charAt(0).toUpperCase() + reviewStatus.slice(1)}`,
+        content: notificationMessages[reviewStatus] + (feedback ? ` Feedback: ${feedback}` : ''),
+        link: `/dashboard/assignments`,
+      });
+
+      // Send real-time notification via Socket.IO
+      const { sendNotification } = await import('../socket/socketHandler.js');
+      sendNotification(studentId.toString(), {
+        _id: notification._id,
+        type: notification.type,
+        title: notification.title,
+        content: notification.content,
+        link: notification.link,
+        isRead: false,
+        createdAt: notification.createdAt,
+      });
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError);
+    }
+
+    return {
+      assignment: assignment,
+      submission: submission,
+      message: `Submission ${reviewStatus} successfully`
+    };
   }
 
   // Update assignment

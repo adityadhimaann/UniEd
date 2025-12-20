@@ -58,6 +58,12 @@ export const instructorService = {
     return response.data;
   },
 
+  // Get assignment submissions
+  async getAssignmentSubmissions(assignmentId: string) {
+    const response = await api.get(`/instructor/assignments/${assignmentId}/submissions`);
+    return response.data;
+  },
+
   // Update assignment
   async updateAssignment(assignmentId: string, updates: any) {
     const response = await api.put(`/instructor/assignments/${assignmentId}`, updates);
@@ -74,6 +80,15 @@ export const instructorService = {
   async gradeSubmission(assignmentId: string, studentId: string, grade: number, feedback: string) {
     const response = await api.post(`/instructor/assignments/${assignmentId}/grade/${studentId}`, {
       grade,
+      feedback,
+    });
+    return response.data;
+  },
+
+  // Review submission (approve/disapprove/viewed)
+  async reviewSubmission(assignmentId: string, studentId: string, reviewStatus: 'viewed' | 'approved' | 'disapproved', feedback?: string) {
+    const response = await api.post(`/instructor/assignments/${assignmentId}/review/${studentId}`, {
+      reviewStatus,
       feedback,
     });
     return response.data;

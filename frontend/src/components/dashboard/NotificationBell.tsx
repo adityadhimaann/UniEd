@@ -9,12 +9,16 @@ import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { getSocket, emitEvent, onEvent, offEvent } from "@/lib/socket";
+import { toast as sonnerToast } from "sonner";
 
 interface Notification {
   _id: string;
   type: string;
   title: string;
-  message: string;
+  content: string;
+  message?: string; // For backward compatibility
+  link?: string;
   isRead: boolean;
   createdAt: string;
   metadata?: any;
@@ -43,9 +47,41 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 10 seconds for real-time updates
-    const interval = setInterval(fetchNotifications, 10000);
-    return () => clearInterval(interval);
+    
+    // Set up socket connection for real-time notifications
+    const socket = getSocket();
+    
+    if (socket) {
+      // Join notifications room
+      emitEvent('join:notifications');
+      
+      // Listen for new notifications
+      const handleNewNotification = (notification: any) => {
+        console.log('📢 New notification received:', notification);
+        
+        // Add to notifications list
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        
+        // Show toast notification
+        sonnerToast.info(notification.title, {
+          description: notification.content,
+          duration: 5000,
+        });
+      };
+      
+      onEvent('new:notification', handleNewNotification);
+      
+      // Cleanup
+      return () => {
+        offEvent('new:notification', handleNewNotification);
+        emitEvent('leave:notifications');
+      };
+    } else {
+      // Fallback to polling if socket not available
+      const interval = setInterval(fetchNotifications, 10000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const fetchNotifications = async () => {
@@ -85,19 +121,24 @@ export function NotificationBell() {
       }
     }
 
-    // Navigate based on notification type
-    const metadata = notification.metadata;
-    if (metadata) {
-      if (notification.type === 'assignment' && metadata.courseId) {
-        window.location.href = `/dashboard/assignments`;
-      } else if (notification.type === 'enrollment-request' && metadata.courseId) {
-        window.location.href = `/instructor/courses`;
-      } else if (notification.type === 'enrollment-response' && metadata.courseId) {
-        window.location.href = `/dashboard/courses`;
-      } else if (notification.type === 'grade' && metadata.courseId) {
-        window.location.href = `/dashboard/grades`;
-      } else if (notification.type === 'announcement' && metadata.courseId) {
-        window.location.href = `/dashboard`;
+    // Navigate based on notification link or type
+    if (notification.link) {
+      window.location.href = notification.link;
+    } else {
+      // Fallback to metadata-based navigation
+      const metadata = notification.metadata;
+      if (metadata) {
+        if (notification.type === 'assignment' && metadata.courseId) {
+          window.location.href = `/dashboard/assignments`;
+        } else if (notification.type === 'enrollment-request' && metadata.courseId) {
+          window.location.href = `/instructor/courses`;
+        } else if (notification.type === 'enrollment-response' && metadata.courseId) {
+          window.location.href = `/dashboard/courses`;
+        } else if (notification.type === 'grade' && metadata.courseId) {
+          window.location.href = `/dashboard/grades`;
+        } else if (notification.type === 'announcement' && metadata.courseId) {
+          window.location.href = `/dashboard`;
+        }
       }
     }
     
@@ -152,6 +193,8 @@ export function NotificationBell() {
         return "📚";
       case "grade":
         return "📊";
+      case "submission-reviewed":
+        return "✓";
       case "announcement":
         return "📢";
       case "message":
@@ -250,7 +293,7 @@ export function NotificationBell() {
                                   )}
                                 </div>
                                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                  {notification.message}
+                                  {notification.content || notification.message}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-2">
                                   {formatDistanceToNow(new Date(notification.createdAt), {
