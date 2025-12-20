@@ -86,4 +86,25 @@ export const studentService = {
     const response = await api.get(`/student/courses/${courseId}/announcements`);
     return response.data;
   },
+
+  // Content Progress Tracking
+  async getEnrolledCoursesWithProgress() {
+    const response = await api.get('/student/courses-with-progress');
+    return response.data;
+  },
+
+  async getContentProgress(courseId: string) {
+    const response = await api.get(`/student/courses/${courseId}/content-progress`);
+    return response.data;
+  },
+
+  async markVideoWatched(courseId: string, videoId: string) {
+    const response = await api.post(`/student/courses/${courseId}/videos/${videoId}/watch`);
+    return response.data;
+  },
+
+  async markMaterialViewed(courseId: string, materialId: string) {
+    const response = await api.post(`/student/courses/${courseId}/materials/${materialId}/view`);
+    return response.data;
+  },
 };

@@ -72,6 +72,79 @@ const courseSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    videos: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        url: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          trim: true,
+        },
+        duration: {
+          type: String,
+          trim: true,
+        },
+        order: {
+          type: Number,
+          default: 0,
+        },
+        isPublic: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    materials: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        type: {
+          type: String,
+          enum: ['pdf', 'doc', 'ppt', 'link', 'other'],
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: String,
+          trim: true,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    learningOutcomes: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    prerequisites: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
   },
   {
     timestamps: true,

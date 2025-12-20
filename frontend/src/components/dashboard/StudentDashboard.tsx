@@ -39,6 +39,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [courseSuggestions, setCourseSuggestions] = useState<any[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [showAllCourses, setShowAllCourses] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,32 +76,48 @@ export default function StudentDashboard() {
 
   const fetchEnrolledCourses = async () => {
     try {
-      const response = await studentService.getMyCourses();
+      // Try to fetch with progress first
+      const response = await studentService.getEnrolledCoursesWithProgress();
       const coursesData = response?.data || response || [];
       setEnrolledCourses(Array.isArray(coursesData) ? coursesData : []);
     } catch (error) {
-      console.error('Error fetching enrolled courses:', error);
-      setEnrolledCourses([]);
+      console.error('Error fetching enrolled courses with progress:', error);
+      // Fallback to regular courses if progress endpoint fails
+      try {
+        const response = await studentService.getMyCourses();
+        const coursesData = response?.data || response || [];
+        const coursesArray = Array.isArray(coursesData) ? coursesData : [];
+        // Add empty progress data
+        const coursesWithEmptyProgress = coursesArray.map((enrollment: any) => ({
+          ...enrollment,
+          contentProgress: {
+            videosWatched: 0,
+            totalVideos: 0,
+            materialsViewed: 0,
+            totalMaterials: 0,
+            videosProgress: 0,
+            materialsProgress: 0,
+            overallContentProgress: 0,
+          },
+          assignmentStats: {
+            total: 0,
+            submitted: 0,
+          },
+          averageGrade: 0,
+          attendancePercentage: 0,
+        }));
+        setEnrolledCourses(coursesWithEmptyProgress);
+      } catch (fallbackError) {
+        console.error('Error fetching regular courses:', fallbackError);
+        setEnrolledCourses([]);
+      }
     }
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    // If the user is scrolling vertically (deltaY), 
-    // we move the container horizontally
-    if (e.deltaY !== 0) {
-      e.currentTarget.scrollLeft += e.deltaY;
-      
-      // Optional: Prevent the entire page from scrolling 
-      // while the mouse is over this specific section
-      // e.preventDefault(); 
-    }
-  };
-
-  // FIXED SCROLL LOGIC: Uses Ref and Container width for precision
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
       const { current } = scrollContainerRef;
-      const scrollAmount = 350; // Width of one card + gap
+      const scrollAmount = 350;
       const target = direction === 'left' 
         ? current.scrollLeft - scrollAmount 
         : current.scrollLeft + scrollAmount;
@@ -115,7 +132,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#0f172a]">
-        <img src="/loadicon.gif" alt="Loading..." className="h-48 w-48" />
+        <video src="/loadicon.mp4" autoPlay loop muted className="h-48 w-48" />
       </div>
     );
   }
@@ -129,7 +146,7 @@ export default function StudentDashboard() {
 
   return (
     <motion.div 
-      className="p-3 lg:p-6 space-y-6 max-w-[1600px] mx-auto min-h-screen"
+      className="p-4 lg:p-6 space-y-6 w-full max-w-[1600px] min-h-screen overflow-x-hidden"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -137,25 +154,25 @@ export default function StudentDashboard() {
       {/* Header */}
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Student Dashboard</h1>
-          <p className="text-gray-400 mt-1 text-sm lg:text-base">Welcome back! Here's your academic overview.</p>
+          <h1 className="text-3xl lg:text-3xl font-extrabold text-white tracking-tight">Student Dashboard</h1>
+          <p className="text-gray-400 mt-1 text-base lg:text-base">Welcome back! Here's your academic overview.</p>
         </div>
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" variants={containerVariants}>
+      <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4" variants={containerVariants}>
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div key={index} variants={itemVariants} whileHover={{ y: -5 }}>
               <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm shadow-xl">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{stat.title}</CardTitle>
-                  <div className={`p-1.5 rounded-lg ${stat.bgColor}`}><Icon className={`h-4 w-4 ${stat.color}`} /></div>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-3 lg:p-6">
+                  <CardTitle className="text-xs lg:text-xs font-semibold text-gray-400 uppercase tracking-wider">{stat.title}</CardTitle>
+                  <div className={`p-1.5 rounded-lg ${stat.bgColor}`}><Icon className={`h-4 w-4 lg:h-4 lg:w-4 ${stat.color}`} /></div>
                 </CardHeader>
-                <CardContent className="pt-2">
+                <CardContent className="pt-0 p-3 lg:p-6 lg:pt-0">
                   <div className="text-2xl lg:text-3xl font-bold text-white">{stat.value}</div>
-                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                  <p className="text-xs lg:text-xs text-gray-500 mt-1">{stat.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -164,64 +181,106 @@ export default function StudentDashboard() {
       </motion.div>
 
       {/* Enrolled Courses Progress */}
-      {enrolledCourses.length > 0 && (
-        <motion.div variants={itemVariants}>
-          <Card className="border-gray-700 bg-gray-800 shadow-2xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl text-white">My Enrolled Courses</CardTitle>
-              <CardDescription className="text-gray-400 text-sm">Track your progress and upcoming deadlines</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {enrolledCourses.map((enrollment: any) => {
+      <motion.div variants={itemVariants}>
+        <Card className="border-gray-700 bg-gray-800 shadow-2xl">
+          <CardHeader className="pb-3 p-4 lg:p-6 lg:pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl lg:text-xl text-white">My Enrolled Courses</CardTitle>
+                <CardDescription className="text-gray-400 text-sm lg:text-sm">Track your progress and upcoming deadlines</CardDescription>
+              </div>
+              {enrolledCourses.length > 2 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAllCourses(!showAllCourses)}
+                  className="text-xs"
+                >
+                  {showAllCourses ? 'Show Less' : `View All (${enrolledCourses.length})`}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 p-4 lg:p-6 pt-0 lg:pt-0">
+            {enrolledCourses.length === 0 ? (
+              <div className="text-center py-8">
+                <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                <p className="text-gray-400 mb-2">No enrolled courses yet</p>
+                <p className="text-sm text-gray-500">Browse available courses to get started</p>
+                <Button 
+                  className="mt-4"
+                  onClick={() => window.location.href = '/dashboard/courses'}
+                >
+                  Browse Courses
+                </Button>
+              </div>
+            ) : (
+              (showAllCourses ? enrolledCourses : enrolledCourses.slice(0, 2)).map((enrollment: any) => {
                 const course = enrollment.course;
                 if (!course) return null;
                 
+                const contentProgress = enrollment.contentProgress || {};
+                const assignmentStats = enrollment.assignmentStats || {};
+                const overallProgress = contentProgress.overallContentProgress || 0;
+                
                 return (
                   <Card key={enrollment._id} className="border-gray-700 bg-gray-900/50 overflow-hidden">
-                    <CardContent className="p-3">
+                    <CardContent className="p-4 lg:p-3">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-1.5 mb-1">
-                            <span className="text-[10px] font-bold text-blue-400 px-1.5 py-0.5 bg-blue-900/30 rounded">{course.courseCode}</span>
-                            <span className="text-[10px] text-green-400">Active</span>
+                            <span className="text-xs lg:text-[10px] font-bold text-blue-400 px-2 py-1 lg:px-1.5 lg:py-0.5 bg-blue-900/30 rounded">{course.courseCode}</span>
+                            <span className="text-xs lg:text-[10px] text-green-400">Active</span>
                           </div>
-                          <h3 className="text-white font-bold text-base">{course.courseName}</h3>
-                          <p className="text-[10px] text-gray-400 mt-0.5">
+                          <h3 className="text-white font-bold text-lg lg:text-base">{course.courseName}</h3>
+                          <p className="text-xs lg:text-[10px] text-gray-400 mt-0.5">
                             {course.faculty?.firstName} {course.faculty?.lastName} • {course.credits} Credits
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-xl font-bold text-white">0%</div>
-                          <p className="text-[10px] text-gray-500">Progress</p>
+                          <div className="text-2xl lg:text-xl font-bold text-white">{overallProgress}%</div>
+                          <p className="text-xs lg:text-[10px] text-gray-500">Progress</p>
                         </div>
                       </div>
                       
-                      <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2">
-                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-1.5 rounded-full" style={{ width: '0%' }}></div>
+                      <div className="w-full bg-gray-800 rounded-full h-2 lg:h-1.5 mb-3 lg:mb-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 lg:h-1.5 rounded-full transition-all duration-500" 
+                          style={{ width: `${overallProgress}%` }}
+                        ></div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-gray-800 rounded-lg p-1.5">
-                          <div className="text-xs font-bold text-white">0</div>
-                          <p className="text-[9px] text-gray-500">Assignments</p>
+                      <div className="grid grid-cols-4 gap-2 text-center mb-3 lg:mb-2">
+                        <div className="bg-gray-800 rounded-lg p-2 lg:p-1.5">
+                          <div className="text-sm lg:text-xs font-bold text-white">{contentProgress.videosWatched || 0}/{contentProgress.totalVideos || 0}</div>
+                          <p className="text-[10px] lg:text-[9px] text-gray-500">Videos</p>
                         </div>
-                        <div className="bg-gray-800 rounded-lg p-1.5">
-                          <div className="text-xs font-bold text-white">0%</div>
-                          <p className="text-[9px] text-gray-500">Attendance</p>
+                        <div className="bg-gray-800 rounded-lg p-2 lg:p-1.5">
+                          <div className="text-sm lg:text-xs font-bold text-white">{contentProgress.materialsViewed || 0}/{contentProgress.totalMaterials || 0}</div>
+                          <p className="text-[10px] lg:text-[9px] text-gray-500">Materials</p>
                         </div>
-                        <div className="bg-gray-800 rounded-lg p-1.5">
-                          <div className="text-xs font-bold text-white">0</div>
-                          <p className="text-[9px] text-gray-500">Grade</p>
+                        <div className="bg-gray-800 rounded-lg p-2 lg:p-1.5">
+                          <div className="text-sm lg:text-xs font-bold text-white">{assignmentStats.submitted || 0}/{assignmentStats.total || 0}</div>
+                          <p className="text-[10px] lg:text-[9px] text-gray-500">Assignments</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-2 lg:p-1.5">
+                          <div className="text-sm lg:text-xs font-bold text-white">{enrollment.averageGrade || 0}%</div>
+                          <p className="text-[10px] lg:text-[9px] text-gray-500">Grade</p>
                         </div>
                       </div>
 
-                      <div className="mt-2 pt-2 border-t border-gray-800">
-                        <div className="flex items-center justify-between text-[10px]">
+                      <div className="mt-3 lg:mt-2 pt-3 lg:pt-2 border-t border-gray-800">
+                        <div className="flex items-center justify-between text-xs lg:text-[10px]">
                           <div className="flex items-center gap-1 text-gray-400">
-                            <Calendar className="h-3 w-3" />
+                            <Calendar className="h-3.5 w-3.5 lg:h-3 lg:w-3" />
                             <span>Enrolled: {new Date(enrollment.enrolledAt).toLocaleDateString()}</span>
                           </div>
-                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 lg:h-6 text-xs lg:text-[10px] px-3 lg:px-2"
+                            onClick={() => window.location.href = `/dashboard/courses/${course._id}`}
+                          >
                             View Course
                           </Button>
                         </div>
@@ -229,22 +288,22 @@ export default function StudentDashboard() {
                     </CardContent>
                   </Card>
                 );
-              })}
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+              })
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Recommended Courses Carousel */}
       {courseSuggestions.length > 0 && (
-        <motion.div variants={itemVariants} className="relative overflow-hidden">
+        <motion.div variants={itemVariants} className="relative">
           <Card className="border-gray-700 bg-gray-800 shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 lg:p-6 lg:pb-2">
               <div>
-                <CardTitle className="text-xl text-white">Recommended for You</CardTitle>
-                <CardDescription className="text-gray-400 text-sm">Expand your skills with these top-rated courses</CardDescription>
+                <CardTitle className="text-xl lg:text-xl text-white">Recommended for You</CardTitle>
+                <CardDescription className="text-gray-400 text-sm lg:text-sm">Expand your skills with these top-rated courses</CardDescription>
               </div>
-              <div className="flex gap-1.5">
+              <div className="hidden sm:flex gap-1.5">
                 <Button variant="outline" size="icon" className="border-gray-600 bg-gray-700 hover:bg-gray-600 text-white rounded-full h-8 w-8" onClick={() => scroll('left')}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -254,49 +313,52 @@ export default function StudentDashboard() {
               </div>
             </CardHeader>
             
-            <CardContent className="px-4 pb-4 overflow-hidden">
+            <CardContent className="px-4 lg:px-4 pb-4">
               <div 
                 ref={scrollContainerRef}
-                onWheel={handleWheel}
-                className="flex gap-2.5 overflow-x-auto no-scrollbar scroll-smooth pt-1 pb-1 -mx-4 px-4"
-                style={{ WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}
+                className="flex gap-3 lg:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth pt-1 pb-1"
+                style={{ 
+                  WebkitOverflowScrolling: 'touch', 
+                  scrollSnapType: 'x mandatory',
+                  overscrollBehavior: 'contain'
+                }}
               >
                 {courseSuggestions.map((course) => (
                   <motion.div 
                     key={course._id} 
-                    className="flex-none w-[220px]"
+                    className="flex-none w-[240px] sm:w-[220px]"
                     style={{ scrollSnapAlign: 'start' }}
                     whileHover={{ y: -8 }}
                   >
                     <Card className="border-gray-700 bg-gray-900 h-full flex flex-col overflow-hidden group">
-                      <div className="relative h-20 bg-gradient-to-br from-indigo-600 to-purple-700 p-2 flex flex-col justify-end">
-                        <div className="absolute top-1.5 right-1.5 bg-white/10 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] text-white font-bold">
+                      <div className="relative h-24 lg:h-20 bg-gradient-to-br from-indigo-600 to-purple-700 p-3 lg:p-2 flex flex-col justify-end">
+                        <div className="absolute top-2 lg:top-1.5 right-2 lg:right-1.5 bg-white/10 backdrop-blur-md px-2 py-1 lg:px-1.5 lg:py-0.5 rounded text-[9px] lg:text-[8px] text-white font-bold">
                           {course.credits} CR
                         </div>
-                        <span className="text-[8px] font-bold text-blue-200 uppercase mb-0.5">{course.courseCode}</span>
-                        <h3 className="text-white font-bold text-xs leading-tight line-clamp-2">{course.courseName}</h3>
+                        <span className="text-[9px] lg:text-[8px] font-bold text-blue-200 uppercase mb-1 lg:mb-0.5">{course.courseCode}</span>
+                        <h3 className="text-white font-bold text-sm lg:text-xs leading-tight line-clamp-2">{course.courseName}</h3>
                       </div>
                       
-                      <CardContent className="p-2.5 flex-1 flex flex-col">
-                        <p className="text-[10px] text-gray-400 line-clamp-2 mb-1.5 leading-relaxed">
+                      <CardContent className="p-3 lg:p-2.5 flex-1 flex flex-col">
+                        <p className="text-xs lg:text-[10px] text-gray-400 line-clamp-2 mb-2 lg:mb-1.5 leading-relaxed">
                           {course.description || "Dive deep into the core concepts of this subject with expert faculty guidance."}
                         </p>
                         
-                        <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-gray-800">
+                        <div className="flex items-center justify-between mt-auto pt-2 lg:pt-1.5 border-t border-gray-800">
                           <div className="flex flex-col">
-                            <span className="text-[7px] text-gray-500 uppercase">Instructor</span>
-                            <span className="text-[10px] text-gray-200 font-medium">
+                            <span className="text-[8px] lg:text-[7px] text-gray-500 uppercase">Instructor</span>
+                            <span className="text-xs lg:text-[10px] text-gray-200 font-medium">
                               {course.faculty?.firstName && course.faculty?.lastName 
                                 ? `${course.faculty.firstName} ${course.faculty.lastName}`
                                 : 'TBA'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-0.5 text-gray-400">
-                            <Users className="h-2.5 w-2.5" />
-                            <span className="text-[10px]">{course.enrollmentCount || 0}</span>
+                          <div className="flex items-center gap-1 lg:gap-0.5 text-gray-400">
+                            <Users className="h-3 w-3 lg:h-2.5 lg:w-2.5" />
+                            <span className="text-xs lg:text-[10px]">{course.enrollmentCount || 0}</span>
                           </div>
                         </div>
-                        <Button className="w-full mt-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-semibold transition-all py-1 h-7">
+                        <Button className="w-full mt-2 lg:mt-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs lg:text-[10px] font-semibold transition-all py-2 lg:py-1 h-8 lg:h-7">
                           Course Details
                         </Button>
                       </CardContent>

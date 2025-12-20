@@ -191,12 +191,86 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
   );
 });
 
+// Get public course details (no authentication required)
+export const getPublicCourseDetails = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  const courseDetails = await studentService.getPublicCourseDetails(courseId);
+
+  res.status(200).json(
+    ApiResponse.success(courseDetails, 'Course details retrieved successfully')
+  );
+});
+
+// Get enrolled course details with full content (requires authentication)
+export const getEnrolledCourseDetails = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const studentId = req.user._id;
+
+  const courseDetails = await studentService.getEnrolledCourseDetails(courseId, studentId);
+
+  res.status(200).json(
+    ApiResponse.success(courseDetails, 'Course details retrieved successfully')
+  );
+});
+
+// ==================== CONTENT PROGRESS TRACKING ====================
+
+// Mark video as watched
+export const markVideoWatched = asyncHandler(async (req, res) => {
+  const { courseId, videoId } = req.params;
+  const studentId = req.user._id;
+
+  const progress = await studentService.markVideoWatched(studentId, courseId, videoId);
+
+  res.status(200).json(
+    ApiResponse.success(progress, 'Video marked as watched')
+  );
+});
+
+// Mark material as viewed
+export const markMaterialViewed = asyncHandler(async (req, res) => {
+  const { courseId, materialId } = req.params;
+  const studentId = req.user._id;
+
+  const progress = await studentService.markMaterialViewed(studentId, courseId, materialId);
+
+  res.status(200).json(
+    ApiResponse.success(progress, 'Material marked as viewed')
+  );
+});
+
+// Get content progress
+export const getContentProgress = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const studentId = req.user._id;
+
+  const progress = await studentService.getContentProgress(studentId, courseId);
+
+  res.status(200).json(
+    ApiResponse.success(progress, 'Content progress retrieved successfully')
+  );
+});
+
+// Get enrolled courses with progress
+export const getEnrolledCoursesWithProgress = asyncHandler(async (req, res) => {
+  const studentId = req.user._id;
+
+  const courses = await studentService.getEnrolledCoursesWithProgress(studentId);
+
+  res.status(200).json(
+    ApiResponse.success(courses, 'Enrolled courses with progress retrieved successfully')
+  );
+});
+
 export default {
   getDashboard,
   getMyCourses,
   getAvailableCourses,
   getCourseSuggestions,
   getCourseDetails,
+  getPublicCourseDetails,
+  getEnrolledCourseDetails,
   getMyAssignments,
   getAssignmentDetails,
   submitAssignment,
@@ -209,4 +283,9 @@ export default {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  // Content progress
+  markVideoWatched,
+  markMaterialViewed,
+  getContentProgress,
+  getEnrolledCoursesWithProgress,
 };

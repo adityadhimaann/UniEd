@@ -18,6 +18,7 @@ import InstructorPortal from "./pages/InstructorPortal";
 import InstructorDashboard from "./components/instructor/InstructorDashboard";
 import CoursesManagement from "./components/instructor/CoursesManagement";
 import CourseDetails from "./components/instructor/CourseDetails";
+import CourseContentPage from "./pages/CourseContentPage";
 import AssignmentsManagement from "./components/instructor/AssignmentsManagement";
 import AttendanceManagement from "./components/instructor/AttendanceManagement";
 import AnnouncementsManagement from "./components/instructor/AnnouncementsManagement";
@@ -53,6 +54,7 @@ const App = () => (
               <Route index element={<InstructorDashboard />} />
               <Route path="courses" element={<CoursesManagement />} />
               <Route path="courses/:courseId" element={<CourseDetails />} />
+              <Route path="courses/:courseId/content" element={<CourseContentPage />} />
               <Route path="assignments" element={<AssignmentsManagement />} />
               <Route path="attendance" element={<AttendanceManagement />} />
               <Route path="announcements" element={<AnnouncementsManagement />} />

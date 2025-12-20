@@ -9,6 +9,10 @@ import {
   Send,
   BookOpen,
   GraduationCap,
+  Video,
+  Download,
+  ExternalLink,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +22,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { studentService } from "@/services/studentService";
-import { instructorService } from "@/services/instructorService";
 
 interface Course {
   _id?: string;
@@ -43,6 +46,26 @@ interface Course {
   department?: string;
   semester?: number;
   isEnrolled?: boolean;
+  videos?: Array<{
+    _id?: string;
+    title: string;
+    url: string;
+    description?: string;
+    duration?: string;
+    order?: number;
+    isPublic?: boolean;
+  }>;
+  materials?: Array<{
+    _id?: string;
+    title: string;
+    type: 'pdf' | 'doc' | 'ppt' | 'link' | 'other';
+    url: string;
+    description?: string;
+    size?: string;
+    uploadedAt?: string;
+  }>;
+  learningOutcomes?: string[];
+  prerequisites?: string[];
 }
 
 interface CourseDetailModalProps {
@@ -59,6 +82,8 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
   const [assignments, setAssignments] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [courseData, setCourseData] = useState<Course | null>(null);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     if (isOpen && course) {
@@ -73,20 +98,36 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
       setLoading(true);
       const courseId = course._id || course.id;
       
-      // Fetch assignments for this course
+      // First check if student is enrolled by trying the enrolled endpoint
       try {
-        const assignmentsRes = await instructorService.getCourseAssignments(courseId as string);
-        setAssignments(assignmentsRes.data || []);
-      } catch (error) {
-        console.log('Could not fetch assignments:', error);
+        const enrolledResponse = await api.get(`/student/courses/${courseId}/enrolled`);
+        if (enrolledResponse.data?.success) {
+          setCourseData(enrolledResponse.data.data);
+          setAssignments(enrolledResponse.data.data.assignments || []);
+          const enrolledCount = enrolledResponse.data.data.stats?.totalStudents || 0;
+          setStudents(new Array(enrolledCount).fill({}));
+          setIsEnrolled(true);
+          return;
+        }
+      } catch (error: any) {
+        // If 403, student is not enrolled, fetch public details
+        if (error.response?.status === 403) {
+          setIsEnrolled(false);
+        }
       }
 
-      // Fetch enrolled students count
+      // Fetch public course details (for non-enrolled students)
       try {
-        const studentsRes = await instructorService.getCourseStudents(courseId as string);
-        setStudents(studentsRes.data || []);
+        const response = await api.get(`/student/public/courses/${courseId}`);
+        if (response.data?.success) {
+          setCourseData(response.data.data);
+          setAssignments(response.data.data.assignments || []);
+          const enrolledCount = response.data.data.stats?.totalStudents || 0;
+          setStudents(new Array(enrolledCount).fill({}));
+          setIsEnrolled(false);
+        }
       } catch (error) {
-        console.log('Could not fetch students:', error);
+        console.log('Could not fetch course details:', error);
       }
     } catch (error) {
       console.error('Error fetching course data:', error);
@@ -181,7 +222,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
                 onClick={onClose}
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm hover:bg-background"
+                className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm hover:bg-blue-500/20 hover:text-blue-400 text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -209,10 +250,14 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
             {/* Content */}
             <div className="overflow-y-auto max-h-[calc(90vh-12rem)] p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className={`grid w-full ${isEnrolled ? 'grid-cols-3' : 'grid-cols-3'} mb-6`}>
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="assignments">Assignments</TabsTrigger>
-                  <TabsTrigger value="enroll">Enroll</TabsTrigger>
+                  {isEnrolled ? (
+                    <TabsTrigger value="content">Content</TabsTrigger>
+                  ) : (
+                    <TabsTrigger value="enroll">Enroll</TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
@@ -314,6 +359,184 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
                     </Card>
                   )}
                 </TabsContent>
+
+                {/* Content Tab - Only for enrolled students */}
+                {isEnrolled && (
+                  <TabsContent value="content" className="space-y-6">
+                    {/* Videos Section */}
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <Video className="w-5 h-5" />
+                        Course Videos
+                      </h3>
+                      {courseData?.videos && courseData.videos.length > 0 ? (
+                        <div className="space-y-3">
+                          {courseData.videos
+                            .sort((a, b) => (a.order || 0) - (b.order || 0))
+                            .map((video, index) => (
+                              <Card key={video._id || index}>
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                      <PlayCircle className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1">
+                                          <h4 className="font-medium">{video.title}</h4>
+                                          {video.description && (
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                              {video.description}
+                                            </p>
+                                          )}
+                                          {video.duration && (
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                              Duration: {video.duration}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            window.open(video.url, '_blank');
+                                            // Track video watched
+                                            if (courseData?._id && video._id) {
+                                              studentService.markVideoWatched(courseData._id, video._id).catch(console.error);
+                                            }
+                                          }}
+                                          className="shrink-0"
+                                        >
+                                          <ExternalLink className="w-4 h-4 mr-1" />
+                                          Watch
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                        </div>
+                      ) : (
+                        <Card>
+                          <CardContent className="p-8 text-center">
+                            <Video className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                            <p className="text-muted-foreground">No videos available yet</p>
+                            <p className="text-sm text-muted-foreground/70 mt-1">
+                              Videos will be added by the instructor
+                            </p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Materials Section */}
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Course Materials
+                      </h3>
+                      {courseData?.materials && courseData.materials.length > 0 ? (
+                        <div className="space-y-3">
+                          {courseData.materials.map((material, index) => (
+                            <Card key={material._id || index}>
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                                    <FileText className="w-6 h-6 text-accent" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <h4 className="font-medium">{material.title}</h4>
+                                        {material.description && (
+                                          <p className="text-sm text-muted-foreground mt-1">
+                                            {material.description}
+                                          </p>
+                                        )}
+                                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                          <span className="uppercase">{material.type}</span>
+                                          {material.size && <span>{material.size}</span>}
+                                          {material.uploadedAt && (
+                                            <span>
+                                              {new Date(material.uploadedAt).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          window.open(material.url, '_blank');
+                                          // Track material viewed
+                                          if (courseData?._id && material._id) {
+                                            studentService.markMaterialViewed(courseData._id, material._id).catch(console.error);
+                                          }
+                                        }}
+                                        className="shrink-0"
+                                      >
+                                        <Download className="w-4 h-4 mr-1" />
+                                        Download
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <Card>
+                          <CardContent className="p-8 text-center">
+                            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                            <p className="text-muted-foreground">No materials available yet</p>
+                            <p className="text-sm text-muted-foreground/70 mt-1">
+                              Course materials will be uploaded by the instructor
+                            </p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Learning Outcomes */}
+                    {courseData?.learningOutcomes && courseData.learningOutcomes.length > 0 && (
+                      <div>
+                        <h3 className="text-xl font-semibold mb-4">Learning Outcomes</h3>
+                        <Card>
+                          <CardContent className="p-4">
+                            <ul className="space-y-2">
+                              {courseData.learningOutcomes.map((outcome, index) => (
+                                <li key={index} className="flex items-start gap-2 text-sm">
+                                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                  <span>{outcome}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+
+                    {/* Prerequisites */}
+                    {courseData?.prerequisites && courseData.prerequisites.length > 0 && (
+                      <div>
+                        <h3 className="text-xl font-semibold mb-4">Prerequisites</h3>
+                        <Card>
+                          <CardContent className="p-4">
+                            <ul className="space-y-2">
+                              {courseData.prerequisites.map((prereq, index) => (
+                                <li key={index} className="flex items-start gap-2 text-sm">
+                                  <BookOpen className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                                  <span>{prereq}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+                  </TabsContent>
+                )}
 
                 <TabsContent value="enroll" className="space-y-6">
                   <div>

@@ -5,6 +5,7 @@ import Grade from '../models/Grade.js';
 import Attendance from '../models/Attendance.js';
 import Announcement from '../models/Announcement.js';
 import Notification from '../models/Notification.js';
+import ContentProgress from '../models/ContentProgress.js';
 import ApiError from '../utils/ApiError.js';
 
 // Get student dashboard data
@@ -190,6 +191,104 @@ const getCourseDetails = async (courseId, studentId) => {
       totalAssignments,
       totalAnnouncements,
     }
+  };
+};
+
+// Get public course details (for course preview before enrollment)
+const getPublicCourseDetails = async (courseId) => {
+  const course = await Course.findById(courseId)
+    .populate('faculty', 'firstName lastName email');
+
+  if (!course) {
+    throw new ApiError(404, 'Course not found');
+  }
+
+  // Get course statistics
+  const totalStudents = await Enrollment.countDocuments({
+    course: courseId,
+    status: 'active'
+  });
+
+  const totalAssignments = await Assignment.countDocuments({ course: courseId });
+  const totalAnnouncements = await Announcement.countDocuments({ course: courseId });
+
+  // Get assignments (without submission details)
+  const assignments = await Assignment.find({ course: courseId })
+    .select('title description dueDate totalMarks')
+    .sort({ dueDate: 1 });
+
+  return {
+    ...course.toObject(),
+    stats: {
+      enrolledStudents: totalStudents,
+      totalStudents,
+      totalAssignments,
+      totalAnnouncements,
+    },
+    assignments,
+  };
+};
+
+// Get enrolled course details with full content (videos, materials)
+const getEnrolledCourseDetails = async (courseId, studentId) => {
+  // Check if student is enrolled
+  const enrollment = await Enrollment.findOne({
+    course: courseId,
+    student: studentId,
+    status: 'active'
+  });
+
+  if (!enrollment) {
+    throw new ApiError(403, 'You are not enrolled in this course');
+  }
+
+  const course = await Course.findById(courseId)
+    .populate('faculty', 'firstName lastName email');
+
+  if (!course) {
+    throw new ApiError(404, 'Course not found');
+  }
+
+  // Get course statistics
+  const totalStudents = await Enrollment.countDocuments({
+    course: courseId,
+    status: 'active'
+  });
+
+  const totalAssignments = await Assignment.countDocuments({ course: courseId });
+  const totalAnnouncements = await Announcement.countDocuments({ course: courseId });
+
+  // Get assignments with student's submission status
+  const assignments = await Assignment.find({ course: courseId })
+    .select('title description dueDate totalMarks submissions')
+    .sort({ dueDate: 1 });
+
+  // Add submission status for this student
+  const assignmentsWithStatus = assignments.map(assignment => {
+    const submission = assignment.submissions.find(
+      sub => sub.student.toString() === studentId.toString()
+    );
+    return {
+      _id: assignment._id,
+      title: assignment.title,
+      description: assignment.description,
+      dueDate: assignment.dueDate,
+      totalMarks: assignment.totalMarks,
+      isSubmitted: !!submission,
+      submissionStatus: submission?.status || null,
+      grade: submission?.grade || null,
+    };
+  });
+
+  return {
+    ...course.toObject(),
+    stats: {
+      totalStudents,
+      totalAssignments,
+      totalAnnouncements,
+    },
+    assignments: assignmentsWithStatus,
+    isEnrolled: true,
   };
 };
 
@@ -531,12 +630,272 @@ const markAllNotificationsAsRead = async (studentId) => {
   };
 };
 
+// ==================== CONTENT PROGRESS TRACKING ====================
+
+// Mark video as watched
+const markVideoWatched = async (studentId, courseId, videoId) => {
+  // Check if student is enrolled
+  const enrollment = await Enrollment.findOne({
+    student: studentId,
+    course: courseId,
+    status: 'active'
+  });
+
+  if (!enrollment) {
+    throw new ApiError(403, 'You are not enrolled in this course');
+  }
+
+  // Get course to count total videos
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(404, 'Course not found');
+  }
+
+  // Find or create content progress
+  let progress = await ContentProgress.findOne({
+    student: studentId,
+    course: courseId
+  });
+
+  if (!progress) {
+    progress = new ContentProgress({
+      student: studentId,
+      course: courseId,
+      totalVideos: course.videos?.length || 0,
+      totalMaterials: course.materials?.length || 0,
+    });
+  } else {
+    // Update totals in case course content changed
+    progress.totalVideos = course.videos?.length || 0;
+    progress.totalMaterials = course.materials?.length || 0;
+  }
+
+  // Check if video already watched
+  const alreadyWatched = progress.videosWatched.some(
+    v => v.videoId.toString() === videoId.toString()
+  );
+
+  if (!alreadyWatched) {
+    progress.videosWatched.push({
+      videoId,
+      watchedAt: new Date(),
+      completed: true,
+    });
+  }
+
+  progress.lastAccessedAt = new Date();
+  progress.calculateProgress();
+  await progress.save();
+
+  return progress;
+};
+
+// Mark material as viewed
+const markMaterialViewed = async (studentId, courseId, materialId) => {
+  // Check if student is enrolled
+  const enrollment = await Enrollment.findOne({
+    student: studentId,
+    course: courseId,
+    status: 'active'
+  });
+
+  if (!enrollment) {
+    throw new ApiError(403, 'You are not enrolled in this course');
+  }
+
+  // Get course to count total materials
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(404, 'Course not found');
+  }
+
+  // Find or create content progress
+  let progress = await ContentProgress.findOne({
+    student: studentId,
+    course: courseId
+  });
+
+  if (!progress) {
+    progress = new ContentProgress({
+      student: studentId,
+      course: courseId,
+      totalVideos: course.videos?.length || 0,
+      totalMaterials: course.materials?.length || 0,
+    });
+  } else {
+    // Update totals in case course content changed
+    progress.totalVideos = course.videos?.length || 0;
+    progress.totalMaterials = course.materials?.length || 0;
+  }
+
+  // Check if material already viewed
+  const alreadyViewed = progress.materialsViewed.some(
+    m => m.materialId.toString() === materialId.toString()
+  );
+
+  if (!alreadyViewed) {
+    progress.materialsViewed.push({
+      materialId,
+      viewedAt: new Date(),
+    });
+  }
+
+  progress.lastAccessedAt = new Date();
+  progress.calculateProgress();
+  await progress.save();
+
+  return progress;
+};
+
+// Get content progress for a course
+const getContentProgress = async (studentId, courseId) => {
+  // Check if student is enrolled
+  const enrollment = await Enrollment.findOne({
+    student: studentId,
+    course: courseId,
+    status: 'active'
+  });
+
+  if (!enrollment) {
+    throw new ApiError(403, 'You are not enrolled in this course');
+  }
+
+  // Get course to count total content
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(404, 'Course not found');
+  }
+
+  // Find or create content progress
+  let progress = await ContentProgress.findOne({
+    student: studentId,
+    course: courseId
+  });
+
+  if (!progress) {
+    progress = new ContentProgress({
+      student: studentId,
+      course: courseId,
+      totalVideos: course.videos?.length || 0,
+      totalMaterials: course.materials?.length || 0,
+    });
+    progress.calculateProgress();
+    await progress.save();
+  } else {
+    // Update totals and recalculate
+    progress.totalVideos = course.videos?.length || 0;
+    progress.totalMaterials = course.materials?.length || 0;
+    progress.calculateProgress();
+    await progress.save();
+  }
+
+  return progress;
+};
+
+// Get enrolled courses with progress
+const getEnrolledCoursesWithProgress = async (studentId) => {
+  const enrollments = await Enrollment.find({
+    student: studentId,
+    status: 'active'
+  })
+    .populate({
+      path: 'course',
+      populate: {
+        path: 'faculty',
+        select: 'firstName lastName email'
+      }
+    })
+    .sort({ enrolledAt: -1 });
+
+  // Get content progress for each course
+  const coursesWithProgress = await Promise.all(
+    enrollments.map(async (enrollment) => {
+      const course = enrollment.course;
+      
+      // Get content progress
+      let contentProgress = await ContentProgress.findOne({
+        student: studentId,
+        course: course._id
+      });
+
+      if (!contentProgress) {
+        contentProgress = new ContentProgress({
+          student: studentId,
+          course: course._id,
+          totalVideos: course.videos?.length || 0,
+          totalMaterials: course.materials?.length || 0,
+        });
+        contentProgress.calculateProgress();
+        await contentProgress.save();
+      }
+
+      // Get assignment stats
+      const assignments = await Assignment.find({ course: course._id });
+      const submittedAssignments = assignments.filter(assignment => 
+        assignment.submissions.some(sub => 
+          sub.student.toString() === studentId.toString()
+        )
+      );
+
+      // Get grades
+      const grades = await Grade.find({
+        student: studentId,
+        course: course._id
+      });
+
+      const averageGrade = grades.length > 0
+        ? grades.reduce((sum, g) => sum + (g.grade || 0), 0) / grades.length
+        : 0;
+
+      // Get attendance
+      const attendanceRecords = await Attendance.find({
+        course: course._id,
+        'students.student': studentId
+      });
+
+      const totalClasses = attendanceRecords.length;
+      const attendedClasses = attendanceRecords.filter(record =>
+        record.students.some(s => 
+          s.student.toString() === studentId.toString() && s.status === 'present'
+        )
+      ).length;
+
+      const attendancePercentage = totalClasses > 0
+        ? Math.round((attendedClasses / totalClasses) * 100)
+        : 0;
+
+      return {
+        ...enrollment.toObject(),
+        contentProgress: {
+          videosWatched: contentProgress.videosWatched.length,
+          totalVideos: contentProgress.totalVideos,
+          materialsViewed: contentProgress.materialsViewed.length,
+          totalMaterials: contentProgress.totalMaterials,
+          videosProgress: contentProgress.videosProgress,
+          materialsProgress: contentProgress.materialsProgress,
+          overallContentProgress: contentProgress.overallContentProgress,
+        },
+        assignmentStats: {
+          total: assignments.length,
+          submitted: submittedAssignments.length,
+        },
+        averageGrade: Math.round(averageGrade),
+        attendancePercentage,
+      };
+    })
+  );
+
+  return coursesWithProgress;
+};
+
 export default {
   getDashboardData,
   getEnrolledCourses,
   getAvailableCourses,
   getCourseSuggestions,
   getCourseDetails,
+  getPublicCourseDetails,
+  getEnrolledCourseDetails,
   getStudentAssignments,
   getAssignmentDetails,
   submitAssignment,
@@ -549,4 +908,9 @@ export default {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  // Content progress tracking
+  markVideoWatched,
+  markMaterialViewed,
+  getContentProgress,
+  getEnrolledCoursesWithProgress,
 };

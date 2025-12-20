@@ -5,7 +5,10 @@ import { checkRole } from '../middlewares/roleCheck.js';
 
 const router = express.Router();
 
-// All routes require authentication and student role
+// Public routes (no authentication required)
+router.get('/public/courses/:courseId', studentController.getPublicCourseDetails);
+
+// All routes below require authentication and student role
 router.use(authenticate);
 router.use(checkRole('student'));
 
@@ -17,6 +20,7 @@ router.get('/courses', studentController.getMyCourses);
 router.get('/available-courses', studentController.getAvailableCourses);
 router.get('/course-suggestions', studentController.getCourseSuggestions);
 router.get('/courses/:courseId', studentController.getCourseDetails);
+router.get('/courses/:courseId/enrolled', studentController.getEnrolledCourseDetails);
 
 // Assignments
 router.get('/assignments', studentController.getMyAssignments);
@@ -39,5 +43,11 @@ router.get('/courses/:courseId/announcements', studentController.getCourseAnnoun
 router.get('/notifications', studentController.getMyNotifications);
 router.patch('/notifications/:notificationId/read', studentController.markNotificationAsRead);
 router.patch('/notifications/mark-all-read', studentController.markAllNotificationsAsRead);
+
+// Content progress tracking
+router.get('/courses-with-progress', studentController.getEnrolledCoursesWithProgress);
+router.get('/courses/:courseId/content-progress', studentController.getContentProgress);
+router.post('/courses/:courseId/videos/:videoId/watch', studentController.markVideoWatched);
+router.post('/courses/:courseId/materials/:materialId/view', studentController.markMaterialViewed);
 
 export default router;

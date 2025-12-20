@@ -16,8 +16,57 @@ export const instructorService = {
     semester: number;
     department: string;
     schedule?: Array<{ day: string; startTime: string; endTime: string; room: string }>;
+    videos?: Array<{
+      title: string;
+      url: string;
+      description?: string;
+      duration?: string;
+      order?: number;
+      isPublic?: boolean;
+    }>;
+    materials?: Array<{
+      title: string;
+      type: 'pdf' | 'doc' | 'ppt' | 'link' | 'other';
+      url: string;
+      description?: string;
+      size?: string;
+    }>;
+    learningOutcomes?: string[];
+    prerequisites?: string[];
   }) {
     const response = await api.post('/instructor/courses', courseData);
+    return response.data;
+  },
+
+  // Create course with full content
+  async createCourseWithContent(courseData: {
+    code: string;
+    name: string;
+    description: string;
+    credits: number;
+    semester: number;
+    department: string;
+    schedule?: Array<{ day: string; startTime: string; endTime: string; room: string }>;
+    titleImage?: string;
+    videos: Array<{
+      title: string;
+      url: string;
+      description?: string;
+      duration?: string;
+      order?: number;
+      isPublic?: boolean;
+    }>;
+    materials: Array<{
+      title: string;
+      type: 'pdf' | 'doc' | 'ppt' | 'link' | 'other';
+      url: string;
+      description?: string;
+      size?: string;
+    }>;
+    learningOutcomes: string[];
+    prerequisites: string[];
+  }) {
+    const response = await api.post('/instructor/courses/with-content', courseData);
     return response.data;
   },
 
@@ -180,6 +229,88 @@ export const instructorService = {
       status,
       responseMessage,
     });
+    return response.data;
+  },
+
+  // ==================== COURSE CONTENT MANAGEMENT ====================
+
+  // Get course content
+  async getCourseContent(courseId: string) {
+    const response = await api.get(`/instructor/courses/${courseId}/content`);
+    return response.data;
+  },
+
+  // Add video to course
+  async addCourseVideo(courseId: string, videoData: {
+    title: string;
+    url: string;
+    description?: string;
+    duration?: string;
+    order?: number;
+    isPublic?: boolean;
+  }) {
+    const response = await api.post(`/instructor/courses/${courseId}/videos`, videoData);
+    return response.data;
+  },
+
+  // Update video
+  async updateCourseVideo(courseId: string, videoId: string, videoData: {
+    title?: string;
+    url?: string;
+    description?: string;
+    duration?: string;
+    order?: number;
+    isPublic?: boolean;
+  }) {
+    const response = await api.put(`/instructor/courses/${courseId}/videos/${videoId}`, videoData);
+    return response.data;
+  },
+
+  // Delete video
+  async deleteCourseVideo(courseId: string, videoId: string) {
+    const response = await api.delete(`/instructor/courses/${courseId}/videos/${videoId}`);
+    return response.data;
+  },
+
+  // Add material to course
+  async addCourseMaterial(courseId: string, materialData: {
+    title: string;
+    type: 'pdf' | 'doc' | 'ppt' | 'link' | 'other';
+    url: string;
+    description?: string;
+    size?: string;
+  }) {
+    const response = await api.post(`/instructor/courses/${courseId}/materials`, materialData);
+    return response.data;
+  },
+
+  // Update material
+  async updateCourseMaterial(courseId: string, materialId: string, materialData: {
+    title?: string;
+    type?: 'pdf' | 'doc' | 'ppt' | 'link' | 'other';
+    url?: string;
+    description?: string;
+    size?: string;
+  }) {
+    const response = await api.put(`/instructor/courses/${courseId}/materials/${materialId}`, materialData);
+    return response.data;
+  },
+
+  // Delete material
+  async deleteCourseMaterial(courseId: string, materialId: string) {
+    const response = await api.delete(`/instructor/courses/${courseId}/materials/${materialId}`);
+    return response.data;
+  },
+
+  // Update learning outcomes
+  async updateLearningOutcomes(courseId: string, outcomes: string[]) {
+    const response = await api.put(`/instructor/courses/${courseId}/learning-outcomes`, { outcomes });
+    return response.data;
+  },
+
+  // Update prerequisites
+  async updatePrerequisites(courseId: string, prerequisites: string[]) {
+    const response = await api.put(`/instructor/courses/${courseId}/prerequisites`, { prerequisites });
     return response.data;
   },
 };

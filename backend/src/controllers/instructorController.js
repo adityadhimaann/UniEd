@@ -351,6 +351,134 @@ export const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
   );
 });
 
+// ==================== COURSE CONTENT MANAGEMENT ====================
+
+// Create course with full content
+export const createCourseWithContent = asyncHandler(async (req, res) => {
+  const instructorId = req.user._id;
+  const courseData = req.body;
+
+  const result = await instructorService.createCourseWithContent(instructorId, courseData);
+
+  res.status(201).json(
+    ApiResponse.success(result, 'Course created with content successfully')
+  );
+});
+
+// Get course content
+export const getCourseContent = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const instructorId = req.user._id;
+
+  const content = await instructorService.getCourseContent(courseId, instructorId);
+
+  res.status(200).json(
+    ApiResponse.success(content, 'Course content retrieved successfully')
+  );
+});
+
+// Add video to course
+export const addCourseVideo = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const instructorId = req.user._id;
+  const videoData = req.body;
+
+  const course = await instructorService.addCourseVideo(courseId, instructorId, videoData);
+
+  res.status(201).json(
+    ApiResponse.success(course, 'Video added successfully')
+  );
+});
+
+// Update video
+export const updateCourseVideo = asyncHandler(async (req, res) => {
+  const { courseId, videoId } = req.params;
+  const instructorId = req.user._id;
+  const videoData = req.body;
+
+  const course = await instructorService.updateCourseVideo(courseId, instructorId, videoId, videoData);
+
+  res.status(200).json(
+    ApiResponse.success(course, 'Video updated successfully')
+  );
+});
+
+// Delete video
+export const deleteCourseVideo = asyncHandler(async (req, res) => {
+  const { courseId, videoId } = req.params;
+  const instructorId = req.user._id;
+
+  const course = await instructorService.deleteCourseVideo(courseId, instructorId, videoId);
+
+  res.status(200).json(
+    ApiResponse.success(course, 'Video deleted successfully')
+  );
+});
+
+// Add material to course
+export const addCourseMaterial = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const instructorId = req.user._id;
+  const materialData = req.body;
+
+  const course = await instructorService.addCourseMaterial(courseId, instructorId, materialData);
+
+  res.status(201).json(
+    ApiResponse.success(course, 'Material added successfully')
+  );
+});
+
+// Update material
+export const updateCourseMaterial = asyncHandler(async (req, res) => {
+  const { courseId, materialId } = req.params;
+  const instructorId = req.user._id;
+  const materialData = req.body;
+
+  const course = await instructorService.updateCourseMaterial(courseId, instructorId, materialId, materialData);
+
+  res.status(200).json(
+    ApiResponse.success(course, 'Material updated successfully')
+  );
+});
+
+// Delete material
+export const deleteCourseMaterial = asyncHandler(async (req, res) => {
+  const { courseId, materialId } = req.params;
+  const instructorId = req.user._id;
+
+  const course = await instructorService.deleteCourseMaterial(courseId, instructorId, materialId);
+
+  res.status(200).json(
+    ApiResponse.success(course, 'Material deleted successfully')
+  );
+});
+
+// Update learning outcomes
+export const updateLearningOutcomes = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const instructorId = req.user._id;
+  const { outcomes } = req.body;
+
+  const course = await instructorService.updateLearningOutcomes(courseId, instructorId, outcomes);
+
+  res.status(200).json(
+    ApiResponse.success(course, 'Learning outcomes updated successfully')
+  );
+});
+
+// Update prerequisites
+export const updatePrerequisites = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const instructorId = req.user._id;
+  const { prerequisites } = req.body;
+
+  const course = await instructorService.updatePrerequisites(courseId, instructorId, prerequisites);
+
+  res.status(200).json(
+    ApiResponse.success(course, 'Prerequisites updated successfully')
+  );
+});
+
 export default {
   getMyCourses,
   createCourse,
@@ -376,4 +504,15 @@ export default {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  // Course content management
+  createCourseWithContent,
+  getCourseContent,
+  addCourseVideo,
+  updateCourseVideo,
+  deleteCourseVideo,
+  addCourseMaterial,
+  updateCourseMaterial,
+  deleteCourseMaterial,
+  updateLearningOutcomes,
+  updatePrerequisites,
 };

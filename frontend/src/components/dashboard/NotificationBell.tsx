@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, FileText, CheckCircle, TrendingUp, MessageSquare, UserPlus, UserCheck, Megaphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -184,23 +184,24 @@ export function NotificationBell() {
   };
 
   const getNotificationIcon = (type: string) => {
+    const iconClass = "h-6 w-6";
     switch (type) {
       case "enrollment-request":
-        return "📝";
+        return <UserPlus className={`${iconClass} text-blue-500`} />;
       case "enrollment-response":
-        return "✅";
+        return <UserCheck className={`${iconClass} text-green-500`} />;
       case "assignment":
-        return "📚";
+        return <FileText className={`${iconClass} text-purple-500`} />;
       case "grade":
-        return "📊";
+        return <TrendingUp className={`${iconClass} text-orange-500`} />;
       case "submission-reviewed":
-        return "✓";
+        return <CheckCircle className={`${iconClass} text-green-500`} />;
       case "announcement":
-        return "📢";
+        return <Megaphone className={`${iconClass} text-red-500`} />;
       case "message":
-        return "💬";
+        return <MessageSquare className={`${iconClass} text-blue-500`} />;
       default:
-        return "🔔";
+        return <Bell className={`${iconClass} text-gray-500`} />;
     }
   };
 
@@ -241,18 +242,21 @@ export function NotificationBell() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-2 w-96 z-50"
+              className="fixed right-2 sm:absolute sm:right-0 mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-96 z-50"
             >
-              <Card className="glass border-border/50 shadow-lg">
-                <div className="p-4 border-b border-border/50">
+              {/* Arrow pointer */}
+              <div className="absolute -top-2 right-4 w-4 h-4 bg-white border-l border-t border-gray-200 transform rotate-45"></div>
+              
+              <Card className="bg-white border-gray-200 shadow-lg rounded-xl overflow-hidden relative">
+                <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Notifications</h3>
+                    <h3 className="font-semibold text-gray-900">Notifications</h3>
                     {unreadCount > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={markAllAsRead}
-                        className="text-xs"
+                        className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       >
                         Mark all read
                       </Button>
@@ -263,39 +267,39 @@ export function NotificationBell() {
                 <ScrollArea className="h-[400px]">
                   <CardContent className="p-0">
                     {!notifications || notifications.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
+                      <div className="p-8 text-center text-gray-500">
                         <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
                         <p>No notifications yet</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-border/50">
+                      <div className="divide-y divide-gray-200">
                         {(notifications || []).map((notification) => (
                           <motion.div
                             key={notification._id}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className={`p-4 hover:bg-accent/50 transition-colors cursor-pointer ${
-                              !notification.isRead ? "bg-accent/20" : ""
+                            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                              !notification.isRead ? "bg-blue-50" : "bg-white"
                             }`}
                             onClick={() => handleNotificationClick(notification)}
                           >
                             <div className="flex gap-3">
-                              <div className="text-2xl flex-shrink-0">
+                              <div className="flex-shrink-0 mt-0.5">
                                 {getNotificationIcon(notification.type)}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <h4 className="font-medium text-sm">
+                                  <h4 className="font-medium text-sm text-gray-900">
                                     {notification.title}
                                   </h4>
                                   {!notification.isRead && (
-                                    <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-1" />
+                                    <div className="h-2 w-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
                                   )}
                                 </div>
-                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                                   {notification.content || notification.message}
                                 </p>
-                                <p className="text-xs text-muted-foreground mt-2">
+                                <p className="text-xs text-gray-500 mt-2">
                                   {formatDistanceToNow(new Date(notification.createdAt), {
                                     addSuffix: true,
                                   })}

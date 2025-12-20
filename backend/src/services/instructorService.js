@@ -20,7 +20,21 @@ class InstructorService {
 
   // Create a new course
   async createCourse(instructorId, courseData) {
-    const { code, name, description, credits, semester, department, schedule, maxStudents, titleImage } = courseData;
+    const { 
+      code, 
+      name, 
+      description, 
+      credits, 
+      semester, 
+      department, 
+      schedule, 
+      maxStudents, 
+      titleImage,
+      videos,
+      materials,
+      learningOutcomes,
+      prerequisites
+    } = courseData;
 
     console.log('Service received:', { code, name, description, credits, semester, department, schedule, maxStudents, titleImage });
 
@@ -41,6 +55,10 @@ class InstructorService {
       schedule: schedule || {},
       maxStudents: maxStudents || 60,
       titleImage: titleImage || null,
+      videos: videos || [],
+      materials: materials || [],
+      learningOutcomes: learningOutcomes || [],
+      prerequisites: prerequisites || [],
     };
 
     console.log('Creating course with:', newCourse);
@@ -735,6 +753,241 @@ class InstructorService {
     return {
       modifiedCount: result.modifiedCount,
       message: `${result.modifiedCount} notifications marked as read`
+    };
+  }
+
+  // ==================== COURSE CONTENT MANAGEMENT ====================
+
+  // Create course with full content (videos, materials, outcomes, prerequisites)
+  async createCourseWithContent(instructorId, courseData) {
+    const { 
+      code, 
+      name, 
+      description, 
+      credits, 
+      semester, 
+      department, 
+      schedule, 
+      maxStudents, 
+      titleImage,
+      videos,
+      materials,
+      learningOutcomes,
+      prerequisites
+    } = courseData;
+
+    // Check if course code already exists
+    const existingCourse = await Course.findOne({ courseCode: code });
+    if (existingCourse) {
+      throw ApiError.conflict('Course code already exists');
+    }
+
+    const newCourse = {
+      courseCode: code,
+      courseName: name,
+      description: description || '',
+      credits: credits || 3,
+      semester: semester || 1,
+      department: department || 'General',
+      faculty: instructorId,
+      schedule: schedule || {},
+      maxStudents: maxStudents || 60,
+      titleImage: titleImage || null,
+      videos: videos || [],
+      materials: materials || [],
+      learningOutcomes: learningOutcomes || [],
+      prerequisites: prerequisites || [],
+    };
+
+    const course = await Course.create(newCourse);
+    await course.populate('faculty', 'firstName lastName email');
+
+    return {
+      course,
+      stats: {
+        videosAdded: course.videos?.length || 0,
+        materialsAdded: course.materials?.length || 0,
+        learningOutcomesAdded: course.learningOutcomes?.length || 0,
+        prerequisitesAdded: course.prerequisites?.length || 0,
+      }
+    };
+  }
+
+  // Add video to course
+  async addCourseVideo(courseId, instructorId, videoData) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    const video = {
+      title: videoData.title,
+      url: videoData.url,
+      description: videoData.description || '',
+      duration: videoData.duration || '',
+      order: videoData.order || (course.videos?.length || 0) + 1,
+      isPublic: videoData.isPublic || false,
+    };
+
+    if (!course.videos) {
+      course.videos = [];
+    }
+
+    course.videos.push(video);
+    await course.save();
+
+    return course;
+  }
+
+  // Update video in course
+  async updateCourseVideo(courseId, instructorId, videoId, videoData) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    const videoIndex = course.videos.findIndex(v => v._id.toString() === videoId);
+    
+    if (videoIndex === -1) {
+      throw ApiError.notFound('Video not found');
+    }
+
+    course.videos[videoIndex] = {
+      ...course.videos[videoIndex].toObject(),
+      ...videoData,
+      _id: course.videos[videoIndex]._id,
+    };
+
+    await course.save();
+    return course;
+  }
+
+  // Delete video from course
+  async deleteCourseVideo(courseId, instructorId, videoId) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    course.videos = course.videos.filter(v => v._id.toString() !== videoId);
+    await course.save();
+
+    return course;
+  }
+
+  // Add material to course
+  async addCourseMaterial(courseId, instructorId, materialData) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    const material = {
+      title: materialData.title,
+      type: materialData.type,
+      url: materialData.url,
+      description: materialData.description || '',
+      size: materialData.size || '',
+      uploadedAt: new Date(),
+    };
+
+    if (!course.materials) {
+      course.materials = [];
+    }
+
+    course.materials.push(material);
+    await course.save();
+
+    return course;
+  }
+
+  // Update material in course
+  async updateCourseMaterial(courseId, instructorId, materialId, materialData) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    const materialIndex = course.materials.findIndex(m => m._id.toString() === materialId);
+    
+    if (materialIndex === -1) {
+      throw ApiError.notFound('Material not found');
+    }
+
+    course.materials[materialIndex] = {
+      ...course.materials[materialIndex].toObject(),
+      ...materialData,
+      _id: course.materials[materialIndex]._id,
+    };
+
+    await course.save();
+    return course;
+  }
+
+  // Delete material from course
+  async deleteCourseMaterial(courseId, instructorId, materialId) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    course.materials = course.materials.filter(m => m._id.toString() !== materialId);
+    await course.save();
+
+    return course;
+  }
+
+  // Update learning outcomes
+  async updateLearningOutcomes(courseId, instructorId, outcomes) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    course.learningOutcomes = outcomes;
+    await course.save();
+
+    return course;
+  }
+
+  // Update prerequisites
+  async updatePrerequisites(courseId, instructorId, prerequisites) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId });
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    course.prerequisites = prerequisites;
+    await course.save();
+
+    return course;
+  }
+
+  // Get course content (videos, materials, outcomes, prerequisites)
+  async getCourseContent(courseId, instructorId) {
+    const course = await Course.findOne({ _id: courseId, faculty: instructorId })
+      .select('videos materials learningOutcomes prerequisites courseName courseCode');
+    
+    if (!course) {
+      throw ApiError.notFound('Course not found or you do not have permission');
+    }
+
+    return {
+      courseId: course._id,
+      courseName: course.courseName,
+      courseCode: course.courseCode,
+      videos: course.videos || [],
+      materials: course.materials || [],
+      learningOutcomes: course.learningOutcomes || [],
+      prerequisites: course.prerequisites || [],
     };
   }
 }

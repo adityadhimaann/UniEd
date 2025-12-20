@@ -51,6 +51,7 @@ import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import sidebarIcon from "@/assets/sidebar.png";
+import logo from "@/assets/UniEdlogoo.png";
 
 const studentNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -129,15 +130,17 @@ export default function Dashboard() {
       >
         {/* Logo */}
         <Link to="/" className="p-3 flex items-center gap-2 border-b border-border hover:bg-secondary/50 transition-colors">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-            <GraduationCap className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img 
+            src={logo} 
+            alt="UniEd Logo" 
+            className="w-10 h-10 object-contain shrink-0"
+          />
           {sidebarOpen && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="font-display text-lg font-bold"
+              className="font-display text-xl font-bold"
             >
               UniEd
             </motion.span>
@@ -145,7 +148,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
           {sidebarItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
@@ -154,24 +157,24 @@ export default function Dashboard() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all duration-200 group ${
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
                   isActive
                     ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary"
                     : "hover:bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : ""}`} />
                 {sidebarOpen && (
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="font-medium text-sm"
+                    className="font-medium text-base"
                   >
                     {item.label}
                   </motion.span>
                 )}
                 {isActive && sidebarOpen && (
-                  <ChevronRight className="w-4 h-4 ml-auto" />
+                  <ChevronRight className="w-5 h-5 ml-auto" />
                 )}
               </Link>
             );
@@ -236,14 +239,16 @@ export default function Dashboard() {
         animate={{ x: mobileMenuOpen ? 0 : "-100%" }}
         className="fixed left-0 top-0 h-full w-72 bg-card border-r border-border z-50 lg:hidden"
       >
-        <div className="p-4 flex items-center justify-between border-b border-border">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity" onClick={() => setMobileMenuOpen(false)}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-primary-foreground" />
-            </div>
+        <div className="p-3 flex items-center justify-center border-b border-border relative">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={() => setMobileMenuOpen(false)}>
+            <img 
+              src={logo} 
+              alt="UniEd Logo" 
+              className="w-12 h-12 object-contain"
+            />
             <span className="font-display text-xl font-bold">UniEd</span>
           </Link>
-          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
+          <Button variant="ghost" size="icon" className="absolute right-3" onClick={() => setMobileMenuOpen(false)}>
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -255,14 +260,14 @@ export default function Dashboard() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
                   isActive
                     ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary"
                     : "hover:bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium text-base">{item.label}</span>
               </Link>
             );
           })}
@@ -351,7 +356,7 @@ export default function Dashboard() {
         </header>
 
         {/* Page content */}
-        <div className="p-3 lg:p-6 max-w-[1600px] mx-auto">
+        <div className="p-3 lg:p-6 max-w-[1600px]">
           <Routes>
             <Route index element={<DashboardHome />} />
             <Route path="courses" element={<CoursesPage />} />

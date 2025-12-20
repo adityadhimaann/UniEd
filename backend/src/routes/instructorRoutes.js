@@ -22,6 +22,7 @@ router.get('/health', (req, res) => {
 // Course routes
 router.get('/courses', instructorController.getMyCourses);
 router.post('/courses', instructorController.createCourse);
+router.post('/courses/with-content', instructorController.createCourseWithContent);
 router.put('/courses/:courseId', instructorController.updateCourse);
 router.delete('/courses/:courseId', instructorController.deleteCourse);
 router.get('/courses/:courseId/students', instructorController.getCourseStudents);
@@ -56,5 +57,16 @@ router.get('/statistics', instructorController.getStatistics);
 router.get('/notifications', instructorController.getMyNotifications);
 router.patch('/notifications/:notificationId/read', instructorController.markNotificationAsRead);
 router.patch('/notifications/mark-all-read', instructorController.markAllNotificationsAsRead);
+
+// Course content management routes
+router.get('/courses/:courseId/content', instructorController.getCourseContent);
+router.post('/courses/:courseId/videos', instructorController.addCourseVideo);
+router.put('/courses/:courseId/videos/:videoId', instructorController.updateCourseVideo);
+router.delete('/courses/:courseId/videos/:videoId', instructorController.deleteCourseVideo);
+router.post('/courses/:courseId/materials', instructorController.addCourseMaterial);
+router.put('/courses/:courseId/materials/:materialId', instructorController.updateCourseMaterial);
+router.delete('/courses/:courseId/materials/:materialId', instructorController.deleteCourseMaterial);
+router.put('/courses/:courseId/learning-outcomes', instructorController.updateLearningOutcomes);
+router.put('/courses/:courseId/prerequisites', instructorController.updatePrerequisites);
 
 export default router;

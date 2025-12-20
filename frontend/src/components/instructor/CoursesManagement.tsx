@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit2, Trash2, Users, BookOpen, UserPlus, Check, X, Clock, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, BookOpen, UserPlus, Check, X, Clock, Upload, Image as ImageIcon, Video } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -844,6 +844,15 @@ export default function CoursesManagement() {
                 >
                   <Users className="h-3 w-3 mr-1" />
                   View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-xs h-8"
+                  onClick={() => window.location.href = `/instructor/courses/${course._id}/content`}
+                >
+                  <Video className="h-3 w-3 mr-1" />
+                  Content
                 </Button>
                 <Button
                   variant="outline"
