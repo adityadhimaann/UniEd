@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen, Image as ImageIcon, Camera, File, X } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen, Image as ImageIcon, Camera, File, X, Eye, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -732,26 +732,79 @@ export function MessagesPage() {
                             }`}
                           >
                             {message.fileUrl && message.fileType === 'image' && (
-                              <img 
-                                src={message.fileUrl} 
-                                alt="Attachment" 
-                                className="rounded-t-2xl max-w-xs h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => {
-                                  setViewerImageUrl(message.fileUrl);
-                                  setShowImageViewer(true);
-                                }}
-                              />
+                              <div className="relative group">
+                                <img 
+                                  src={message.fileUrl} 
+                                  alt="Attachment" 
+                                  className="rounded-t-2xl max-w-xs h-auto"
+                                />
+                                {/* Overlay with icons */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-2xl flex items-center justify-center gap-3">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="bg-white/20 hover:bg-white/30 text-white"
+                                    onClick={() => {
+                                      setViewerImageUrl(message.fileUrl);
+                                      setShowImageViewer(true);
+                                    }}
+                                  >
+                                    <Eye className="w-5 h-5" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="bg-white/20 hover:bg-white/30 text-white"
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = message.fileUrl;
+                                      link.download = 'image.jpg';
+                                      link.target = '_blank';
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }}
+                                  >
+                                    <Download className="w-5 h-5" />
+                                  </Button>
+                                </div>
+                              </div>
                             )}
                             {message.fileUrl && message.fileType !== 'image' && (
-                              <div 
-                                className="flex items-center gap-2 p-3 hover:opacity-80 cursor-pointer"
-                                onClick={() => {
-                                  setViewerImageUrl(message.fileUrl);
-                                  setShowImageViewer(true);
-                                }}
-                              >
-                                <File className="w-5 h-5" />
-                                <span className="text-sm">View File</span>
+                              <div className="p-3 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <File className="w-5 h-5" />
+                                  <span className="text-sm">File Attachment</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className={`h-8 w-8 ${isMe ? 'hover:bg-white/20' : 'hover:bg-secondary'}`}
+                                    onClick={() => {
+                                      setViewerImageUrl(message.fileUrl);
+                                      setShowImageViewer(true);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className={`h-8 w-8 ${isMe ? 'hover:bg-white/20' : 'hover:bg-secondary'}`}
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = message.fileUrl;
+                                      link.download = 'file';
+                                      link.target = '_blank';
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
                             )}
                             {message.content && (
@@ -986,14 +1039,34 @@ export function MessagesPage() {
       <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0">
           <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white"
-              onClick={() => setShowImageViewer(false)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
+            <div className="absolute top-2 right-2 z-10 flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-black/50 hover:bg-black/70 text-white"
+                onClick={() => {
+                  if (viewerImageUrl) {
+                    const link = document.createElement('a');
+                    link.href = viewerImageUrl;
+                    link.download = 'image.jpg';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-black/50 hover:bg-black/70 text-white"
+                onClick={() => setShowImageViewer(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
             {viewerImageUrl && (
               <img
                 src={viewerImageUrl}
