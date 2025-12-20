@@ -29,7 +29,10 @@ router.post('/assignments/:assignmentId/submit', studentController.submitAssignm
 
 // Grades
 router.get('/grades', studentController.getMyGrades);
+router.get('/grades/detailed', studentController.getDetailedGrades);
+router.get('/grades/semester', studentController.getSemesterGrades);
 router.get('/courses/:courseId/grades', studentController.getCourseGrades);
+router.get('/courses/:courseId/grade-breakdown', studentController.getCourseGradeBreakdown);
 
 // Attendance
 router.get('/attendance', studentController.getMyAttendance);

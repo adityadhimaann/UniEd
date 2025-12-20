@@ -1,23 +1,13 @@
+import { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Award, BookOpen, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, Award, BookOpen, Download, Calendar, Target, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-
-const courseGrades = [
-  { course: "CS301 - Data Structures", grade: "A", percentage: 92, credits: 4, trend: "up" },
-  { course: "CS302 - Database Systems", grade: "A-", percentage: 88, credits: 3, trend: "up" },
-  { course: "PHI201 - Ethics in Technology", grade: "B+", percentage: 85, credits: 3, trend: "down" },
-  { course: "CS401 - Web Technologies", grade: "A", percentage: 94, credits: 4, trend: "up" },
-  { course: "MTH301 - Discrete Mathematics", grade: "B", percentage: 82, credits: 3, trend: "stable" },
-];
-
-const gradeDistribution = [
-  { grade: "A", count: 2, color: "bg-success" },
-  { grade: "A-", count: 1, color: "bg-success/80" },
-  { grade: "B+", count: 1, color: "bg-info" },
-  { grade: "B", count: 1, color: "bg-info/80" },
-];
+import { studentService } from "@/services/studentService";
+import { toast } from "sonner";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -79,7 +69,96 @@ function GradeCircle({ gpa }: { gpa: number }) {
 export function GradesPage() {
   const { user } = useAuth();
   const isStudent = user?.role === "student";
-  const currentGPA = 3.68;
+  const [loading, setLoading] = useState(true);
+  const [gradesData, setGradesData] = useState<any>(null);
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [courseBreakdown, setCourseBreakdown] = useState<any>(null);
+
+  useEffect(() => {
+    if (isStudent) {
+      fetchGrades();
+    }
+  }, [isStudent]);
+
+  const fetchGrades = async () => {
+    try {
+      setLoading(true);
+      const response = await studentService.getDetailedGrades();
+      setGradesData(response.data);
+    } catch (error) {
+      console.error('Error fetching grades:', error);
+      toast.error('Failed to load grades');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCourseBreakdown = async (courseId: string) => {
+    try {
+      const response = await studentService.getCourseGradeBreakdown(courseId);
+      setCourseBreakdown(response.data);
+      setSelectedCourse(courseId);
+    } catch (error) {
+      console.error('Error fetching course breakdown:', error);
+      toast.error('Failed to load course details');
+    }
+  };
+
+  const getGradeColor = (letterGrade: string) => {
+    if (letterGrade.startsWith('A')) return 'text-green-500';
+    if (letterGrade.startsWith('B')) return 'text-blue-500';
+    if (letterGrade.startsWith('C')) return 'text-yellow-500';
+    if (letterGrade.startsWith('D')) return 'text-orange-500';
+    return 'text-red-500';
+  };
+
+  const getTrendIcon = (percentage: number) => {
+    if (percentage >= 85) return <TrendingUp className="w-5 h-5 text-success" />;
+    if (percentage >= 70) return null;
+    return <TrendingDown className="w-5 h-5 text-destructive" />;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <video src="/loadicon.mp4" autoPlay loop muted className="h-32 w-32" />
+      </div>
+    );
+  }
+
+  if (!isStudent) {
+    return (
+      <motion.div variants={itemVariants} className="glass rounded-xl p-6 border border-border/50">
+        <h3 className="font-semibold text-lg mb-4">Grade Management</h3>
+        <p className="text-muted-foreground">Faculty grade management coming soon.</p>
+      </motion.div>
+    );
+  }
+
+  if (!gradesData || gradesData.grades.length === 0) {
+    return (
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="space-y-6"
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
+            <p className="text-muted-foreground">Track your academic performance</p>
+          </div>
+        </div>
+        <Card className="border-gray-700 bg-gray-800">
+          <CardContent className="p-12 text-center">
+            <BarChart3 className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Grades Yet</h3>
+            <p className="text-gray-400">Your grades will appear here once assignments are graded</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -92,9 +171,7 @@ export function GradesPage() {
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
-          <p className="text-muted-foreground">
-            {isStudent ? "Track your academic performance" : "View and manage student grades"}
-          </p>
+          <p className="text-muted-foreground">Track your academic performance</p>
         </div>
         <Button variant="outline">
           <Download className="w-4 h-4 mr-2" />
@@ -102,136 +179,211 @@ export function GradesPage() {
         </Button>
       </motion.div>
 
-      {isStudent ? (
-        <>
-          {/* GPA Overview */}
-          <motion.div variants={itemVariants} className="grid md:grid-cols-3 gap-6">
-            <div className="glass rounded-xl p-6 border border-border/50 flex flex-col items-center justify-center">
-              <GradeCircle gpa={currentGPA} />
-              <div className="flex items-center gap-2 mt-4">
-                <TrendingUp className="w-4 h-4 text-success" />
-                <span className="text-sm text-success">+0.12 from last semester</span>
-              </div>
-            </div>
+      {/* GPA Overview */}
+      <motion.div variants={itemVariants} className="grid md:grid-cols-3 gap-6">
+        <div className="glass rounded-xl p-6 border border-border/50 flex flex-col items-center justify-center">
+          <GradeCircle gpa={gradesData.gpa} />
+          <div className="flex items-center gap-2 mt-4">
+            <Target className="w-4 h-4 text-primary" />
+            <span className="text-sm text-muted-foreground">Cumulative GPA</span>
+          </div>
+        </div>
 
-            <div className="glass rounded-xl p-6 border border-border/50">
-              <h3 className="font-semibold mb-4">Grade Distribution</h3>
-              <div className="space-y-3">
-                {gradeDistribution.map((item) => (
-                  <div key={item.grade} className="flex items-center gap-3">
-                    <span className="w-8 font-medium">{item.grade}</span>
-                    <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(item.count / 5) * 100}%` }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className={`h-full ${item.color} rounded-full`}
-                      />
+        <div className="glass rounded-xl p-6 border border-border/50">
+          <h3 className="font-semibold mb-4">Grade Distribution</h3>
+          <div className="space-y-3">
+            {gradesData.gradeDistribution.map((item: any) => (
+              <div key={item.grade} className="flex items-center gap-3">
+                <span className={`w-8 font-medium ${getGradeColor(item.grade)}`}>{item.grade}</span>
+                <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(item.count / gradesData.totalCourses) * 100}%` }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground w-8">{item.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="glass rounded-xl p-6 border border-border/50 space-y-4">
+          <h3 className="font-semibold">Quick Stats</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <div className="text-2xl font-bold gradient-text">{gradesData.totalCredits}</div>
+              <div className="text-xs text-muted-foreground">Credits</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-success/10">
+              <div className="text-2xl font-bold text-success">{gradesData.totalCourses}</div>
+              <div className="text-xs text-muted-foreground">Courses</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-info/10">
+              <div className="text-2xl font-bold text-info">{gradesData.avgScore.toFixed(1)}%</div>
+              <div className="text-xs text-muted-foreground">Avg Score</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-warning/10">
+              <div className="text-2xl font-bold text-warning">{gradesData.gpa.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground">GPA</div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Course Grades */}
+      <motion.div variants={itemVariants}>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="detailed">Detailed View</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="mt-6">
+            <div className="glass rounded-xl border border-border/50 overflow-hidden">
+              <div className="p-6 border-b border-border/50">
+                <h3 className="font-semibold text-lg">Course Grades</h3>
+              </div>
+              <div className="divide-y divide-border/50">
+                {gradesData.grades.map((grade: any, index: number) => (
+                  <motion.div
+                    key={grade.course._id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="p-4 hover:bg-secondary/30 transition-colors cursor-pointer"
+                    onClick={() => fetchCourseBreakdown(grade.course._id)}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <BookOpen className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{grade.course.code} - {grade.course.name}</h4>
+                          <span className="text-sm text-muted-foreground">{grade.course.credits} Credits</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-8">
+                        <div className="w-48">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">Score</span>
+                            <span className="text-sm font-semibold">{grade.overallPercentage.toFixed(1)}%</span>
+                          </div>
+                          <Progress value={grade.overallPercentage} className="h-2" />
+                        </div>
+                        
+                        <div className="flex items-center gap-2 min-w-[80px] justify-center">
+                          <span className={`text-2xl font-bold w-12 text-center ${getGradeColor(grade.letterGrade)}`}>
+                            {grade.letterGrade}
+                          </span>
+                          {getTrendIcon(grade.overallPercentage)}
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-sm text-muted-foreground w-8">{item.count}</span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
+          </TabsContent>
 
-            <div className="glass rounded-xl p-6 border border-border/50 space-y-4">
-              <h3 className="font-semibold">Quick Stats</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 rounded-lg bg-primary/10">
-                  <div className="text-2xl font-bold gradient-text">17</div>
-                  <div className="text-xs text-muted-foreground">Credits</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-success/10">
-                  <div className="text-2xl font-bold text-success">5</div>
-                  <div className="text-xs text-muted-foreground">Courses</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-info/10">
-                  <div className="text-2xl font-bold text-info">92%</div>
-                  <div className="text-xs text-muted-foreground">Avg Score</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-warning/10">
-                  <div className="text-2xl font-bold text-warning">Top 10%</div>
-                  <div className="text-xs text-muted-foreground">Class Rank</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Course Grades */}
-          <motion.div variants={itemVariants} className="glass rounded-xl border border-border/50 overflow-hidden">
-            <div className="p-6 border-b border-border/50">
-              <h3 className="font-semibold text-lg">Course Grades</h3>
-            </div>
-            <div className="divide-y divide-border/50">
-              {courseGrades.map((course, index) => (
-                <motion.div
-                  key={course.course}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="p-4 hover:bg-secondary/30 transition-colors"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <BookOpen className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{course.course}</h4>
-                        <span className="text-sm text-muted-foreground">{course.credits} Credits</span>
+          <TabsContent value="detailed" className="mt-6">
+            {selectedCourse && courseBreakdown ? (
+              <Card className="border-gray-700 bg-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-white">Grade Breakdown</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Detailed breakdown of your performance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-lg bg-gray-900 border border-gray-700">
+                      <div className="text-sm text-gray-400">Overall</div>
+                      <div className="text-2xl font-bold text-white mt-1">
+                        {courseBreakdown.overallPercentage.toFixed(1)}%
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-8">
-                      <div className="w-48">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-muted-foreground">Score</span>
-                          <span className="text-sm font-semibold">{course.percentage}%</span>
-                        </div>
-                        <Progress value={course.percentage} className="h-2" />
+                    <div className="p-4 rounded-lg bg-gray-900 border border-gray-700">
+                      <div className="text-sm text-gray-400">Assignments</div>
+                      <div className="text-2xl font-bold text-white mt-1">
+                        {courseBreakdown.assignmentPercentage.toFixed(1)}%
                       </div>
-                      
-                      <div className="flex items-center gap-2 min-w-[80px] justify-center">
-                        <span className="text-2xl font-bold gradient-text w-12 text-center">{course.grade}</span>
-                        {course.trend === "up" && <TrendingUp className="w-5 h-5 text-success" />}
-                        {course.trend === "down" && <TrendingDown className="w-5 h-5 text-destructive" />}
+                    </div>
+                    <div className="p-4 rounded-lg bg-gray-900 border border-gray-700">
+                      <div className="text-sm text-gray-400">Attendance</div>
+                      <div className="text-2xl font-bold text-white mt-1">
+                        {courseBreakdown.attendancePercentage.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-gray-900 border border-gray-700">
+                      <div className="text-sm text-gray-400">Grade</div>
+                      <div className={`text-2xl font-bold mt-1 ${getGradeColor(courseBreakdown.letterGrade)}`}>
+                        {courseBreakdown.letterGrade}
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
 
-          {/* Achievements */}
-          <motion.div variants={itemVariants} className="glass rounded-xl p-6 border border-border/50">
-            <h3 className="font-semibold text-lg mb-4">Achievements</h3>
-            <div className="flex flex-wrap gap-4">
-              {[
-                { icon: Award, label: "Dean's List", color: "text-warning" },
-                { icon: TrendingUp, label: "Consistent Improver", color: "text-success" },
-                { icon: BookOpen, label: "Perfect Attendance", color: "text-info" },
-              ].map((achievement) => (
-                <div key={achievement.label} className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50">
-                  <achievement.icon className={`w-4 h-4 ${achievement.color}`} />
-                  <span className="text-sm font-medium">{achievement.label}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </>
-      ) : (
-        /* Faculty View */
+                  {/* Assignment List */}
+                  <div>
+                    <h4 className="font-semibold text-white mb-4">Assignment Grades</h4>
+                    <div className="space-y-3">
+                      {courseBreakdown.assignments.map((assignment: any) => (
+                        <div key={assignment.assignmentId} className="p-4 rounded-lg bg-gray-900 border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="font-medium text-white">{assignment.title}</h5>
+                            <span className={`text-sm font-semibold ${
+                              assignment.status === 'graded' ? 'text-green-400' : 'text-gray-400'
+                            }`}>
+                              {assignment.status === 'graded' 
+                                ? `${assignment.earnedMarks}/${assignment.totalMarks}` 
+                                : assignment.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </div>
+                          {assignment.status === 'graded' && (
+                            <Progress value={assignment.percentage} className="h-2" />
+                          )}
+                          {assignment.feedback && (
+                            <p className="text-sm text-gray-400 mt-2">{assignment.feedback}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-gray-700 bg-gray-800">
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                  <p className="text-gray-400">Select a course to view detailed breakdown</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </motion.div>
+
+      {/* Achievements */}
+      {gradesData.gpa >= 3.5 && (
         <motion.div variants={itemVariants} className="glass rounded-xl p-6 border border-border/50">
-          <h3 className="font-semibold text-lg mb-4">Grade Management</h3>
-          <p className="text-muted-foreground">Select a course to view and manage student grades.</p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {["CS301 - Data Structures", "CS302 - Database Systems", "CS401 - Web Technologies"].map((course) => (
-              <Button key={course} variant="outline" className="h-auto py-4 justify-start">
-                <BookOpen className="w-5 h-5 mr-3" />
-                <span>{course}</span>
-              </Button>
-            ))}
+          <h3 className="font-semibold text-lg mb-4">Achievements</h3>
+          <div className="flex flex-wrap gap-4">
+            {gradesData.gpa >= 3.8 && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-warning/10 border border-warning/20">
+                <Award className="w-4 h-4 text-warning" />
+                <span className="text-sm font-medium">Dean's List</span>
+              </div>
+            )}
+            {gradesData.gpa >= 3.5 && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20">
+                <TrendingUp className="w-4 h-4 text-success" />
+                <span className="text-sm font-medium">High Achiever</span>
+              </div>
+            )}
           </div>
         </motion.div>
       )}

@@ -23,6 +23,8 @@ import AssignmentsManagement from "./components/instructor/AssignmentsManagement
 import AttendanceManagement from "./components/instructor/AttendanceManagement";
 import AnnouncementsManagement from "./components/instructor/AnnouncementsManagement";
 import AnalyticsDashboard from "./components/instructor/AnalyticsDashboard";
+import InstructorProfile from "./pages/instructor/InstructorProfile";
+import InstructorSettings from "./pages/instructor/InstructorSettings";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,8 @@ const App = () => (
               <Route path="attendance" element={<AttendanceManagement />} />
               <Route path="announcements" element={<AnnouncementsManagement />} />
               <Route path="analytics" element={<AnalyticsDashboard />} />
+              <Route path="profile" element={<InstructorProfile />} />
+              <Route path="settings" element={<InstructorSettings />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

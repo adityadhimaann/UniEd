@@ -263,19 +263,57 @@ export const getEnrolledCoursesWithProgress = asyncHandler(async (req, res) => {
   );
 });
 
+// Grade Controllers
+const getDetailedGrades = asyncHandler(async (req, res) => {
+  const gradeService = (await import('../services/gradeService.js')).default;
+  
+  const gradesData = await gradeService.getStudentGrades(req.user.id);
+  
+  res.json({
+    success: true,
+    data: gradesData
+  });
+});
+
+const getSemesterGrades = asyncHandler(async (req, res) => {
+  const gradeService = (await import('../services/gradeService.js')).default;
+  
+  const semesters = await gradeService.getSemesterGrades(req.user.id);
+  
+  res.json({
+    success: true,
+    data: semesters
+  });
+});
+
+const getCourseGradeBreakdown = asyncHandler(async (req, res) => {
+  const gradeService = (await import('../services/gradeService.js')).default;
+  const { courseId } = req.params;
+  
+  const breakdown = await gradeService.getCourseGradeBreakdown(req.user.id, courseId);
+  
+  res.json({
+    success: true,
+    data: breakdown
+  });
+});
+
 export default {
   getDashboard,
   getMyCourses,
   getAvailableCourses,
   getCourseSuggestions,
   getCourseDetails,
-  getPublicCourseDetails,
   getEnrolledCourseDetails,
+  getPublicCourseDetails,
   getMyAssignments,
   getAssignmentDetails,
   submitAssignment,
   getMyGrades,
   getCourseGrades,
+  getDetailedGrades,
+  getSemesterGrades,
+  getCourseGradeBreakdown,
   getMyAttendance,
   getCourseAttendance,
   getMyAnnouncements,
@@ -283,9 +321,8 @@ export default {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  // Content progress
-  markVideoWatched,
-  markMaterialViewed,
-  getContentProgress,
   getEnrolledCoursesWithProgress,
+  getContentProgress,
+  markVideoWatched,
+  markMaterialViewed
 };

@@ -48,6 +48,14 @@ router.delete('/announcements/:announcementId', instructorController.deleteAnnou
 
 // Grade routes
 router.post('/grades', instructorController.submitGrades);
+
+// Profile and Settings routes
+router.get('/profile', instructorController.getProfile);
+router.put('/profile', instructorController.updateProfile);
+router.put('/change-password', instructorController.changePassword);
+router.put('/notification-settings', instructorController.updateNotificationSettings);
+router.put('/privacy-settings', instructorController.updatePrivacySettings);
+router.delete('/account', instructorController.deleteAccount);
 router.get('/courses/:courseId/grades', instructorController.getCourseGrades);
 
 // Statistics route

@@ -32,6 +32,7 @@ export default function InstructorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showTopProfileMenu, setShowTopProfileMenu] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { user, logout } = useAuth();
 
@@ -203,12 +204,66 @@ export default function InstructorLayout() {
             <div className="flex-1"></div>
             <div className="flex items-center gap-4">
               <NotificationBell />
-              <a
-                href="/dashboard"
-                className="text-sm text-blue-400 hover:text-blue-300 font-medium"
-              >
-                Switch to Student View
-              </a>
+              {/* Faculty Profile Section with Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowTopProfileMenu(!showTopProfileMenu)}
+                  className="flex items-center gap-3 px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-semibold text-xs">
+                      {user?.profile?.firstName?.[0] || user?.firstName?.[0]}
+                      {user?.profile?.lastName?.[0] || user?.lastName?.[0]}
+                    </span>
+                  </div>
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-medium text-white">
+                      {user?.profile?.firstName || user?.firstName} {user?.profile?.lastName || user?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                  </div>
+                </button>
+
+                {/* Profile Dropdown Menu */}
+                {showTopProfileMenu && (
+                  <>
+                    {/* Backdrop to close menu */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowTopProfileMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-gray-700 rounded-lg shadow-lg border border-gray-600 py-2 z-50">
+                      <a
+                        href="/instructor/profile"
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 hover:text-white transition-colors"
+                        onClick={() => setShowTopProfileMenu(false)}
+                      >
+                        <User className="h-4 w-4" />
+                        <span>Profile</span>
+                      </a>
+                      <a
+                        href="/instructor/settings"
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 hover:text-white transition-colors"
+                        onClick={() => setShowTopProfileMenu(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Settings</span>
+                      </a>
+                      <div className="border-t border-gray-600 my-2"></div>
+                      <button
+                        onClick={() => {
+                          setShowTopProfileMenu(false);
+                          setShowLogoutDialog(true);
+                        }}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-600 hover:text-red-300 w-full text-left transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

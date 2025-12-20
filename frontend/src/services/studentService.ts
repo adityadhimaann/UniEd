@@ -107,4 +107,20 @@ export const studentService = {
     const response = await api.post(`/student/courses/${courseId}/materials/${materialId}/view`);
     return response.data;
   },
+
+  // Detailed Grades
+  async getDetailedGrades() {
+    const response = await api.get('/student/grades/detailed');
+    return response.data;
+  },
+
+  async getSemesterGrades() {
+    const response = await api.get('/student/grades/semester');
+    return response.data;
+  },
+
+  async getCourseGradeBreakdown(courseId: string) {
+    const response = await api.get(`/student/courses/${courseId}/grade-breakdown`);
+    return response.data;
+  },
 };

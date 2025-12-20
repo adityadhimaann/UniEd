@@ -479,6 +479,184 @@ export const updatePrerequisites = asyncHandler(async (req, res) => {
   );
 });
 
+// Profile and Settings Controllers
+const getProfile = asyncHandler(async (req, res) => {
+  const User = (await import('../models/User.js')).default;
+  
+  const user = await User.findById(req.user.id).select('-password');
+  
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  res.json({
+    success: true,
+    data: user
+  });
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const User = (await import('../models/User.js')).default;
+  const { firstName, lastName, phone, department, designation, bio, officeLocation, officeHours, specialization } = req.body;
+  
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  // Update profile fields
+  if (!user.profile) {
+    user.profile = {};
+  }
+  
+  if (firstName) user.profile.firstName = firstName;
+  if (lastName) user.profile.lastName = lastName;
+  if (phone) user.profile.phone = phone;
+  if (department) user.profile.department = department;
+  if (designation) user.profile.designation = designation;
+  if (bio) user.profile.bio = bio;
+  if (officeLocation) user.profile.officeLocation = officeLocation;
+  if (officeHours) user.profile.officeHours = officeHours;
+  if (specialization) user.profile.specialization = specialization;
+  
+  await user.save();
+  
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: user
+  });
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const User = (await import('../models/User.js')).default;
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Please provide current and new password' });
+  }
+  
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  // Check current password
+  const isMatch = await user.comparePassword(currentPassword);
+  
+  if (!isMatch) {
+    return res.status(401).json({ message: 'Current password is incorrect' });
+  }
+  
+  // Update password
+  user.password = newPassword;
+  await user.save();
+  
+  res.json({
+    success: true,
+    message: 'Password changed successfully'
+  });
+});
+
+const updateNotificationSettings = asyncHandler(async (req, res) => {
+  const User = (await import('../models/User.js')).default;
+  const { emailNotifications, assignmentSubmissions, enrollmentRequests, announcements, systemUpdates } = req.body;
+  
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  if (!user.settings) {
+    user.settings = {};
+  }
+  
+  if (!user.settings.notifications) {
+    user.settings.notifications = {};
+  }
+  
+  user.settings.notifications = {
+    emailNotifications: emailNotifications !== undefined ? emailNotifications : true,
+    assignmentSubmissions: assignmentSubmissions !== undefined ? assignmentSubmissions : true,
+    enrollmentRequests: enrollmentRequests !== undefined ? enrollmentRequests : true,
+    announcements: announcements !== undefined ? announcements : true,
+    systemUpdates: systemUpdates !== undefined ? systemUpdates : false
+  };
+  
+  await user.save();
+  
+  res.json({
+    success: true,
+    message: 'Notification settings updated successfully',
+    data: user.settings.notifications
+  });
+});
+
+const updatePrivacySettings = asyncHandler(async (req, res) => {
+  const User = (await import('../models/User.js')).default;
+  const { showEmail, showPhone, showOfficeHours } = req.body;
+  
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  if (!user.settings) {
+    user.settings = {};
+  }
+  
+  if (!user.settings.privacy) {
+    user.settings.privacy = {};
+  }
+  
+  user.settings.privacy = {
+    showEmail: showEmail !== undefined ? showEmail : false,
+    showPhone: showPhone !== undefined ? showPhone : false,
+    showOfficeHours: showOfficeHours !== undefined ? showOfficeHours : true
+  };
+  
+  await user.save();
+  
+  res.json({
+    success: true,
+    message: 'Privacy settings updated successfully',
+    data: user.settings.privacy
+  });
+});
+
+const deleteAccount = asyncHandler(async (req, res) => {
+  const User = (await import('../models/User.js')).default;
+  const Course = (await import('../models/Course.js')).default;
+  const Assignment = (await import('../models/Assignment.js')).default;
+  
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  // Check if user has active courses
+  const activeCourses = await Course.countDocuments({ faculty: req.user.id });
+  
+  if (activeCourses > 0) {
+    return res.status(400).json({ 
+      message: 'Cannot delete account with active courses. Please transfer or delete your courses first.' 
+    });
+  }
+  
+  // Delete user
+  await User.findByIdAndDelete(req.user.id);
+  
+  res.json({
+    success: true,
+    message: 'Account deleted successfully'
+  });
+});
+
 export default {
   getMyCourses,
   createCourse,
@@ -504,7 +682,6 @@ export default {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  // Course content management
   createCourseWithContent,
   getCourseContent,
   addCourseVideo,
@@ -515,4 +692,10 @@ export default {
   deleteCourseMaterial,
   updateLearningOutcomes,
   updatePrerequisites,
+  getProfile,
+  updateProfile,
+  changePassword,
+  updateNotificationSettings,
+  updatePrivacySettings,
+  deleteAccount
 };
