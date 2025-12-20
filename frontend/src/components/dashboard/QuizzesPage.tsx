@@ -190,7 +190,7 @@ export function QuizzesPage() {
       <div className="space-y-4">
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <img src="/loadicon.gif" alt="Loading" className="h-16 w-16 mx-auto" />
             <p className="mt-4 text-muted-foreground">Loading quizzes...</p>
           </div>
         ) : quizzes.length === 0 ? (

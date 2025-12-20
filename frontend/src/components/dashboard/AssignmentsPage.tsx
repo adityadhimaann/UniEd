@@ -311,16 +311,7 @@ export function AssignmentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          className="h-48 w-48"
-          style={{ mixBlendMode: 'screen' }}
-        >
-          <source src="/loadicon.mp4" type="video/mp4" />
-        </video>
+        <img src="/loadicon.gif" alt="Loading" className="h-48 w-48" />
       </div>
     );
   }

@@ -70,9 +70,11 @@ export function GradesPage() {
   const { user } = useAuth();
   const isStudent = user?.role === "student";
   const [loading, setLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(true);
   const [gradesData, setGradesData] = useState<any>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [courseBreakdown, setCourseBreakdown] = useState<any>(null);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 
   useEffect(() => {
@@ -97,21 +99,27 @@ export function GradesPage() {
 
   const fetchCourseBreakdown = async (courseId: string) => {
     try {
+      setBreakdownLoading(true);
+      setSelectedCourse(courseId);
       const response = await studentService.getCourseGradeBreakdown(courseId);
       setCourseBreakdown(response.data);
-      setSelectedCourse(courseId);
     } catch (error) {
       console.error('Error fetching course breakdown:', error);
       toast.error('Failed to load course details');
+    } finally {
+      setBreakdownLoading(false);
     }
   };
 
   const fetchUpcomingEvents = async () => {
     try {
+      setEventsLoading(true);
       const response = await studentService.getUpcomingEvents();
       setUpcomingEvents(response.data);
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
+    } finally {
+      setEventsLoading(false);
     }
   };
 
@@ -187,9 +195,26 @@ For official transcripts, please contact the registrar's office.
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <video src="/loadicon.mp4" autoPlay loop muted className="h-32 w-32" />
-      </div>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="space-y-6"
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
+            <p className="text-muted-foreground">Track your academic performance</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <img src="/loadicon.gif" alt="Loading" className="h-32 w-32 mx-auto" />
+            <p className="text-muted-foreground mt-4">Loading your grades...</p>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 
@@ -357,7 +382,14 @@ For official transcripts, please contact the registrar's office.
           </TabsContent>
 
           <TabsContent value="detailed" className="mt-6">
-            {selectedCourse && courseBreakdown ? (
+            {breakdownLoading ? (
+              <Card className="border-gray-700 bg-gray-800">
+                <CardContent className="p-12 text-center">
+                  <img src="/loadicon.gif" alt="Loading" className="h-24 w-24 mx-auto" />
+                  <p className="text-gray-400 mt-4">Loading course details...</p>
+                </CardContent>
+              </Card>
+            ) : selectedCourse && courseBreakdown ? (
               <Card className="border-gray-700 bg-gray-800">
                 <CardHeader>
                   <CardTitle className="text-white">Grade Breakdown</CardTitle>
@@ -440,7 +472,11 @@ For official transcripts, please contact the registrar's office.
           <Calendar className="w-5 h-5 text-primary" />
           <h3 className="font-semibold text-lg">Upcoming Events</h3>
         </div>
-        {upcomingEvents.length > 0 ? (
+        {eventsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <img src="/loadicon.gif" alt="Loading" className="h-20 w-20" />
+          </div>
+        ) : upcomingEvents.length > 0 ? (
           <div className="space-y-3">
             {upcomingEvents.map((event: any, index: number) => (
               <motion.div

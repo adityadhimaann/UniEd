@@ -132,7 +132,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#0f172a]">
-        <video src="/loadicon.mp4" autoPlay loop muted className="h-48 w-48" />
+        <img src="/loadicon.gif" alt="Loading" className="h-48 w-48" />
       </div>
     );
   }

@@ -317,7 +317,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
                   <h3 className="text-xl font-semibold mb-4">Course Assignments</h3>
                   {loading ? (
                     <div className="text-center py-8">
-                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                      <img src="/loadicon.gif" alt="Loading" className="h-12 w-12 mx-auto" />
                       <p className="text-muted-foreground mt-2">Loading assignments...</p>
                     </div>
                   ) : assignments.length > 0 ? (
