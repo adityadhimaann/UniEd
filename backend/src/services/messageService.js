@@ -302,6 +302,8 @@ export const getMessages = async (userId, otherUserId, page = 1, limit = 50) => 
         avatar: msg.sender.avatar || null,
       },
       content: msg.content,
+      fileUrl: msg.fileUrl,
+      fileType: msg.fileType,
       isRead: msg.isRead,
       createdAt: msg.createdAt,
     };

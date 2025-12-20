@@ -16,7 +16,7 @@ const messageSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      default: '',
       trim: true,
     },
     fileUrl: {
@@ -40,6 +40,15 @@ const messageSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Validate that either content or fileUrl is present
+messageSchema.pre('validate', function(next) {
+  if (!this.content && !this.fileUrl) {
+    next(new Error('Either content or fileUrl must be provided'));
+  } else {
+    next();
+  }
+});
 
 // Compound index for efficient querying of conversations
 messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
