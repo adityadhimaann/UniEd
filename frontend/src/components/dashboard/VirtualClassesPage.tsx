@@ -106,7 +106,7 @@ export function VirtualClassesPage() {
       className="space-y-6"
     >
       <motion.div variants={itemVariants}>
-        <h1 className="text-3xl font-bold">Virtual Classes</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Virtual Classes</h1>
       </motion.div>
 
       <motion.div variants={itemVariants}>
@@ -160,11 +160,11 @@ export function VirtualClassesPage() {
           ) : (
             virtualClasses.map((virtualClass) => (
               <Card key={virtualClass._id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{virtualClass.title}</CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base md:text-lg line-clamp-2">{virtualClass.title}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(virtualClass.status)}`}>
                           {virtualClass.status.toUpperCase()}
                         </span>
@@ -180,23 +180,23 @@ export function VirtualClassesPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {virtualClass.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{virtualClass.description}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{virtualClass.description}</p>
                   )}
 
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-xs md:text-sm">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-200" style={{ color: 'white' }} />
-                      <span>{format(new Date(virtualClass.scheduledStartTime), 'MMM dd, yyyy')}</span>
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4 text-gray-200" style={{ color: 'white' }} />
+                      <span className="truncate">{format(new Date(virtualClass.scheduledStartTime), 'MMM dd, yyyy')}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" style={{ color: 'white' }} />
-                      <span>
+                      <Clock className="h-3 w-3 md:h-4 md:w-4" style={{ color: 'white' }} />
+                      <span className="truncate">
                         {format(new Date(virtualClass.scheduledStartTime), 'h:mm a')} -{' '}
                         {format(new Date(virtualClass.scheduledEndTime), 'h:mm a')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" style={{ color: 'white' }} />
+                      <Users className="h-3 w-3 md:h-4 md:w-4" style={{ color: 'white' }} />
                       <span>
                         {virtualClass.participants.filter(p => !p.leftAt).length} participants
                       </span>
@@ -207,18 +207,19 @@ export function VirtualClassesPage() {
                     {virtualClass.status === 'live' ? (
                       <Button
                         onClick={() => handleJoinClass(virtualClass._id, virtualClass.status)}
-                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-sm"
+                        size="sm"
                       >
-                        <Play className="h-4 w-4 mr-2" />
+                        <Play className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                         Join Now
                       </Button>
                     ) : virtualClass.status === 'scheduled' ? (
-                      <Button variant="outline" className="w-full" disabled>
-                        <Clock className="h-4 w-4 mr-2" />
+                      <Button variant="outline" className="w-full text-sm" size="sm" disabled>
+                        <Clock className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                         Scheduled
                       </Button>
                     ) : (
-                      <Button variant="outline" className="w-full" disabled>
+                      <Button variant="outline" className="w-full text-sm" size="sm" disabled>
                         Ended
                       </Button>
                     )}
