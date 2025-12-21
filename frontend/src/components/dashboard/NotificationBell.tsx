@@ -214,7 +214,7 @@ export function NotificationBell() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className="relative hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-300"
         onClick={() => setIsOpen(!isOpen)}
       >
         <Bell className="h-5 w-5" />

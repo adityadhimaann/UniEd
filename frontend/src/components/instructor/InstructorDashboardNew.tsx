@@ -122,18 +122,23 @@ export default function InstructorDashboardNew() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 md:p-8"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-6 md:p-8"
       >
         <div className="absolute inset-0 bg-grid-white/10"></div>
         <div className="relative z-10">
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2">
-                Instructor Dashboard 👨‍🏫
-              </h1>
-              <p className="text-blue-100 text-sm md:text-lg">
-                Manage your courses and track student progress
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 md:p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+                <Award className="w-6 h-6 md:w-8 md:h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2">
+                  Instructor Dashboard
+                </h1>
+                <p className="text-blue-100 text-sm md:text-lg">
+                  Manage your courses and track student progress
+                </p>
+              </div>
             </div>
             <div className="hidden md:flex items-center gap-2">
               <Link to="/instructor/virtual-classroom">

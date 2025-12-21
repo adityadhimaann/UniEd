@@ -1141,9 +1141,8 @@ export default function VirtualClassroomMeeting() {
               try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
                   video: {
-                    cursor: 'always',
                     displaySurface: 'monitor'
-                  },
+                  } as any,
                   audio: false
                 });
                 
