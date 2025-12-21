@@ -91,7 +91,7 @@ export default function CourseDetails() {
               <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-base font-semibold text-blue-400 mb-2">Due Date</h3>
                 <p className="text-white text-lg font-medium flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-400" />
+                  <Calendar className="h-5 w-5" style={{ color: 'white' }} />
                   {new Date(viewingAssignment.dueDate).toLocaleString()}
                 </p>
               </div>
@@ -210,7 +210,7 @@ export default function CourseDetails() {
                         <p className="text-base text-gray-300 mt-2">{assignment.description}</p>
                         <div className="flex items-center gap-4 mt-3 text-base text-gray-300 font-medium">
                           <span className="flex items-center gap-2">
-                            <Calendar className="h-5 w-5 text-blue-400" />
+                            <Calendar className="h-5 w-5" style={{ color: 'white' }} />
                             Due: {new Date(assignment.dueDate).toLocaleDateString()}
                           </span>
                           <span className="text-blue-400">{assignment.totalPoints} points</span>

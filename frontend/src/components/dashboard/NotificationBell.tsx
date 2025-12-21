@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, FileText, CheckCircle, TrendingUp, MessageSquare, UserPlus, UserCheck, Megaphone } from "lucide-react";
+import { Bell, FileText, CheckCircle, TrendingUp, MessageSquare, UserPlus, UserCheck, Megaphone, Video } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,8 @@ export function NotificationBell() {
           window.location.href = `/dashboard/grades`;
         } else if (notification.type === 'announcement' && metadata.courseId) {
           window.location.href = `/dashboard`;
+        } else if (notification.type === 'virtual_class') {
+          window.location.href = `/dashboard/virtual-classes`;
         }
       }
     }
@@ -200,6 +202,8 @@ export function NotificationBell() {
         return <Megaphone className={`${iconClass} text-red-500`} />;
       case "message":
         return <MessageSquare className={`${iconClass} text-blue-500`} />;
+      case "virtual_class":
+        return <Video className={`${iconClass} text-purple-500`} />;
       default:
         return <Bell className={`${iconClass} text-gray-500`} />;
     }

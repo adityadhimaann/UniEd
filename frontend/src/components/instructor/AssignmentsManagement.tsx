@@ -286,10 +286,6 @@ export default function AssignmentsManagement() {
       <motion.div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4" variants={itemVariants}>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Assignments</h1>
-          <p className="text-gray-400 mt-1 text-sm sm:text-base">
-            Create and manage assignments
-            {viewingAssignment && <span className="ml-2 text-blue-400 font-semibold">• Viewing: {viewingAssignment.title}</span>}
-          </p>
         </div>
         <Button
           onClick={() => {
@@ -567,7 +563,7 @@ export default function AssignmentsManagement() {
                 <div className="bg-gray-800/50 p-3 sm:p-4 rounded-lg border border-gray-700">
                   <h3 className="text-sm sm:text-base font-semibold text-blue-400 mb-2">Due Date</h3>
                   <p className="text-white text-lg font-medium flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-blue-400" />
+                    <Calendar className="h-5 w-5" style={{ color: 'white' }} />
                     {new Date(viewingAssignment.dueDate).toLocaleString()}
                   </p>
                 </div>
@@ -744,7 +740,7 @@ export default function AssignmentsManagement() {
                 </p>
                 <div className="space-y-2.5 text-base bg-gray-800/50 p-3 rounded-lg border border-gray-700">
                   <div className="flex items-center gap-2 text-white font-medium">
-                    <Calendar className="h-5 w-5 text-blue-400" />
+                    <Calendar className="h-5 w-5" style={{ color: 'white' }} />
                     <span className="text-sm text-gray-400">Due:</span>
                     <span>{new Date(assignment.dueDate).toLocaleDateString()}</span>
                   </div>

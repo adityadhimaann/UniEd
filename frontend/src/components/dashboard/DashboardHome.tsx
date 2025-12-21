@@ -1,5 +1,5 @@
-import StudentDashboard from './StudentDashboard';
+import StudentDashboardNew from './StudentDashboardNew';
 
 export default function DashboardHome() {
-  return <StudentDashboard />;
+  return <StudentDashboardNew />;
 }

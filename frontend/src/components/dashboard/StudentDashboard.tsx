@@ -272,7 +272,7 @@ export default function StudentDashboard() {
                       <div className="mt-3 lg:mt-2 pt-3 lg:pt-2 border-t border-gray-800">
                         <div className="flex items-center justify-between text-xs lg:text-[10px]">
                           <div className="flex items-center gap-1 text-gray-400">
-                            <Calendar className="h-3.5 w-3.5 lg:h-3 lg:w-3" />
+                            <Calendar className="h-3.5 w-3.5 lg:h-3 lg:w-3" style={{ color: 'white' }} />
                             <span>Enrolled: {new Date(enrollment.enrolledAt).toLocaleDateString()}</span>
                           </div>
                           <Button 
@@ -395,7 +395,7 @@ export default function StudentDashboard() {
                     <p className="text-xs text-gray-400 line-clamp-2">{announcement.content}</p>
                     <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500">
                       <span className="font-medium text-blue-400">{announcement.course?.name}</span>
-                      <span className="flex items-center gap-0.5"><Calendar className="h-2.5 w-2.5" /> {new Date(announcement.createdAt).toLocaleDateString()}</span>
+                      <span className="flex items-center gap-0.5"><Calendar className="h-2.5 w-2.5" style={{ color: 'white' }} /> {new Date(announcement.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))

@@ -235,7 +235,7 @@ export default function InstructorProfile() {
               <div className="space-y-2">
                 <Label htmlFor="officeHours" className="text-gray-300">Office Hours</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                  <Calendar className="absolute left-3 top-3 h-4 w-4" style={{ color: 'white' }} />
                   <Input
                     id="officeHours"
                     name="officeHours"

@@ -163,6 +163,12 @@ export const instructorService = {
     return response.data;
   },
 
+  // Get attendance statistics
+  async getAttendanceStats(courseId: string) {
+    const response = await api.get(`/instructor/courses/${courseId}/attendance/stats`);
+    return response.data;
+  },
+
   // Create announcement
   async createAnnouncement(announcementData: {
     course: string;

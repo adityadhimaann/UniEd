@@ -327,9 +327,6 @@ export function AssignmentsPage() {
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold">Assignments</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            {isStudent ? "Track and submit your assignments" : "Manage and grade assignments"}
-          </p>
         </div>
         <div className="flex gap-2">
           <Button 

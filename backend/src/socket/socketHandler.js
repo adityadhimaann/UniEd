@@ -6,6 +6,7 @@ let io = null;
 // User room mappings
 const userSockets = new Map(); // userId -> Set of socketIds
 const classRooms = new Map();  // classId -> Set of socketIds
+const virtualClassRooms = new Map(); // virtualClassId -> Map of userId -> participant data
 
 export const initializeSocket = (server) => {
   io = new Server(server, {
@@ -23,6 +24,13 @@ export const initializeSocket = (server) => {
   io.on('connection', (socket) => {
     const userId = socket.user._id.toString();
     console.log(`✅ Socket connected: ${socket.id} (User: ${socket.user.email})`);
+
+    // Helper function to get user's full name safely
+    const getUserName = () => {
+      const firstName = socket.user.profile?.firstName || socket.user.firstName || 'User';
+      const lastName = socket.user.profile?.lastName || socket.user.lastName || '';
+      return `${firstName} ${lastName}`.trim();
+    };
 
     // Store user socket mapping
     if (!userSockets.has(userId)) {
@@ -328,6 +336,472 @@ export const initializeSocket = (server) => {
     });
 
     // ==========================================
+    // VIRTUAL CLASSROOM
+    // ==========================================
+
+    // Join virtual classroom
+    socket.on('virtualClass:join', async (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      socket.join(room);
+      
+      // Initialize room if doesn't exist
+      if (!virtualClassRooms.has(classId)) {
+        virtualClassRooms.set(classId, new Map());
+      }
+      
+      // Add participant to room
+      const participant = {
+        userId,
+        socketId: socket.id,
+        userName: getUserName(),
+        userRole: socket.user.role,
+        avatar: socket.user.profile?.avatar || null,
+        isMuted: false,
+        isVideoOff: false,
+        isHandRaised: false,
+        joinedAt: new Date(),
+      };
+      
+      virtualClassRooms.get(classId).set(userId, participant);
+      
+      const participants = Array.from(virtualClassRooms.get(classId).values());
+      
+      console.log(`🎥 User ${getUserName()} joined virtual class ${classId} (${participants.length} participants)`);
+      
+      // Notify user
+      socket.emit('virtualClass:joined', {
+        success: true,
+        classId,
+        participants,
+      });
+      
+      // Notify others
+      socket.to(room).emit('virtualClass:participant:joined', {
+        participant,
+        totalParticipants: participants.length,
+      });
+    });
+
+    // Leave virtual classroom
+    socket.on('virtualClass:leave', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      socket.leave(room);
+      
+      if (virtualClassRooms.has(classId)) {
+        const participant = virtualClassRooms.get(classId).get(userId);
+        virtualClassRooms.get(classId).delete(userId);
+        const participants = Array.from(virtualClassRooms.get(classId).values());
+        
+        console.log(`🎥 User ${getUserName()} left virtual class ${classId} (${participants.length} participants)`);
+        
+        // Notify others
+        socket.to(room).emit('virtualClass:participant:left', {
+          userId,
+          userName: getUserName(),
+          totalParticipants: participants.length,
+        });
+      }
+    });
+
+    // Toggle audio (mute/unmute)
+    socket.on('virtualClass:toggleAudio', (data) => {
+      const { classId, isMuted } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (virtualClassRooms.has(classId) && virtualClassRooms.get(classId).has(userId)) {
+        virtualClassRooms.get(classId).get(userId).isMuted = isMuted;
+        
+        console.log(`🎤 User ${userId} ${isMuted ? 'muted' : 'unmuted'} in class ${classId}`);
+        
+        // Notify others
+        socket.to(room).emit('virtualClass:participant:audioToggled', {
+          userId,
+          isMuted,
+        });
+        
+        socket.emit('virtualClass:audioToggled', { success: true, isMuted });
+      }
+    });
+
+    // Toggle video
+    socket.on('virtualClass:toggleVideo', (data) => {
+      const { classId, isVideoOff } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (virtualClassRooms.has(classId) && virtualClassRooms.get(classId).has(userId)) {
+        virtualClassRooms.get(classId).get(userId).isVideoOff = isVideoOff;
+        
+        console.log(`📹 User ${userId} ${isVideoOff ? 'turned off' : 'turned on'} video in class ${classId}`);
+        
+        // Notify others
+        socket.to(room).emit('virtualClass:participant:videoToggled', {
+          userId,
+          isVideoOff,
+        });
+        
+        socket.emit('virtualClass:videoToggled', { success: true, isVideoOff });
+      }
+    });
+
+    // Raise/lower hand
+    socket.on('virtualClass:toggleHand', (data) => {
+      const { classId, isHandRaised } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (virtualClassRooms.has(classId) && virtualClassRooms.get(classId).has(userId)) {
+        virtualClassRooms.get(classId).get(userId).isHandRaised = isHandRaised;
+        
+        console.log(`✋ User ${userId} ${isHandRaised ? 'raised' : 'lowered'} hand in class ${classId}`);
+        
+        // Notify everyone
+        io.to(room).emit('virtualClass:participant:handToggled', {
+          userId,
+          userName: getUserName(),
+          isHandRaised,
+        });
+        
+        socket.emit('virtualClass:handToggled', { success: true, isHandRaised });
+      }
+    });
+
+    // Screen share start
+    socket.on('virtualClass:screenShare:start', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      console.log(`🖥️ User ${userId} started screen sharing in class ${classId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:screenShare:started', {
+        userId,
+        userName: getUserName(),
+      });
+      
+      socket.emit('virtualClass:screenShare:started:success', { success: true });
+    });
+
+    // Screen share stop
+    socket.on('virtualClass:screenShare:stop', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      console.log(`🖥️ User ${userId} stopped screen sharing in class ${classId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:screenShare:stopped', {
+        userId,
+        userName: getUserName(),
+      });
+      
+      socket.emit('virtualClass:screenShare:stopped:success', { success: true });
+    });
+
+    // Chat message in virtual class
+    socket.on('virtualClass:chat:send', (data) => {
+      const { classId, message, isPrivate, recipientId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      const chatMessage = {
+        _id: `${Date.now()}-${userId}`,
+        sender: {
+          _id: userId,
+          firstName: socket.user.profile?.firstName || '',
+          lastName: socket.user.profile?.lastName || '',
+          avatar: socket.user.profile?.avatar || null,
+        },
+        message,
+        timestamp: new Date().toISOString(),
+        isPrivate: isPrivate || false,
+      };
+      
+      console.log(`💬 Chat message in virtual class ${classId} from ${userId}`);
+      
+      if (isPrivate && recipientId) {
+        // Send to specific recipient
+        io.to(`virtualClass:${classId}`).emit('virtualClass:chat:message', chatMessage);
+        socket.emit('virtualClass:chat:sent', { success: true, message: chatMessage });
+      } else {
+        // Broadcast to everyone in the class
+        io.to(room).emit('virtualClass:chat:message', chatMessage);
+        socket.emit('virtualClass:chat:sent', { success: true, message: chatMessage });
+      }
+    });
+
+    // Poll created
+    socket.on('virtualClass:poll:created', (data) => {
+      const { classId, poll } = data;
+      const room = `virtualClass:${classId}`;
+      
+      // Only host/faculty can create polls
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can create polls' });
+        return;
+      }
+      
+      console.log(`📊 Poll created in virtual class ${classId} by ${userId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:poll:new', {
+        poll,
+        createdBy: getUserName(),
+      });
+    });
+
+    // Poll vote
+    socket.on('virtualClass:poll:vote', (data) => {
+      const { classId, pollId, optionIndex } = data;
+      const room = `virtualClass:${classId}`;
+      
+      console.log(`📊 Vote cast in poll ${pollId} by ${userId}`);
+      
+      // Notify everyone of updated poll results
+      io.to(room).emit('virtualClass:poll:voted', {
+        pollId,
+        optionIndex,
+        voterId: userId,
+      });
+      
+      socket.emit('virtualClass:poll:vote:success', { success: true, pollId });
+    });
+
+    // Whiteboard update
+    socket.on('virtualClass:whiteboard:update', (data) => {
+      const { classId, whiteboardData } = data;
+      const room = `virtualClass:${classId}`;
+      
+      console.log(`🎨 Whiteboard updated in virtual class ${classId} by ${userId}`);
+      
+      // Broadcast to others (not sender)
+      socket.to(room).emit('virtualClass:whiteboard:updated', {
+        whiteboardData,
+        updatedBy: userId,
+      });
+    });
+
+    // File shared
+    socket.on('virtualClass:file:shared', (data) => {
+      const { classId, file } = data;
+      const room = `virtualClass:${classId}`;
+      
+      console.log(`📎 File shared in virtual class ${classId} by ${userId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:file:new', {
+        file,
+        sharedBy: {
+          userId,
+          userName: getUserName(),
+        },
+      });
+    });
+
+    // Class started (by host)
+    socket.on('virtualClass:started', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can start class' });
+        return;
+      }
+      
+      console.log(`🎥 Virtual class ${classId} started by ${userId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:started', {
+        classId,
+        startedBy: getUserName(),
+        startTime: new Date(),
+      });
+    });
+
+    // Class ended (by host)
+    socket.on('virtualClass:ended', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can end class' });
+        return;
+      }
+      
+      console.log(`🎥 Virtual class ${classId} ended by ${userId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:ended', {
+        classId,
+        endedBy: getUserName(),
+        endTime: new Date(),
+      });
+      
+      // Clean up room
+      if (virtualClassRooms.has(classId)) {
+        virtualClassRooms.delete(classId);
+      }
+    });
+
+    // Class paused (by host)
+    socket.on('virtualClass:paused', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can pause class' });
+        return;
+      }
+      
+      console.log(`⏸️ Virtual class ${classId} paused by ${userId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:paused', {
+        classId,
+        pausedBy: getUserName(),
+        pausedAt: new Date(),
+      });
+    });
+
+    // Class resumed (by host)
+    socket.on('virtualClass:resumed', (data) => {
+      const { classId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can resume class' });
+        return;
+      }
+      
+      console.log(`▶️ Virtual class ${classId} resumed by ${userId}`);
+      
+      // Notify everyone
+      io.to(room).emit('virtualClass:resumed', {
+        classId,
+        resumedBy: getUserName(),
+        resumedAt: new Date(),
+      });
+    });
+
+    // Participant kicked (by host)
+    socket.on('virtualClass:participant:kick', (data) => {
+      const { classId, participantId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can kick participants' });
+        return;
+      }
+      
+      console.log(`🚫 Participant ${participantId} kicked from virtual class ${classId}`);
+      
+      // Remove from room
+      if (virtualClassRooms.has(classId)) {
+        virtualClassRooms.get(classId).delete(participantId);
+      }
+      
+      // Notify the kicked participant
+      const participantSockets = userSockets.get(participantId);
+      if (participantSockets) {
+        participantSockets.forEach(socketId => {
+          io.to(socketId).emit('virtualClass:kicked', {
+            classId,
+            reason: 'Removed by host',
+          });
+        });
+      }
+      
+      // Notify others
+      socket.to(room).emit('virtualClass:participant:removed', {
+        participantId,
+        removedBy: getUserName(),
+      });
+    });
+
+    // Mute participant (by host)
+    socket.on('virtualClass:participant:mute', (data) => {
+      const { classId, participantId } = data;
+      const room = `virtualClass:${classId}`;
+      
+      if (socket.user.role !== 'faculty' && socket.user.role !== 'admin') {
+        socket.emit('error', { message: 'Only faculty can mute participants' });
+        return;
+      }
+      
+      console.log(`🔇 Participant ${participantId} muted in virtual class ${classId}`);
+      
+      // Update participant state
+      if (virtualClassRooms.has(classId) && virtualClassRooms.get(classId).has(participantId)) {
+        virtualClassRooms.get(classId).get(participantId).isMuted = true;
+      }
+      
+      // Notify the participant
+      const participantSockets = userSockets.get(participantId);
+      if (participantSockets) {
+        participantSockets.forEach(socketId => {
+          io.to(socketId).emit('virtualClass:muted:byHost', {
+            classId,
+            mutedBy: getUserName(),
+          });
+        });
+      }
+      
+      // Notify others
+      socket.to(room).emit('virtualClass:participant:audioToggled', {
+        userId: participantId,
+        isMuted: true,
+      });
+    });
+
+    // WebRTC signaling for peer-to-peer connections
+    socket.on('virtualClass:webrtc:offer', (data) => {
+      const { classId, targetUserId, offer } = data;
+      
+      console.log(`🔄 WebRTC offer from ${userId} to ${targetUserId}`);
+      
+      const targetSockets = userSockets.get(targetUserId);
+      if (targetSockets) {
+        targetSockets.forEach(socketId => {
+          io.to(socketId).emit('virtualClass:webrtc:offer', {
+            fromUserId: userId,
+            offer,
+          });
+        });
+      }
+    });
+
+    socket.on('virtualClass:webrtc:answer', (data) => {
+      const { classId, targetUserId, answer } = data;
+      
+      console.log(`🔄 WebRTC answer from ${userId} to ${targetUserId}`);
+      
+      const targetSockets = userSockets.get(targetUserId);
+      if (targetSockets) {
+        targetSockets.forEach(socketId => {
+          io.to(socketId).emit('virtualClass:webrtc:answer', {
+            fromUserId: userId,
+            answer,
+          });
+        });
+      }
+    });
+
+    socket.on('virtualClass:webrtc:iceCandidate', (data) => {
+      const { classId, targetUserId, candidate } = data;
+      
+      const targetSockets = userSockets.get(targetUserId);
+      if (targetSockets) {
+        targetSockets.forEach(socketId => {
+          io.to(socketId).emit('virtualClass:webrtc:iceCandidate', {
+            fromUserId: userId,
+            candidate,
+          });
+        });
+      }
+    });
+
+    // ==========================================
     // ONLINE STATUS
     // ==========================================
 
@@ -370,6 +844,20 @@ export const initializeSocket = (server) => {
             userId,
             userName: socket.user.getFullName(),
             participantCount,
+          });
+        }
+      });
+
+      // Remove from all virtual class rooms
+      virtualClassRooms.forEach((participants, classId) => {
+        if (participants.has(userId)) {
+          participants.delete(userId);
+          const room = `virtualClass:${classId}`;
+          
+          io.to(room).emit('virtualClass:participant:left', {
+            userId,
+            userName: socket.user.getFullName(),
+            totalParticipants: participants.size,
           });
         }
       });
@@ -451,6 +939,32 @@ export const getClassParticipants = (classId) => {
 // Check if user is online
 export const isUserOnline = (userId) => {
   return userSockets.has(userId);
+};
+
+// Virtual classroom helpers
+export const getVirtualClassParticipants = (classId) => {
+  return virtualClassRooms.get(classId)?.size || 0;
+};
+
+export const broadcastToVirtualClass = (classId, event, data) => {
+  if (!io) return;
+  
+  io.to(`virtualClass:${classId}`).emit(event, {
+    ...data,
+    timestamp: new Date(),
+  });
+};
+
+export const notifyVirtualClassParticipant = (userId, event, data) => {
+  if (!io || !userSockets.has(userId)) return;
+  
+  const sockets = userSockets.get(userId);
+  sockets.forEach(socketId => {
+    io.to(socketId).emit(event, {
+      ...data,
+      timestamp: new Date(),
+    });
+  });
 };
 
 export default { initializeSocket, getIO, sendNotification, sendMessage, broadcastAnnouncement };

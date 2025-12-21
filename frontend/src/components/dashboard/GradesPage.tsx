@@ -204,7 +204,6 @@ For official transcripts, please contact the registrar's office.
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
-            <p className="text-muted-foreground">Track your academic performance</p>
           </div>
         </div>
         
@@ -238,7 +237,6 @@ For official transcripts, please contact the registrar's office.
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
-            <p className="text-muted-foreground">Track your academic performance</p>
           </div>
         </div>
         <Card className="border-gray-700 bg-gray-800">
@@ -263,7 +261,6 @@ For official transcripts, please contact the registrar's office.
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold">Grades</h1>
-          <p className="text-muted-foreground">Track your academic performance</p>
         </div>
         <Button variant="outline" onClick={exportTranscript}>
           <Download className="w-4 h-4 mr-2" />
@@ -469,7 +466,7 @@ For official transcripts, please contact the registrar's office.
       {/* Academic Calendar */}
       <motion.div variants={itemVariants} className="glass rounded-xl p-6 border border-border/50">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-primary" />
+          <Calendar className="w-5 h-5" style={{ color: 'white' }} />
           <h3 className="font-semibold text-lg">Upcoming Events</h3>
         </div>
         {eventsLoading ? (
@@ -500,7 +497,7 @@ For official transcripts, please contact the registrar's office.
                   ) : event.type === 'exam' ? (
                     <Target className="w-5 h-5 text-red-500" />
                   ) : (
-                    <Calendar className="w-5 h-5 text-green-500" />
+                    <Calendar className="w-5 h-5" style={{ color: 'white' }} />
                   )}
                 </div>
                 <div className="flex-1">
@@ -532,7 +529,7 @@ For official transcripts, please contact the registrar's office.
           </div>
         ) : (
           <div className="text-center py-8">
-            <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+            <Calendar className="w-12 h-12 mx-auto mb-3" style={{ color: 'white' }} />
             <p className="text-muted-foreground">No upcoming events</p>
           </div>
         )}

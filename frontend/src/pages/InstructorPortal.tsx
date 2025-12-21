@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ const instructorNavItems = [
   { icon: FileText, label: "Assignments", path: "/instructor/assignments" },
   { icon: Calendar, label: "Attendance", path: "/instructor/attendance" },
   { icon: MessageSquare, label: "Messages", path: "/instructor/messages" },
+  { icon: Video, label: "Virtual Classroom", path: "/instructor/virtual-classroom" },
   { icon: Bell, label: "Announcements", path: "/instructor/announcements" },
   { icon: BarChart3, label: "Analytics", path: "/instructor/analytics" },
   { icon: Settings, label: "Settings", path: "/instructor/settings" },
@@ -135,7 +137,7 @@ export default function InstructorPortal() {
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="font-medium text-base"
+                    className="font-medium text-base whitespace-nowrap"
                   >
                     {item.label}
                   </motion.span>

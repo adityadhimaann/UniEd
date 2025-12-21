@@ -99,7 +99,6 @@ export default function InstructorDashboard() {
       >
         <div>
           <h1 className="text-3xl font-bold text-white">Instructor Dashboard</h1>
-          <p className="text-gray-400 mt-1">Welcome back! Here's your overview</p>
         </div>
       </motion.div>
 

@@ -47,7 +47,9 @@ import { GradesPage } from "@/components/dashboard/GradesPage";
 import { CalendarPage } from "@/components/dashboard/CalendarPage";
 import { MessagesPage } from "@/components/dashboard/MessagesPage";
 import { SettingsPage } from "@/components/dashboard/SettingsPage";
+import { VirtualClassesPage } from "@/components/dashboard/VirtualClassesPage";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
+import { VirtualClassPopup } from "@/components/dashboard/VirtualClassPopup";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import sidebarIcon from "@/assets/sidebar.png";
@@ -60,6 +62,7 @@ const studentNavItems = [
   { icon: TrendingUp, label: "Grades", path: "/dashboard/grades" },
   { icon: Calendar, label: "Calendar", path: "/dashboard/calendar" },
   { icon: MessageSquare, label: "Messages", path: "/dashboard/messages" },
+  { icon: GraduationCap, label: "Virtual Classes", path: "/dashboard/virtual-classes" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
@@ -367,6 +370,7 @@ export default function Dashboard() {
             <Route path="grades" element={<GradesPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="messages" element={<MessagesPage />} />
+            <Route path="virtual-classes" element={<VirtualClassesPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardHome />} />
           </Routes>
@@ -390,6 +394,9 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Virtual Class Live Popup - Only for Students */}
+      {user?.role === 'student' && <VirtualClassPopup />}
     </div>
   );
 }

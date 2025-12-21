@@ -212,7 +212,6 @@ export function SettingsPage() {
     >
       <motion.div variants={itemVariants}>
         <h1 className="text-2xl md:text-3xl font-display font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
       </motion.div>
 
       <Tabs defaultValue="profile" className="space-y-6">

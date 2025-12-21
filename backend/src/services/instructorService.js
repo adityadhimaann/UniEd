@@ -500,21 +500,33 @@ class InstructorService {
       throw ApiError.forbidden('You are not authorized to mark attendance for this course');
     }
 
-    // Create or update attendance
-    const attendancePromises = attendanceRecords.map(async record => {
-      const { student, status } = record;
+    // Normalize date to start of day
+    const attendanceDate = new Date(date);
+    attendanceDate.setHours(0, 0, 0, 0);
 
-      const attendance = await Attendance.findOneAndUpdate(
-        { course: courseId, student, date },
-        { status },
-        { upsert: true, new: true }
-      );
+    // Prepare records with markedBy field
+    const records = attendanceRecords.map(record => ({
+      student: record.student,
+      status: record.status,
+      markedBy: instructorId,
+      remarks: record.remarks || null,
+    }));
 
-      return attendance;
-    });
+    // Create or update attendance for the day
+    const attendance = await Attendance.findOneAndUpdate(
+      { course: courseId, date: attendanceDate },
+      { 
+        course: courseId,
+        date: attendanceDate,
+        records: records,
+      },
+      { upsert: true, new: true }
+    ).populate([
+      { path: 'course', select: 'courseCode courseName' },
+      { path: 'records.student', select: 'firstName lastName email' },
+    ]);
 
-    const results = await Promise.all(attendancePromises);
-    return results;
+    return attendance;
   }
 
   // Get course attendance
@@ -532,15 +544,95 @@ class InstructorService {
     const query = { course: courseId };
     if (startDate || endDate) {
       query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.date.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
+      }
     }
 
     const attendance = await Attendance.find(query)
-      .populate('student', 'firstName lastName')
+      .populate([
+        { path: 'course', select: 'courseCode courseName' },
+        { path: 'records.student', select: 'firstName lastName email' },
+      ])
       .sort({ date: -1 });
 
     return attendance;
+  }
+
+  // Get attendance statistics for a course
+  async getAttendanceStats(courseId, instructorId) {
+    const course = await Course.findById(courseId).populate('faculty');
+
+    if (!course) {
+      throw ApiError.notFound('Course not found');
+    }
+
+    if (course.faculty._id.toString() !== instructorId.toString()) {
+      throw ApiError.forbidden('You are not authorized to view attendance for this course');
+    }
+
+    // Get all enrollments for the course
+    const enrollments = await Enrollment.find({ course: courseId })
+      .populate('student', 'firstName lastName email');
+
+    // Get all attendance records
+    const attendanceRecords = await Attendance.find({ course: courseId });
+
+    // Calculate stats for each student
+    const stats = enrollments.map(enrollment => {
+      const student = enrollment.student;
+      let totalClasses = 0;
+      let present = 0;
+      let absent = 0;
+      let late = 0;
+
+      attendanceRecords.forEach(attendance => {
+        const record = attendance.records.find(
+          r => r.student.toString() === student._id.toString()
+        );
+        if (record) {
+          totalClasses++;
+          if (record.status === 'present') present++;
+          else if (record.status === 'absent') absent++;
+          else if (record.status === 'late') late++;
+        }
+      });
+
+      const attendancePercentage = totalClasses > 0 
+        ? ((present + late) / totalClasses * 100).toFixed(2)
+        : 0;
+
+      return {
+        student: {
+          _id: student._id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+        },
+        totalClasses,
+        present,
+        absent,
+        late,
+        attendancePercentage,
+      };
+    });
+
+    return {
+      course: {
+        _id: course._id,
+        code: course.courseCode,
+        name: course.courseName,
+      },
+      totalSessions: attendanceRecords.length,
+      students: stats,
+    };
   }
 
   // Create announcement

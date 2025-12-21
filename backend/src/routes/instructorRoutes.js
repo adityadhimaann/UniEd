@@ -39,6 +39,7 @@ router.post('/assignments/:assignmentId/review/:studentId', instructorController
 // Attendance routes
 router.post('/attendance', instructorController.markAttendance);
 router.get('/courses/:courseId/attendance', instructorController.getCourseAttendance);
+router.get('/courses/:courseId/attendance/stats', instructorController.getAttendanceStats);
 
 // Announcement routes
 router.post('/announcements', instructorController.createAnnouncement);

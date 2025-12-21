@@ -123,9 +123,6 @@ export function CalendarPage() {
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold">Calendar</h1>
-          <p className="text-muted-foreground">
-            {user?.role === "faculty" ? "Manage your schedule and classes" : "View your upcoming classes and deadlines"}
-          </p>
         </div>
         {user?.role === "faculty" && (
           <Button className="bg-gradient-to-r from-primary to-accent">

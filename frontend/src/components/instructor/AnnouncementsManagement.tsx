@@ -93,7 +93,6 @@ export default function AnnouncementsManagement() {
       <motion.div className="flex items-center justify-between" variants={itemVariants}>
         <div>
           <h1 className="text-3xl font-bold text-white">Announcements</h1>
-          <p className="text-gray-400 mt-1">Post updates and announcements</p>
         </div>
         <Button
           onClick={() => setShowCreateForm(!showCreateForm)}

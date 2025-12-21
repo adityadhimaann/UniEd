@@ -126,7 +126,6 @@ export function QuizzesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Quizzes</h1>
-        <p className="text-muted-foreground">Test your knowledge and track your progress</p>
       </div>
 
       {/* Stats */}
@@ -250,7 +249,7 @@ export function QuizzesPage() {
 
                   {/* Availability */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="w-4 h-4" style={{ color: 'white' }} />
                     <span>
                       Available: {new Date(quiz.availableFrom).toLocaleDateString()} -{' '}
                       {new Date(quiz.availableUntil).toLocaleDateString()}

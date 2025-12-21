@@ -224,6 +224,18 @@ export const getCourseAttendance = asyncHandler(async (req, res) => {
   );
 });
 
+// Get attendance statistics
+export const getAttendanceStats = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const instructorId = req.user._id;
+
+  const stats = await instructorService.getAttendanceStats(courseId, instructorId);
+
+  res.status(200).json(
+    ApiResponse.success(stats, 'Attendance statistics retrieved successfully')
+  );
+});
+
 // Create announcement
 export const createAnnouncement = asyncHandler(async (req, res) => {
   const instructorId = req.user._id;
@@ -672,6 +684,7 @@ export default {
   reviewSubmission,
   markAttendance,
   getCourseAttendance,
+  getAttendanceStats,
   createAnnouncement,
   getCourseAnnouncements,
   updateAnnouncement,

@@ -174,7 +174,6 @@ export function CoursesPage() {
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Courses</h1>
-          <p className="text-muted-foreground">Browse and manage all courses created by faculty</p>
         </div>
         <div className="flex gap-2">
           <Button
