@@ -215,7 +215,7 @@ export function SettingsPage() {
       </motion.div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="glass flex-wrap h-auto gap-2 p-2">
+        <TabsList className="glass flex flex-wrap h-auto gap-2 p-2">
           <TabsTrigger value="profile" className="gap-2">
             <User className="w-4 h-4" />
             Profile
@@ -351,7 +351,7 @@ export function SettingsPage() {
             {/* Role info */}
             <div className="glass rounded-xl p-6 border border-border/50">
               <h3 className="font-semibold mb-4">Account Details</h3>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Role</Label>
                   <p className="font-medium capitalize">{user?.role}</p>
