@@ -44,27 +44,23 @@ interface Student {
 
 export default function AttendanceManagement() {
   const [courses, setCourses] = useState<any[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [attendanceStats, setAttendanceStats] = useState<any>(null);
-  const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
+  const [coursesData, setCoursesData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [showMarkDialog, setShowMarkDialog] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord>>({});
   const [marking, setMarking] = useState(false);
 
   useEffect(() => {
-    fetchCourses();
+    fetchAllCoursesData();
     
     // Socket.IO for real-time attendance notifications
     const socket = getSocket();
     if (socket) {
       socket.on('attendance:marked', (data) => {
-        if (data.courseId === selectedCourse) {
-          toast.success('Attendance updated in real-time');
-          fetchAttendanceData();
-        }
+        toast.success('Attendance updated in real-time');
+        fetchAllCoursesData();
       });
     }
 
@@ -73,65 +69,59 @@ export default function AttendanceManagement() {
         socket.off('attendance:marked');
       }
     };
-  }, [selectedCourse]);
+  }, []);
 
-  useEffect(() => {
-    if (selectedCourse) {
-      fetchAttendanceData();
-    }
-  }, [selectedCourse]);
-
-  const fetchCourses = async () => {
+  const fetchAllCoursesData = async () => {
     try {
       setLoading(true);
       const response = await instructorService.getMyCourses();
-      console.log('Courses response:', response);
-      setCourses(response.data || []);
+      const coursesList = response.data || [];
+      setCourses(coursesList);
+
+      // Fetch attendance data for all courses
+      const allCoursesData: Record<string, any> = {};
+      
+      for (const course of coursesList) {
+        try {
+          const [studentsRes, statsRes, historyRes] = await Promise.all([
+            instructorService.getCourseStudents(course._id),
+            instructorService.getAttendanceStats(course._id),
+            instructorService.getCourseAttendance(course._id),
+          ]);
+
+          allCoursesData[course._id] = {
+            course,
+            students: studentsRes.data,
+            stats: statsRes.data,
+            history: historyRes.data,
+          };
+        } catch (error) {
+          console.error(`Error fetching data for course ${course._id}:`, error);
+        }
+      }
+
+      setCoursesData(allCoursesData);
     } catch (error: any) {
       console.error('Error fetching courses:', error);
-      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to load courses');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchAttendanceData = async () => {
-    if (!selectedCourse) return;
-
-    try {
-      setLoading(true);
-      const [studentsRes, statsRes, historyRes] = await Promise.all([
-        instructorService.getCourseStudents(selectedCourse),
-        instructorService.getAttendanceStats(selectedCourse),
-        instructorService.getCourseAttendance(selectedCourse),
-      ]);
-
-      setStudents(studentsRes.data);
-      setAttendanceStats(statsRes.data);
-      setAttendanceHistory(historyRes.data);
-
+  const handleMarkAttendance = (course: any) => {
+    setSelectedCourse(course);
+    const courseData = coursesData[course._id];
+    if (courseData) {
       // Initialize attendance records for all students
       const initialRecords: Record<string, AttendanceRecord> = {};
-      studentsRes.data.forEach((student: Student) => {
+      courseData.students.forEach((student: Student) => {
         initialRecords[student._id] = {
           student: student._id,
           status: 'present',
         };
       });
       setAttendanceRecords(initialRecords);
-    } catch (error: any) {
-      console.error('Error fetching attendance data:', error);
-      toast.error(error.response?.data?.message || 'Failed to load attendance data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMarkAttendance = () => {
-    if (!selectedCourse) {
-      toast.error('Please select a course first');
-      return;
     }
     setShowMarkDialog(true);
   };
@@ -153,20 +143,21 @@ export default function AttendanceManagement() {
       setMarking(true);
       const records = Object.values(attendanceRecords);
       
-      await instructorService.markAttendance(selectedCourse, selectedDate, records);
+      await instructorService.markAttendance(selectedCourse._id, selectedDate, records);
       
       // Emit socket event for real-time update
       const socket = getSocket();
       if (socket) {
         socket.emit('attendance:mark', {
-          courseId: selectedCourse,
+          courseId: selectedCourse._id,
           date: selectedDate,
         });
       }
 
       toast.success('Attendance marked successfully');
       setShowMarkDialog(false);
-      fetchAttendanceData();
+      setSelectedCourse(null);
+      fetchAllCoursesData();
     } catch (error: any) {
       console.error('Error marking attendance:', error);
       toast.error(error.response?.data?.message || 'Failed to mark attendance');
@@ -185,271 +176,264 @@ export default function AttendanceManagement() {
 
   return (
     <motion.div 
-      className="space-y-6" 
+      className="space-y-6 p-4" 
       initial="hidden" 
       animate="visible" 
       variants={containerVariants}
     >
       <motion.div className="flex items-center justify-between" variants={itemVariants}>
         <div>
-          <h1 className="text-3xl font-bold">Attendance</h1>
+          <h1 className="text-3xl font-bold text-white">Attendance Management</h1>
+          <p className="text-gray-400 mt-1">View and manage attendance for all your courses</p>
         </div>
-        <Button 
-          onClick={handleMarkAttendance}
-          disabled={!selectedCourse}
-          className="bg-gradient-to-r from-primary to-accent"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Mark Attendance
-        </Button>
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Course</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <img src="/loadicon.gif" alt="Loading..." className="h-12 w-12" />
-              </div>
-            ) : courses.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No courses found. Please create a course first.
-              </div>
-            ) : (
-              <select
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-md"
-              >
-                <option value="">Choose a course...</option>
-                {courses.map((course) => (
-                  <option key={course._id} value={course._id}>
-                    {course.courseCode || course.code} - {course.courseName || course.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {selectedCourse && attendanceStats && (
-        <>
-          {/* Statistics Cards */}
-          <motion.div className="grid grid-cols-1 md:grid-cols-4 gap-4" variants={itemVariants}>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Students</p>
-                    <p className="text-2xl font-bold">{attendanceStats.students?.length || 0}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Sessions</p>
-                    <p className="text-2xl font-bold">{attendanceStats.totalSessions || 0}</p>
-                  </div>
-                  <CalendarIcon className="h-8 w-8" style={{ color: 'white' }} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Avg Attendance</p>
-                    <p className="text-2xl font-bold">
-                      {attendanceStats.students?.length > 0
-                        ? (
-                            attendanceStats.students.reduce((sum: number, s: any) => sum + parseFloat(s.attendancePercentage), 0) /
-                            attendanceStats.students.length
-                          ).toFixed(1)
-                        : 0}%
-                    </p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Course</p>
-                    <p className="text-lg font-bold truncate">{attendanceStats.course?.code}</p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-accent" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Student Attendance Table */}
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Student Attendance Statistics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-4">Student</th>
-                        <th className="text-center py-3 px-4">Total Classes</th>
-                        <th className="text-center py-3 px-4">Present</th>
-                        <th className="text-center py-3 px-4">Absent</th>
-                        <th className="text-center py-3 px-4">Late</th>
-                        <th className="text-center py-3 px-4">Attendance %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendanceStats.students?.map((student: any) => (
-                        <tr key={student.student._id} className="border-b border-border/50">
-                          <td className="py-3 px-4">
-                            <div>
-                              <p className="font-medium">{student.student.firstName} {student.student.lastName}</p>
-                              <p className="text-sm text-muted-foreground">{student.student.email}</p>
-                            </div>
-                          </td>
-                          <td className="text-center py-3 px-4">{student.totalClasses}</td>
-                          <td className="text-center py-3 px-4">
-                            <span className="inline-flex items-center gap-1 text-green-500">
-                              <CheckCircle className="h-4 w-4" />
-                              {student.present}
-                            </span>
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            <span className="inline-flex items-center gap-1 text-red-500">
-                              <XCircle className="h-4 w-4" />
-                              {student.absent}
-                            </span>
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            <span className="inline-flex items-center gap-1 text-yellow-500">
-                              <Clock className="h-4 w-4" />
-                              {student.late}
-                            </span>
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            <span className={`font-bold ${
-                              parseFloat(student.attendancePercentage) >= 75 
-                                ? 'text-green-500' 
-                                : parseFloat(student.attendancePercentage) >= 60
-                                ? 'text-yellow-500'
-                                : 'text-red-500'
-                            }`}>
-                              {student.attendancePercentage}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Attendance History */}
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {attendanceHistory.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No attendance records yet
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {attendanceHistory.map((record: any) => (
-                      <div key={record._id} className="border border-border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">{format(new Date(record.date), 'MMMM dd, yyyy')}</h4>
-                          <span className="text-sm text-muted-foreground">
-                            {record.records.length} students marked
-                          </span>
-                        </div>
-                        <div className="flex gap-4 text-sm">
-                          <span className="text-green-500">
-                            Present: {record.records.filter((r: any) => r.status === 'present').length}
-                          </span>
-                          <span className="text-red-500">
-                            Absent: {record.records.filter((r: any) => r.status === 'absent').length}
-                          </span>
-                          <span className="text-yellow-500">
-                            Late: {record.records.filter((r: any) => r.status === 'late').length}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </>
-      )}
-
-      {!selectedCourse && (
+      {courses.length === 0 ? (
         <motion.div variants={itemVariants}>
-          <Card>
+          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-600">
             <CardContent className="text-center py-12">
-              <CalendarIcon className="h-12 w-12 mx-auto mb-4" style={{ color: 'white' }} />
-              <h3 className="text-lg font-semibold mb-2">Select a course</h3>
-              <p className="text-muted-foreground">
-                Choose a course to view and manage attendance records
-              </p>
+              <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-500" />
+              <h3 className="text-xl font-bold text-white mb-2">No courses yet</h3>
+              <p className="text-gray-400">Create a course to start managing attendance</p>
             </CardContent>
           </Card>
         </motion.div>
+      ) : (
+        <div className="space-y-8">
+          {courses.map((course) => {
+            const courseData = coursesData[course._id];
+            if (!courseData) return null;
+
+            const { stats, students, history } = courseData;
+
+            return (
+              <motion.div key={course._id} variants={itemVariants} className="space-y-4">
+                {/* Course Header */}
+                <Card className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-2 border-blue-500">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-2xl font-bold text-white">
+                          {course.courseCode} - {course.courseName}
+                        </CardTitle>
+                        <p className="text-gray-400 mt-1">{course.description}</p>
+                      </div>
+                      <Button 
+                        onClick={() => handleMarkAttendance(course)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Mark Attendance
+                      </Button>
+                    </div>
+                  </CardHeader>
+                </Card>
+
+                {/* Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Total Students</p>
+                          <p className="text-2xl font-bold text-white">{students?.length || 0}</p>
+                        </div>
+                        <Users className="h-8 w-8 text-blue-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Total Sessions</p>
+                          <p className="text-2xl font-bold text-white">{stats?.totalSessions || 0}</p>
+                        </div>
+                        <CalendarIcon className="h-8 w-8 text-purple-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Avg Attendance</p>
+                          <p className="text-2xl font-bold text-white">
+                            {stats?.students?.length > 0
+                              ? (
+                                  stats.students.reduce((sum: number, s: any) => sum + parseFloat(s.attendancePercentage), 0) /
+                                  stats.students.length
+                                ).toFixed(1)
+                              : 0}%
+                          </p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-green-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Course Code</p>
+                          <p className="text-lg font-bold text-white truncate">{course.courseCode}</p>
+                        </div>
+                        <CheckCircle className="h-8 w-8 text-cyan-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Student Attendance Table */}
+                <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white">Student Attendance Statistics</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {stats?.students?.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-gray-700">
+                              <th className="text-left py-3 px-4 text-gray-300">Student</th>
+                              <th className="text-center py-3 px-4 text-gray-300">Total Classes</th>
+                              <th className="text-center py-3 px-4 text-gray-300">Present</th>
+                              <th className="text-center py-3 px-4 text-gray-300">Absent</th>
+                              <th className="text-center py-3 px-4 text-gray-300">Late</th>
+                              <th className="text-center py-3 px-4 text-gray-300">Attendance %</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stats.students.map((student: any) => (
+                              <tr key={student.student._id} className="border-b border-gray-700/50">
+                                <td className="py-3 px-4">
+                                  <div>
+                                    <p className="font-medium text-white">{student.student.firstName} {student.student.lastName}</p>
+                                    <p className="text-sm text-gray-400">{student.student.email}</p>
+                                  </div>
+                                </td>
+                                <td className="text-center py-3 px-4 text-white">{student.totalClasses}</td>
+                                <td className="text-center py-3 px-4">
+                                  <span className="inline-flex items-center gap-1 text-green-400">
+                                    <CheckCircle className="h-4 w-4" />
+                                    {student.present}
+                                  </span>
+                                </td>
+                                <td className="text-center py-3 px-4">
+                                  <span className="inline-flex items-center gap-1 text-red-400">
+                                    <XCircle className="h-4 w-4" />
+                                    {student.absent}
+                                  </span>
+                                </td>
+                                <td className="text-center py-3 px-4">
+                                  <span className="inline-flex items-center gap-1 text-yellow-400">
+                                    <Clock className="h-4 w-4" />
+                                    {student.late}
+                                  </span>
+                                </td>
+                                <td className="text-center py-3 px-4">
+                                  <span className={`font-bold ${
+                                    parseFloat(student.attendancePercentage) >= 75 
+                                      ? 'text-green-400' 
+                                      : parseFloat(student.attendancePercentage) >= 60
+                                      ? 'text-yellow-400'
+                                      : 'text-red-400'
+                                  }`}>
+                                    {student.attendancePercentage}%
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-400">
+                        No students enrolled yet
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Attendance History */}
+                <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white">Attendance History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {history?.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        No attendance records yet
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {history?.map((record: any) => (
+                          <div key={record._id} className="border border-gray-700 rounded-lg p-4 bg-gray-800/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold text-white">{format(new Date(record.date), 'MMMM dd, yyyy')}</h4>
+                              <span className="text-sm text-gray-400">
+                                {record.records.length} students marked
+                              </span>
+                            </div>
+                            <div className="flex gap-4 text-sm">
+                              <span className="text-green-400">
+                                Present: {record.records.filter((r: any) => r.status === 'present').length}
+                              </span>
+                              <span className="text-red-400">
+                                Absent: {record.records.filter((r: any) => r.status === 'absent').length}
+                              </span>
+                              <span className="text-yellow-400">
+                                Late: {record.records.filter((r: any) => r.status === 'late').length}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
       )}
 
       {/* Mark Attendance Dialog */}
       <Dialog open={showMarkDialog} onOpenChange={setShowMarkDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gray-900 border-gray-700 text-white">
           <DialogHeader>
-            <DialogTitle>Mark Attendance</DialogTitle>
+            <DialogTitle className="text-white">
+              Mark Attendance - {selectedCourse?.courseCode} {selectedCourse?.courseName}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Date</label>
+              <label className="block text-sm font-medium mb-2 text-gray-200">Date</label>
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-md"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white"
               />
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-semibold">Students</h4>
-              {students.map((student) => (
-                <div key={student._id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+              <h4 className="font-semibold text-white">Students</h4>
+              {selectedCourse && coursesData[selectedCourse._id]?.students.map((student: Student) => (
+                <div key={student._id} className="flex items-center justify-between p-3 border border-gray-700 rounded-lg bg-gray-800/50">
                   <div>
-                    <p className="font-medium">{student.firstName} {student.lastName}</p>
-                    <p className="text-sm text-muted-foreground">{student.email}</p>
+                    <p className="font-medium text-white">{student.firstName} {student.lastName}</p>
+                    <p className="text-sm text-gray-400">{student.email}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant={attendanceRecords[student._id]?.status === 'present' ? 'default' : 'outline'}
                       onClick={() => handleStatusChange(student._id, 'present')}
-                      className={attendanceRecords[student._id]?.status === 'present' ? 'bg-green-500 hover:bg-green-600' : ''}
+                      className={attendanceRecords[student._id]?.status === 'present' ? 'bg-green-500 hover:bg-green-600' : 'border-gray-600 text-gray-300'}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Present
@@ -458,7 +442,7 @@ export default function AttendanceManagement() {
                       size="sm"
                       variant={attendanceRecords[student._id]?.status === 'late' ? 'default' : 'outline'}
                       onClick={() => handleStatusChange(student._id, 'late')}
-                      className={attendanceRecords[student._id]?.status === 'late' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
+                      className={attendanceRecords[student._id]?.status === 'late' ? 'bg-yellow-500 hover:bg-yellow-600' : 'border-gray-600 text-gray-300'}
                     >
                       <Clock className="h-4 w-4 mr-1" />
                       Late
@@ -467,7 +451,7 @@ export default function AttendanceManagement() {
                       size="sm"
                       variant={attendanceRecords[student._id]?.status === 'absent' ? 'default' : 'outline'}
                       onClick={() => handleStatusChange(student._id, 'absent')}
-                      className={attendanceRecords[student._id]?.status === 'absent' ? 'bg-red-500 hover:bg-red-600' : ''}
+                      className={attendanceRecords[student._id]?.status === 'absent' ? 'bg-red-500 hover:bg-red-600' : 'border-gray-600 text-gray-300'}
                     >
                       <XCircle className="h-4 w-4 mr-1" />
                       Absent
@@ -478,13 +462,20 @@ export default function AttendanceManagement() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setShowMarkDialog(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowMarkDialog(false);
+                  setSelectedCourse(null);
+                }}
+                className="border-gray-700 text-gray-300 hover:bg-gray-800"
+              >
                 Cancel
               </Button>
               <Button 
                 onClick={submitAttendance} 
                 disabled={marking}
-                className="bg-gradient-to-r from-primary to-accent"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {marking ? 'Marking...' : 'Submit Attendance'}
               </Button>
