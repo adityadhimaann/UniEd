@@ -51,7 +51,8 @@ export const createEnrollmentRequest = asyncHandler(async (req, res) => {
     user: course.faculty._id,
     type: 'enrollment-request',
     title: 'New Enrollment Request',
-    message: `${req.user.firstName} ${req.user.lastName} has requested to enroll in ${course.courseName}`,
+    content: `${req.user.firstName} ${req.user.lastName} has requested to enroll in ${course.courseName}`,
+    link: `/instructor/courses`,
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: course._id,
@@ -67,7 +68,8 @@ export const createEnrollmentRequest = asyncHandler(async (req, res) => {
     user: studentId,
     type: 'enrollment-request',
     title: 'Enrollment Request Submitted',
-    message: `Your enrollment request for ${course.courseName} has been submitted to ${course.faculty.firstName} ${course.faculty.lastName}`,
+    content: `Your enrollment request for ${course.courseName} has been submitted to ${course.faculty.firstName} ${course.faculty.lastName}`,
+    link: `/dashboard/courses`,
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: course._id,
@@ -200,7 +202,8 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
     user: enrollmentRequest.student._id,
     type: 'enrollment-response',
     title: status === 'approved' ? 'Enrollment Approved' : 'Enrollment Rejected',
-    message: notificationMessage,
+    content: notificationMessage,
+    link: status === 'approved' ? `/dashboard/courses` : `/dashboard/courses`,
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: enrollmentRequest.course._id,

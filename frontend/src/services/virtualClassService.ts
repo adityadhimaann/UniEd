@@ -119,6 +119,12 @@ export const virtualClassService = {
     return response.data;
   },
 
+  // Get my virtual classes (all enrolled courses)
+  async getMyVirtualClasses() {
+    const response = await api.get('/virtual-classes/my-classes');
+    return response.data;
+  },
+
   // Get virtual class by ID
   async getVirtualClassById(classId: string) {
     const response = await api.get(`/virtual-classes/${classId}`);

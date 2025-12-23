@@ -1,6 +1,46 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import virtualClassService from '../services/virtualClassService.js';
+import Enrollment from '../models/Enrollment.js';
+import VirtualClass from '../models/VirtualClass.js';
+
+// Get my virtual classes (all enrolled courses)
+export const getMyVirtualClasses = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const userRole = req.user.role;
+
+  let virtualClasses = [];
+
+  if (userRole === 'student') {
+    // Get all courses the student is enrolled in
+    const enrollments = await Enrollment.find({ 
+      student: userId, 
+      status: 'active' 
+    }).select('course');
+    
+    const courseIds = enrollments.map(e => e.course);
+    
+    // Get all virtual classes for these courses
+    virtualClasses = await VirtualClass.find({
+      course: { $in: courseIds }
+    })
+      .populate('course', 'courseName courseCode')
+      .populate('host', 'firstName lastName email')
+      .sort({ scheduledStartTime: -1 });
+  } else if (userRole === 'faculty') {
+    // Get all virtual classes hosted by this faculty
+    virtualClasses = await VirtualClass.find({
+      host: userId
+    })
+      .populate('course', 'courseName courseCode')
+      .populate('host', 'firstName lastName email')
+      .sort({ scheduledStartTime: -1 });
+  }
+
+  res.status(200).json(
+    ApiResponse.success(virtualClasses, 'Virtual classes retrieved successfully')
+  );
+});
 
 // Create virtual class
 export const createVirtualClass = asyncHandler(async (req, res) => {
@@ -192,6 +232,7 @@ export const deleteVirtualClass = asyncHandler(async (req, res) => {
 });
 
 export default {
+  getMyVirtualClasses,
   createVirtualClass,
   getCourseVirtualClasses,
   getVirtualClassById,

@@ -17,7 +17,6 @@ interface Notification {
   type: string;
   title: string;
   content: string;
-  message?: string; // For backward compatibility
   link?: string;
   isRead: boolean;
   createdAt: string;
@@ -330,7 +329,7 @@ export function NotificationBell() {
                                   )}
                                 </div>
                                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                  {notification.content || notification.message}
+                                  {notification.content}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-2">
                                   {formatDistanceToNow(new Date(notification.createdAt), {

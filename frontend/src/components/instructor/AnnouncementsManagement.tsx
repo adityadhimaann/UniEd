@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
+import announcementService from '@/services/announcementService';
 import { instructorService } from '@/services/instructorService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Bell, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Bell } from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,12 +56,12 @@ export default function AnnouncementsManagement() {
       const coursesRes = await instructorService.getMyCourses();
       setCourses(coursesRes.data);
       
-      if (courseId) {
-        const announcementsRes = await instructorService.getCourseAnnouncements(courseId);
-        setAnnouncements(announcementsRes.data);
-      }
+      // Fetch all announcements
+      const announcementsRes = await announcementService.getAnnouncements({ courseId });
+      setAnnouncements(announcementsRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -66,165 +70,174 @@ export default function AnnouncementsManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await instructorService.createAnnouncement(formData);
+      await announcementService.createAnnouncement({
+        title: formData.title,
+        content: formData.content,
+        priority: formData.priority,
+        courseId: formData.course || undefined,
+        targetAudience: 'students',
+      });
       setShowCreateForm(false);
       setFormData({ course: courseId || '', title: '', content: '', priority: 'medium' });
       fetchData();
+      toast.success('Announcement created successfully');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error creating announcement');
+      console.error('Error creating announcement:', error);
+      toast.error(error.response?.data?.message || 'Error creating announcement');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <img src="/loadicon.gif" alt="Loading..." className="h-48 w-48" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
     <motion.div 
-      className="space-y-6" 
+      className="space-y-6 p-6" 
       initial="hidden" 
       animate="visible" 
       variants={containerVariants}
     >
       <motion.div className="flex items-center justify-between" variants={itemVariants}>
         <div>
-          <h1 className="text-3xl font-bold text-white">Announcements</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            Announcements
+          </h1>
+          <p className="text-muted-foreground mt-1">Manage course announcements</p>
         </div>
         <Button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => setShowCreateForm(true)}
+          className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Announcement
         </Button>
       </motion.div>
 
-      {showCreateForm && (
-        <motion.div variants={itemVariants}>
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Create New Announcement</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="course" className="text-gray-200">Course *</Label>
-                <select
-                  id="course"
-                  value={formData.course}
-                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white"
-                  required
-                >
-                  <option value="">Select a course</option>
-                  {courses.map((course) => (
-                    <option key={course._id} value={course._id}>
-                      {course.code} - {course.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-gray-200">Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Announcement title"
-                  required
-                  className="bg-gray-900 border-gray-700 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="content" className="text-gray-200">Content *</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Announcement content..."
-                  required
-                  rows={4}
-                  className="bg-gray-900 border-gray-700 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="priority" className="text-gray-200">Priority *</Label>
-                <select
-                  id="priority"
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'low' | 'medium' | 'high' })}
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white"
-                  required
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                  Create Announcement
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCreateForm(false)}
-                  className="border-gray-700 text-gray-200 hover:bg-gray-800"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-        </motion.div>
-      )}
+      {/* Create Announcement Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Create New Announcement</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="course">Course (Optional)</Label>
+              <select
+                id="course"
+                value={formData.course}
+                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md"
+              >
+                <option value="">All Courses (General Announcement)</option>
+                {courses.map((course) => (
+                  <option key={course._id} value={course._id}>
+                    {course.courseCode} - {course.courseName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Announcement title"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="content">Content *</Label>
+              <Textarea
+                id="content"
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                placeholder="Announcement content..."
+                required
+                rows={6}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority *</Label>
+              <select
+                id="priority"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'low' | 'medium' | 'high' })}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md"
+                required
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreateForm(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-cyan-500">
+                Create Announcement
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {announcements.length > 0 ? (
         <motion.div className="space-y-4" variants={containerVariants}>
           {announcements.map((announcement) => (
             <motion.div key={announcement._id} variants={itemVariants}>
-            <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-white text-lg">{announcement.title}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        announcement.priority === 'high'
-                          ? 'bg-red-900/50 text-red-200 border border-red-700'
-                          : announcement.priority === 'medium'
-                          ? 'bg-yellow-900/50 text-yellow-200 border border-yellow-700'
-                          : 'bg-blue-900/50 text-blue-200 border border-blue-700'
-                      }`}>
-                        {announcement.priority}
-                      </span>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{announcement.title}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          announcement.priority === 'high'
+                            ? 'bg-red-100 text-red-800 border border-red-200'
+                            : announcement.priority === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                            : 'bg-green-100 text-green-800 border border-green-200'
+                        }`}>
+                          {announcement.priority.toUpperCase()}
+                        </span>
+                      </div>
+                      {announcement.course && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {announcement.course.courseCode} - {announcement.course.courseName}
+                        </p>
+                      )}
+                      <p className="text-muted-foreground mb-3 whitespace-pre-wrap">{announcement.content}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(announcement.createdAt), 'MMM dd, yyyy h:mm a')}
+                      </p>
                     </div>
-                    <p className="text-gray-300 mb-3">{announcement.content}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(announcement.createdAt).toLocaleString()}
-                    </p>
+                    <Bell className="h-5 w-5 text-blue-500" />
                   </div>
-                  <Bell className="h-5 w-5 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </motion.div>
       ) : (
         <motion.div variants={itemVariants}>
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="text-center py-12">
-            <Bell className="h-12 w-12 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">No announcements yet</h3>
-            <p className="text-gray-400 mb-4">Create your first announcement to get started</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="text-center py-12">
+              <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No announcements yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first announcement to get started</p>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
     </motion.div>

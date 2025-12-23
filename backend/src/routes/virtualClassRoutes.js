@@ -7,6 +7,9 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticate);
 
+// Get my virtual classes (must be before /:classId to avoid route conflict)
+router.get('/my-classes', virtualClassController.getMyVirtualClasses);
+
 // Create virtual class (faculty only)
 router.post('/', virtualClassController.createVirtualClass);
 
