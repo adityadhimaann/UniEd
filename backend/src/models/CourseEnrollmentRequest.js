@@ -29,7 +29,7 @@ const courseEnrollmentRequestSchema = new mongoose.Schema(
     },
     enrollmentType: {
       type: String,
-      enum: ['free-trial', 'purchase', 'subscription'],
+      enum: ['free-trial', 'purchase', 'subscription', 'audit'],
       required: [true, 'Enrollment type is required'],
     },
     respondedAt: {

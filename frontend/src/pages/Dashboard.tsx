@@ -48,6 +48,7 @@ import { CalendarPage } from "@/components/dashboard/CalendarPage";
 import { MessagesPage } from "@/components/dashboard/MessagesPage";
 import { SettingsPage } from "@/components/dashboard/SettingsPage";
 import { VirtualClassesPage } from "@/components/dashboard/VirtualClassesPage";
+import { AdminPage } from "@/components/dashboard/AdminPage";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { GlobalSearch } from "@/components/dashboard/GlobalSearch";
 import { VirtualClassPopup } from "@/components/dashboard/VirtualClassPopup";
@@ -364,6 +365,7 @@ export default function Dashboard() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="virtual-classes" element={<VirtualClassesPage />} />
+            <Route path="admin" element={<AdminPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<DashboardHome />} />
           </Routes>

@@ -267,7 +267,7 @@ export const getEnrolledCoursesWithProgress = asyncHandler(async (req, res) => {
 const getDetailedGrades = asyncHandler(async (req, res) => {
   const gradeService = (await import('../services/gradeService.js')).default;
   
-  const gradesData = await gradeService.getStudentGrades(req.user.id);
+  const gradesData = await gradeService.getStudentGrades(req.user._id);
   
   res.json({
     success: true,
@@ -278,7 +278,7 @@ const getDetailedGrades = asyncHandler(async (req, res) => {
 const getSemesterGrades = asyncHandler(async (req, res) => {
   const gradeService = (await import('../services/gradeService.js')).default;
   
-  const semesters = await gradeService.getSemesterGrades(req.user.id);
+  const semesters = await gradeService.getSemesterGrades(req.user._id);
   
   res.json({
     success: true,
@@ -290,7 +290,7 @@ const getCourseGradeBreakdown = asyncHandler(async (req, res) => {
   const gradeService = (await import('../services/gradeService.js')).default;
   const { courseId } = req.params;
   
-  const breakdown = await gradeService.getCourseGradeBreakdown(req.user.id, courseId);
+  const breakdown = await gradeService.getCourseGradeBreakdown(req.user._id, courseId);
   
   res.json({
     success: true,
@@ -302,7 +302,7 @@ const getCourseGradeBreakdown = asyncHandler(async (req, res) => {
 const getUpcomingEvents = asyncHandler(async (req, res) => {
   const calendarService = (await import('../services/calendarService.js')).default;
   
-  const events = await calendarService.getUpcomingEvents(req.user.id);
+  const events = await calendarService.getUpcomingEvents(req.user._id);
   
   res.json({
     success: true,
@@ -315,7 +315,7 @@ const getMonthlyCalendar = asyncHandler(async (req, res) => {
   const { year, month } = req.query;
   
   const calendar = await calendarService.getMonthlyCalendar(
-    req.user.id,
+    req.user._id,
     parseInt(year),
     parseInt(month)
   );

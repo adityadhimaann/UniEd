@@ -50,6 +50,8 @@ export default function VirtualClassroomMeeting() {
   const [isWhiteboardFullscreen, setIsWhiteboardFullscreen] = useState(false);
   const [drawStartPos, setDrawStartPos] = useState<{ x: number; y: number } | null>(null);
   const whiteboardContainerRef = useRef<HTMLDivElement>(null);
+  const lastWhiteboardUpdate = useRef<number>(0);
+  const whiteboardUpdateThrottle = 100; // ms between updates
   
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid');
   const [isMinimized, setIsMinimized] = useState(false);
@@ -60,11 +62,17 @@ export default function VirtualClassroomMeeting() {
   const [participantStreams, setParticipantStreams] = useState<Map<string, MediaStream>>(new Map());
   const [isScreenShareFullscreen, setIsScreenShareFullscreen] = useState(false);
   const [screenShareUserId, setScreenShareUserId] = useState<string | null>(null);
+  const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
+  const [peerConnections, setPeerConnections] = useState<Map<string, RTCPeerConnection>>(new Map());
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
   const minimizedVideoRef = useRef<HTMLVideoElement>(null);
+  const participantVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   
-  const isHost = virtualClass?.host?._id === user?.id;
+  const isHost = virtualClass?.host?._id === user?.id || user?.role === 'faculty';
   const isStudent = user?.role === 'student';
 
   useEffect(() => {
@@ -85,6 +93,34 @@ export default function VirtualClassroomMeeting() {
     };
   }, [classId]);
 
+  // Establish peer connections when participants list updates AND we have local stream
+  useEffect(() => {
+    if (!virtualClass?.participants || !localStream) {
+      console.log('⏳ Waiting for participants and local stream...');
+      return;
+    }
+
+    console.log('👥 Participants list updated. Total participants:', virtualClass.participants.length);
+    console.log('🎥 Local stream available with', localStream.getTracks().length, 'tracks');
+
+    // Connect to all active participants
+    const activeParticipants = virtualClass.participants.filter(p => !p.leftAt && p.user._id !== user?.id);
+    
+    console.log('🔗 Need to connect to', activeParticipants.length, 'participants');
+    
+    activeParticipants.forEach(participant => {
+      // Only create connection if it doesn't exist
+      if (!peerConnections.has(participant.user._id)) {
+        console.log('🆕 Creating new connection with', participant.user.firstName, participant.user._id);
+        setTimeout(() => {
+          createOffer(participant.user._id);
+        }, 500);
+      } else {
+        console.log('✅ Connection already exists with', participant.user.firstName);
+      }
+    });
+  }, [virtualClass?.participants, localStream, user?.id]);
+
   // Initialize camera and microphone
   const initializeMedia = async () => {
     try {
@@ -104,17 +140,11 @@ export default function VirtualClassroomMeeting() {
       setLocalStream(stream);
       console.log('✅ Media stream obtained:', stream.getTracks().map(t => t.kind));
       
-      // Set initial muted state
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = !isMuted;
-        console.log('🎤 Audio track enabled:', track.enabled);
-      });
+      // Don't disable tracks initially - just set state
+      // Tracks will be managed by toggle functions
       
-      // Set initial video state
-      stream.getVideoTracks().forEach(track => {
-        track.enabled = !isVideoOff;
-        console.log('📹 Video track enabled:', track.enabled);
-      });
+      // Setup audio level detection for speaking indicator
+      setupAudioLevelDetection(stream);
       
       toast.success('Camera and microphone connected');
     } catch (error: any) {
@@ -129,8 +159,80 @@ export default function VirtualClassroomMeeting() {
     }
   };
 
+  // Setup audio level detection for speaking indicator
+  const setupAudioLevelDetection = (stream: MediaStream) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 1024;
+      
+      microphone.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      
+      // Start monitoring audio levels
+      monitorAudioLevel();
+    } catch (error) {
+      console.error('Error setting up audio detection:', error);
+    }
+  };
+
+  // Monitor audio level to detect speaking
+  const monitorAudioLevel = () => {
+    if (!analyserRef.current) return;
+    
+    const analyser = analyserRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    
+    const checkAudioLevel = () => {
+      analyser.getByteFrequencyData(dataArray);
+      
+      // Calculate average volume
+      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      
+      // Threshold for speaking detection (adjust as needed)
+      const isSpeaking = average > 20 && !isMuted;
+      
+      // Update speaking state
+      setSpeakingUsers(prev => {
+        const newSet = new Set(prev);
+        if (isSpeaking && user?.id) {
+          newSet.add(user.id);
+          // Emit speaking event to other participants
+          socket.emit('virtualClass:speaking', { classId, userId: user.id, isSpeaking: true });
+        } else if (!isSpeaking && user?.id && prev.has(user.id)) {
+          newSet.delete(user.id);
+          socket.emit('virtualClass:speaking', { classId, userId: user.id, isSpeaking: false });
+        }
+        return newSet;
+      });
+      
+      animationFrameRef.current = requestAnimationFrame(checkAudioLevel);
+    };
+    
+    checkAudioLevel();
+  };
+
   // Cleanup media streams
   const cleanupMedia = () => {
+    // Stop animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    
+    // Close all peer connections
+    peerConnections.forEach(pc => pc.close());
+    setPeerConnections(new Map());
+    
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
       setLocalStream(null);
@@ -145,6 +247,204 @@ export default function VirtualClassroomMeeting() {
     setParticipantStreams(new Map());
   };
 
+  // Create WebRTC peer connection
+  const createPeerConnection = (participantId: string): RTCPeerConnection => {
+    console.log('🔗 Creating peer connection with', participantId);
+    
+    const configuration: RTCConfiguration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+      ],
+    };
+
+    const pc = new RTCPeerConnection(configuration);
+
+    // Add local stream tracks to peer connection
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        const sender = pc.addTrack(track, localStream);
+        console.log('➕ Added local track:', track.kind, 'enabled:', track.enabled);
+      });
+    } else {
+      console.warn('⚠️ No local stream available when creating peer connection');
+    }
+
+    // Handle incoming tracks from remote peer
+    pc.ontrack = (event) => {
+      console.log('📹 Received remote track from', participantId, '- Kind:', event.track.kind, 'Enabled:', event.track.enabled);
+      const remoteStream = event.streams[0];
+      
+      if (remoteStream) {
+        console.log('✅ Remote stream received with', remoteStream.getTracks().length, 'tracks');
+        
+        // Log all tracks
+        remoteStream.getTracks().forEach(track => {
+          console.log(`  - ${track.kind} track: enabled=${track.enabled}, muted=${track.muted}, readyState=${track.readyState}`);
+        });
+        
+        setParticipantStreams(prev => {
+          const newMap = new Map(prev);
+          newMap.set(participantId, remoteStream);
+          console.log('📊 Updated participant streams. Total:', newMap.size);
+          return newMap;
+        });
+
+        // Attach to video element immediately
+        setTimeout(() => {
+          const videoElement = participantVideoRefs.current.get(participantId);
+          if (videoElement) {
+            videoElement.srcObject = remoteStream;
+            videoElement.muted = false; // CRITICAL: Enable audio
+            videoElement.volume = 1.0;
+            
+            // Ensure playback starts
+            videoElement.play().then(() => {
+              console.log('🎥 Video/Audio playing for', participantId);
+            }).catch(error => {
+              console.warn('⚠️ Autoplay blocked for', participantId, '- User interaction may be required');
+            });
+            
+            console.log('🔊 Audio enabled for', participantId);
+          } else {
+            console.warn('⚠️ Video element not found for', participantId);
+          }
+        }, 100);
+      }
+    };
+
+    // Handle ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('🧊 Sending ICE candidate to', participantId);
+        socket.emit('virtualClass:webrtc:iceCandidate', {
+          classId,
+          targetUserId: participantId,
+          candidate: event.candidate,
+        });
+      }
+    };
+
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log('🔗 Connection state with', participantId, ':', pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        console.log('✅ Successfully connected to', participantId);
+      } else if (pc.connectionState === 'failed') {
+        console.error('❌ Connection failed with', participantId);
+        // Attempt to reconnect
+        setTimeout(() => {
+          console.log('🔄 Attempting to reconnect with', participantId);
+          createOffer(participantId);
+        }, 2000);
+      } else if (pc.connectionState === 'disconnected') {
+        console.warn('⚠️ Disconnected from', participantId);
+      }
+    };
+
+    // Handle ICE connection state
+    pc.oniceconnectionstatechange = () => {
+      console.log('🧊 ICE connection state with', participantId, ':', pc.iceConnectionState);
+    };
+
+    return pc;
+  };
+
+  // Create and send offer to participant
+  const createOffer = async (participantId: string) => {
+    try {
+      console.log('📤 Creating offer for', participantId);
+      
+      if (!localStream) {
+        console.error('❌ Cannot create offer: no local stream');
+        return;
+      }
+      
+      const pc = createPeerConnection(participantId);
+      setPeerConnections(prev => new Map(prev).set(participantId, pc));
+
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+      
+      await pc.setLocalDescription(offer);
+
+      socket.emit('virtualClass:webrtc:offer', {
+        classId,
+        targetUserId: participantId,
+        offer,
+      });
+
+      console.log('✅ Offer sent to', participantId);
+    } catch (error) {
+      console.error('❌ Error creating offer for', participantId, ':', error);
+    }
+  };
+
+  // Handle incoming offer
+  const handleOffer = async (fromUserId: string, offer: RTCSessionDescriptionInit) => {
+    try {
+      console.log('📥 Received offer from', fromUserId);
+      
+      if (!localStream) {
+        console.error('❌ Cannot handle offer: no local stream');
+        return;
+      }
+      
+      const pc = createPeerConnection(fromUserId);
+      setPeerConnections(prev => new Map(prev).set(fromUserId, pc));
+
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socket.emit('virtualClass:webrtc:answer', {
+        classId,
+        targetUserId: fromUserId,
+        answer,
+      });
+
+      console.log('✅ Answer sent to', fromUserId);
+    } catch (error) {
+      console.error('❌ Error handling offer from', fromUserId, ':', error);
+    }
+  };
+
+  // Handle incoming answer
+  const handleAnswer = async (fromUserId: string, answer: RTCSessionDescriptionInit) => {
+    try {
+      console.log('📥 Received answer from', fromUserId);
+      
+      const pc = peerConnections.get(fromUserId);
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log('✅ Remote description set for', fromUserId);
+      } else {
+        console.error('❌ No peer connection found for', fromUserId);
+      }
+    } catch (error) {
+      console.error('❌ Error handling answer from', fromUserId, ':', error);
+    }
+  };
+
+  // Handle incoming ICE candidate
+  const handleIceCandidate = async (fromUserId: string, candidate: RTCIceCandidateInit) => {
+    try {
+      const pc = peerConnections.get(fromUserId);
+      if (pc) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log('🧊 ICE candidate added for', fromUserId);
+      } else {
+        console.warn('⚠️ No peer connection found for ICE candidate from', fromUserId);
+      }
+    } catch (error) {
+      console.error('❌ Error handling ICE candidate from', fromUserId, ':', error);
+    }
+  };
+
   // Update video element when local stream changes
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -152,6 +452,24 @@ export default function VirtualClassroomMeeting() {
       console.log('📹 Video element updated with stream');
     }
   }, [localStream]);
+
+  // Ensure video tracks are always enabled when toggling
+  useEffect(() => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = !isVideoOff;
+      });
+    }
+  }, [isVideoOff, localStream]);
+
+  // Ensure audio tracks are always enabled when toggling
+  useEffect(() => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !isMuted;
+      });
+    }
+  }, [isMuted, localStream]);
 
   // Update screen share video element
   useEffect(() => {
@@ -167,6 +485,25 @@ export default function VirtualClassroomMeeting() {
       minimizedVideoRef.current.srcObject = localStream;
     }
   }, [localStream, isMinimized]);
+
+  // Ensure remote participant audio is playing
+  useEffect(() => {
+    participantStreams.forEach((stream, participantId) => {
+      const videoElement = participantVideoRefs.current.get(participantId);
+      if (videoElement && stream) {
+        videoElement.srcObject = stream;
+        videoElement.muted = false;
+        videoElement.volume = 1.0;
+        
+        // Play audio if paused
+        videoElement.play().catch(error => {
+          console.warn('⚠️ Could not auto-play audio for', participantId, ':', error);
+        });
+        
+        console.log('🔊 Audio configured for participant:', participantId);
+      }
+    });
+  }, [participantStreams]);
 
   // Handle pause meeting
   const handlePauseMeeting = () => {
@@ -225,6 +562,13 @@ export default function VirtualClassroomMeeting() {
       console.log('Participant joined:', data);
       fetchClassData(); // Refresh participant list
       toast.success(`${data.participant.userName} joined the class`);
+      
+      // Initiate WebRTC connection with new participant
+      if (data.participant.userId !== user?.id) {
+        setTimeout(() => {
+          createOffer(data.participant.userId);
+        }, 1000);
+      }
     });
 
     // Listen for participant left
@@ -245,6 +589,9 @@ export default function VirtualClassroomMeeting() {
         );
         return { ...prev, participants: updatedParticipants };
       });
+      
+      // The audio track enabled state is automatically handled by WebRTC
+      // No need to manually update - the remote stream's audio track will reflect the change
     });
 
     // Listen for video toggle
@@ -258,6 +605,9 @@ export default function VirtualClassroomMeeting() {
         );
         return { ...prev, participants: updatedParticipants };
       });
+      
+      // The video track enabled state is automatically handled by WebRTC
+      // The UI will show/hide video based on isVideoOff state
     });
 
     // Listen for hand raised
@@ -319,31 +669,43 @@ export default function VirtualClassroomMeeting() {
 
     // Listen for whiteboard updates
     socket.on('virtualClass:whiteboard:updated', (data) => {
-      console.log('Whiteboard updated:', data);
+      console.log('🎨 Whiteboard update received from:', data.updatedBy);
       // Update whiteboard canvas in real-time
       if (canvasRef && data.whiteboardData) {
         const ctx = canvasRef.getContext('2d');
         if (ctx) {
           const img = new Image();
           img.onload = () => {
+            // Clear canvas first
             ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-            ctx.drawImage(img, 0, 0);
+            // Draw image scaled to canvas size
+            ctx.drawImage(img, 0, 0, canvasRef.width, canvasRef.height);
+            console.log('✅ Whiteboard updated successfully');
+          };
+          img.onerror = (error) => {
+            console.error('❌ Error loading whiteboard image:', error);
           };
           img.src = data.whiteboardData;
+        } else {
+          console.warn('⚠️ Canvas context not available');
         }
+      } else {
+        console.warn('⚠️ Canvas ref not available or no whiteboard data');
       }
     });
 
     // Listen for screen share start
     socket.on('virtualClass:screenShare:started', (data) => {
-      console.log('Screen share started:', data);
+      console.log('🖥️ Screen share started event received:', data);
+      console.log('🖥️ Setting screen share user ID to:', data.userId);
+      console.log('🖥️ Current participant streams:', Array.from(participantStreams.keys()));
       setScreenShareUserId(data.userId);
       toast.info(`${data.userName} started sharing screen`);
     });
 
     // Listen for screen share stop
     socket.on('virtualClass:screenShare:stopped', (data) => {
-      console.log('Screen share stopped:', data);
+      console.log('🖥️ Screen share stopped event received:', data);
       setScreenShareUserId(null);
       setIsScreenShareFullscreen(false);
       toast.info(`${data.userName} stopped sharing screen`);
@@ -396,6 +758,32 @@ export default function VirtualClassroomMeeting() {
       toast.success('Host has resumed the meeting');
     });
 
+    // Listen for speaking status
+    socket.on('virtualClass:speaking', (data) => {
+      setSpeakingUsers(prev => {
+        const newSet = new Set(prev);
+        if (data.isSpeaking) {
+          newSet.add(data.userId);
+        } else {
+          newSet.delete(data.userId);
+        }
+        return newSet;
+      });
+    });
+
+    // WebRTC signaling listeners
+    socket.on('virtualClass:webrtc:offer', (data) => {
+      handleOffer(data.fromUserId, data.offer);
+    });
+
+    socket.on('virtualClass:webrtc:answer', (data) => {
+      handleAnswer(data.fromUserId, data.answer);
+    });
+
+    socket.on('virtualClass:webrtc:iceCandidate', (data) => {
+      handleIceCandidate(data.fromUserId, data.candidate);
+    });
+
     // Cleanup
     return () => {
       socket.emit('virtualClass:leave', { classId });
@@ -417,6 +805,10 @@ export default function VirtualClassroomMeeting() {
       socket.off('virtualClass:muted:byHost');
       socket.off('virtualClass:paused');
       socket.off('virtualClass:resumed');
+      socket.off('virtualClass:speaking');
+      socket.off('virtualClass:webrtc:offer');
+      socket.off('virtualClass:webrtc:answer');
+      socket.off('virtualClass:webrtc:iceCandidate');
     };
   }, [classId, user, navigate]);
 
@@ -445,6 +837,17 @@ export default function VirtualClassroomMeeting() {
     if (!classId || classId === 'undefined') return;
     try {
       await virtualClassService.joinVirtualClass(classId);
+      
+      // After joining, initiate connections with existing participants
+      setTimeout(() => {
+        if (virtualClass?.participants) {
+          virtualClass.participants
+            .filter(p => !p.leftAt && p.user._id !== user?.id)
+            .forEach(participant => {
+              createOffer(participant.user._id);
+            });
+        }
+      }, 2000);
     } catch (error: any) {
       console.error('Error joining class:', error);
     }
@@ -461,21 +864,40 @@ export default function VirtualClassroomMeeting() {
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !classId) return;
-    try {
-      await virtualClassService.sendChatMessage(classId, chatMessage);
-      
-      // Emit Socket.IO event
-      socket.emit('virtualClass:chat:send', {
-        classId,
-        message: chatMessage,
-        isPrivate: false,
-      });
-      
-      setChatMessage('');
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    }
+    
+    const messageData = {
+      _id: `${Date.now()}-${user?.id}`,
+      sender: {
+        _id: user?.id,
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        avatar: user?.avatar || null,
+      },
+      message: chatMessage,
+      timestamp: new Date().toISOString(),
+      isPrivate: false,
+    };
+    
+    // Add message to local state immediately for instant feedback
+    setVirtualClass(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        chatMessages: [...(prev.chatMessages || []), messageData],
+      };
+    });
+    
+    // Emit Socket.IO event (backend will broadcast to others)
+    socket.emit('virtualClass:chat:send', {
+      classId,
+      message: chatMessage,
+      isPrivate: false,
+    });
+    
+    setChatMessage('');
+    
+    // Scroll to bottom
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
   const handleCreatePoll = async () => {
@@ -586,6 +1008,17 @@ export default function VirtualClassroomMeeting() {
     if (drawTool === 'pen' || drawTool === 'eraser') {
       ctx.lineTo(x, y);
       ctx.stroke();
+      
+      // Throttle whiteboard updates for better performance
+      const now = Date.now();
+      if (classId && now - lastWhiteboardUpdate.current > whiteboardUpdateThrottle) {
+        lastWhiteboardUpdate.current = now;
+        const whiteboardData = canvas.toDataURL();
+        socket.emit('virtualClass:whiteboard:update', {
+          classId,
+          whiteboardData,
+        });
+      }
     }
   };
 
@@ -703,11 +1136,27 @@ export default function VirtualClassroomMeeting() {
                 playsInline
                 className="w-full h-full object-contain"
               />
+            ) : screenShareUserId && participantStreams.has(screenShareUserId) ? (
+              <video
+                ref={(el) => {
+                  if (el && screenShareUserId) {
+                    const stream = participantStreams.get(screenShareUserId);
+                    if (stream && el.srcObject !== stream) {
+                      el.srcObject = stream;
+                      el.play().catch(err => console.error('Error playing remote screen share:', err));
+                    }
+                  }
+                }}
+                autoPlay
+                playsInline
+                muted={false}
+                className="w-full h-full object-contain"
+              />
             ) : (
               <div className="text-center text-white">
                 <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <p className="text-lg">Viewing shared screen</p>
-                <p className="text-sm text-gray-400 mt-2">Screen content will appear here</p>
+                <p className="text-sm text-gray-400 mt-2">Waiting for screen share stream...</p>
               </div>
             )}
           </div>
@@ -741,17 +1190,22 @@ export default function VirtualClassroomMeeting() {
           }`}>
             {/* Local user video (always show first) */}
             {user && (
-              <Card key={user.id} className="relative aspect-video bg-gray-800 border-gray-700 overflow-hidden">
-                {/* Video element */}
-                {localStream && !isVideoOff ? (
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
+              <Card key={user.id} className={`relative aspect-video bg-gray-800 border-gray-700 overflow-hidden ${
+                speakingUsers.has(user.id) ? 'ring-4 ring-green-500 ring-opacity-75' : ''
+              }`}>
+                {/* Video element - always render, track.enabled controls visibility */}
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                    isVideoOff ? 'opacity-0' : 'opacity-100'
+                  }`}
+                />
+                
+                {/* Avatar overlay when video is off */}
+                {isVideoOff && (
                   <>
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20" />
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -769,6 +1223,11 @@ export default function VirtualClassroomMeeting() {
                   {isMuted && (
                     <div className="bg-red-500 rounded-full p-1.5">
                       <MicOff className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                  {!isMuted && speakingUsers.has(user.id) && (
+                    <div className="bg-green-500 rounded-full p-1.5 animate-pulse">
+                      <Mic className="w-3 h-3 text-white" />
                     </div>
                   )}
                   {isVideoOff && (
@@ -793,56 +1252,84 @@ export default function VirtualClassroomMeeting() {
             )}
             
             {/* Other participants */}
-            {virtualClass.participants?.filter(p => !p.leftAt && p.user._id !== user?.id).map((participant) => (
-              <Card key={participant.user._id} className="relative aspect-video bg-gray-800 border-gray-700 overflow-hidden">
-                {/* Show avatar when video is off */}
-                {participant.isVideoOff ? (
-                  <>
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                        <span className="text-3xl font-bold text-white">
-                          {participant.user.firstName?.[0]}{participant.user.lastName?.[0]}
-                        </span>
+            {virtualClass.participants?.filter(p => !p.leftAt && p.user._id !== user?.id).map((participant) => {
+              const participantStream = participantStreams.get(participant.user._id);
+              
+              return (
+                <Card key={participant.user._id} className={`relative aspect-video bg-gray-800 border-gray-700 overflow-hidden ${
+                  speakingUsers.has(participant.user._id) ? 'ring-4 ring-green-500 ring-opacity-75' : ''
+                }`}>
+                  {/* Video element - always render if stream exists, track.enabled controls visibility */}
+                  {participantStream && (
+                    <video
+                      ref={(el) => {
+                        if (el) {
+                          participantVideoRefs.current.set(participant.user._id, el);
+                          if (participantStream) {
+                            el.srcObject = participantStream;
+                            // Ensure audio plays
+                            el.muted = false;
+                            el.volume = 1.0;
+                            console.log('🔊 Audio enabled for', participant.user.firstName);
+                          }
+                        }
+                      }}
+                      autoPlay
+                      playsInline
+                      muted={false}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                        participant.isVideoOff ? 'opacity-0' : 'opacity-100'
+                      }`}
+                    />
+                  )}
+                  
+                  {/* Avatar overlay - show when no stream or video is off */}
+                  {(!participantStream || participant.isVideoOff) && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                          <span className="text-3xl font-bold text-white">
+                            {participant.user.firstName?.[0]}{participant.user.lastName?.[0]}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <Video className="w-12 h-12 text-white/50 mx-auto mb-2" />
-                      <p className="text-sm text-white/70">Camera enabled</p>
-                    </div>
+                    </>
+                  )}
+                  
+                  {/* Status indicators */}
+                  <div className="absolute bottom-2 left-2 flex gap-1">
+                    {participant.isMuted && (
+                      <div className="bg-red-500 rounded-full p-1.5">
+                        <MicOff className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    {!participant.isMuted && speakingUsers.has(participant.user._id) && (
+                      <div className="bg-green-500 rounded-full p-1.5 animate-pulse">
+                        <Mic className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    {participant.isVideoOff && (
+                      <div className="bg-gray-600 rounded-full p-1.5">
+                        <VideoOff className="w-3 h-3 text-white" />
+                      </div>
+                    )}
                   </div>
-                )}
-                
-                {/* Status indicators */}
-                <div className="absolute bottom-2 left-2 flex gap-1">
-                  {participant.isMuted && (
-                    <div className="bg-red-500 rounded-full p-1.5">
-                      <MicOff className="w-3 h-3 text-white" />
+                  
+                  {/* Name tag */}
+                  <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
+                    {participant.user.firstName} {participant.user.lastName}
+                  </div>
+                  
+                  {/* Hand raised indicator */}
+                  {participant.isHandRaised && (
+                    <div className="absolute top-2 right-2">
+                      <Hand className="w-6 h-6 text-yellow-400 animate-bounce" />
                     </div>
                   )}
-                  {participant.isVideoOff && (
-                    <div className="bg-gray-600 rounded-full p-1.5">
-                      <VideoOff className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Name tag */}
-                <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
-                  {participant.user.firstName} {participant.user.lastName}
-                </div>
-                
-                {/* Hand raised indicator */}
-                {participant.isHandRaised && (
-                  <div className="absolute top-2 right-2">
-                    <Hand className="w-6 h-6 text-yellow-400 animate-bounce" />
-                  </div>
-                )}
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </div>
 
@@ -922,7 +1409,9 @@ export default function VirtualClassroomMeeting() {
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-2">
                   {virtualClass.participants?.filter(p => !p.leftAt).map((participant) => (
-                    <div key={participant.user._id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors">
+                    <div key={participant.user._id} className={`flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors ${
+                      speakingUsers.has(participant.user._id) ? 'bg-green-500/10 ring-2 ring-green-500/50' : ''
+                    }`}>
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-bold text-white">{participant.user.firstName?.[0]}{participant.user.lastName?.[0]}</span>
                       </div>
@@ -931,7 +1420,11 @@ export default function VirtualClassroomMeeting() {
                         <p className="text-xs text-muted-foreground capitalize">{participant.role}</p>
                       </div>
                       {participant.isHandRaised && <Hand className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
-                      {participant.isMuted && <MicOff className="w-4 h-4 text-red-500 flex-shrink-0" />}
+                      {participant.isMuted ? (
+                        <MicOff className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      ) : speakingUsers.has(participant.user._id) ? (
+                        <Mic className="w-4 h-4 text-green-500 flex-shrink-0 animate-pulse" />
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -1067,21 +1560,20 @@ export default function VirtualClassroomMeeting() {
                       <Palette className="w-4 h-4 inline mr-1" />
                       View only - Host is drawing
                     </div>
-                    {isWhiteboardFullscreen && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setIsWhiteboardFullscreen(false)}>
-                        Exit Fullscreen
-                      </Button>
-                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsWhiteboardFullscreen(!isWhiteboardFullscreen)}
+                      title={isWhiteboardFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+                      {isWhiteboardFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    </Button>
                   </div>
                 )}
                 <canvas 
                   ref={(el) => setCanvasRef(el)}
                   width={isWhiteboardFullscreen ? window.innerWidth - 40 : 280} 
                   height={isWhiteboardFullscreen ? window.innerHeight - 150 : 400}
-                  className={`border border-border rounded-lg bg-white ${isHost ? 'cursor-crosshair' : 'cursor-not-allowed'} ${isWhiteboardFullscreen ? 'flex-1' : ''}`}
+                  className={`border border-border rounded-lg bg-white ${isHost ? 'cursor-crosshair' : 'cursor-default'} ${isWhiteboardFullscreen ? 'flex-1' : ''}`}
                   onMouseDown={isHost ? startDrawing : undefined} 
                   onMouseMove={isHost ? draw : undefined} 
                   onMouseUp={isHost ? stopDrawing : undefined} 
@@ -1100,13 +1592,15 @@ export default function VirtualClassroomMeeting() {
           
           console.log('🎤 Toggling audio:', newMutedState ? 'MUTED' : 'UNMUTED');
           
-          // Toggle audio track
+          // Toggle audio track enabled state (don't stop/start the track)
           if (localStream) {
             localStream.getAudioTracks().forEach(track => {
               track.enabled = !newMutedState;
               console.log('🎤 Audio track enabled:', track.enabled);
             });
           }
+          
+          // No need to update peer connections - track enabled state is automatically reflected
           
           socket.emit('virtualClass:toggleAudio', { classId, isMuted: newMutedState });
         }}
@@ -1119,13 +1613,15 @@ export default function VirtualClassroomMeeting() {
           
           console.log('📹 Toggling video:', newVideoState ? 'OFF' : 'ON');
           
-          // Toggle video track
+          // Toggle video track enabled state (don't stop/start the track)
           if (localStream) {
             localStream.getVideoTracks().forEach(track => {
               track.enabled = !newVideoState;
               console.log('📹 Video track enabled:', track.enabled);
             });
           }
+          
+          // No need to update peer connections - track enabled state is automatically reflected
           
           socket.emit('virtualClass:toggleVideo', { classId, isVideoOff: newVideoState });
         }}
@@ -1150,8 +1646,53 @@ export default function VirtualClassroomMeeting() {
                 setIsScreenSharing(true);
                 setScreenShareUserId(user?.id || null);
                 
+                // Add screen share track to all existing peer connections
+                const screenTrack = stream.getVideoTracks()[0];
+                
+                console.log('🖥️ Screen sharing started, adding to peer connections...');
+                console.log('🖥️ Screen track details:', {
+                  id: screenTrack.id,
+                  kind: screenTrack.kind,
+                  enabled: screenTrack.enabled,
+                  readyState: screenTrack.readyState
+                });
+                
+                peerConnections.forEach((pc, participantId) => {
+                  // Find and replace the video sender with screen share
+                  const senders = pc.getSenders();
+                  const videoSender = senders.find(sender => sender.track?.kind === 'video');
+                  
+                  if (videoSender) {
+                    console.log('🔄 Replacing video track with screen share for', participantId);
+                    videoSender.replaceTrack(screenTrack).then(() => {
+                      console.log('✅ Screen share track added to peer connection with', participantId);
+                    }).catch(error => {
+                      console.error('❌ Error adding screen share track to', participantId, ':', error);
+                    });
+                  } else {
+                    console.warn('⚠️ No video sender found for', participantId);
+                  }
+                });
+                
                 // Listen for when user stops sharing via browser UI
-                stream.getVideoTracks()[0].onended = () => {
+                screenTrack.onended = () => {
+                  console.log('🖥️ Screen sharing ended by user');
+                  
+                  // Restore camera video track
+                  if (localStream) {
+                    const cameraTrack = localStream.getVideoTracks()[0];
+                    peerConnections.forEach((pc, participantId) => {
+                      const senders = pc.getSenders();
+                      const videoSender = senders.find(sender => sender.track?.kind === 'video');
+                      
+                      if (videoSender && cameraTrack) {
+                        videoSender.replaceTrack(cameraTrack).then(() => {
+                          console.log('✅ Camera track restored for', participantId);
+                        });
+                      }
+                    });
+                  }
+                  
                   setScreenStream(null);
                   setIsScreenSharing(false);
                   setScreenShareUserId(null);
@@ -1161,7 +1702,6 @@ export default function VirtualClassroomMeeting() {
                 
                 socket.emit('virtualClass:screenShare:start', { classId });
                 toast.success('Screen sharing started');
-                console.log('🖥️ Screen sharing started');
               } catch (error: any) {
                 console.error('Error starting screen share:', error);
                 if (error.name === 'NotAllowedError') {
@@ -1172,6 +1712,23 @@ export default function VirtualClassroomMeeting() {
               }
             } else {
               // Stop screen sharing
+              console.log('🖥️ Stopping screen share...');
+              
+              // Restore camera video track to all peer connections
+              if (localStream) {
+                const cameraTrack = localStream.getVideoTracks()[0];
+                peerConnections.forEach((pc, participantId) => {
+                  const senders = pc.getSenders();
+                  const videoSender = senders.find(sender => sender.track?.kind === 'video');
+                  
+                  if (videoSender && cameraTrack) {
+                    videoSender.replaceTrack(cameraTrack).then(() => {
+                      console.log('✅ Camera track restored for', participantId);
+                    });
+                  }
+                });
+              }
+              
               if (screenStream) {
                 screenStream.getTracks().forEach(track => track.stop());
                 setScreenStream(null);
@@ -1180,7 +1737,6 @@ export default function VirtualClassroomMeeting() {
               setScreenShareUserId(null);
               socket.emit('virtualClass:screenShare:stop', { classId });
               toast.info('Screen sharing stopped');
-              console.log('🖥️ Screen sharing stopped');
             }
           }}
             className="rounded-full w-12 h-12 p-0">

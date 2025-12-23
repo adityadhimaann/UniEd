@@ -2,7 +2,7 @@ import express from 'express';
 import courseMaterialController from '../controllers/courseMaterialController.js';
 import { authenticate } from '../middlewares/auth.js';
 import { checkRole } from '../middlewares/roleCheck.js';
-import { upload } from '../middlewares/upload.js';
+import { upload, handleMulterError } from '../middlewares/upload.js';
 
 const router = express.Router();
 
@@ -14,6 +14,7 @@ router.post(
   '/',
   checkRole(['faculty', 'admin']),
   upload.single('file'),
+  handleMulterError,
   courseMaterialController.uploadMaterial
 );
 

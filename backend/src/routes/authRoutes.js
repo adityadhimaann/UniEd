@@ -19,7 +19,7 @@ import { authenticate } from '../middlewares/auth.js';
 import validate from '../middlewares/validate.js';
 import { registerValidator, loginValidator, refreshTokenValidator } from '../utils/validators.js';
 import { authLimiter } from '../middlewares/rateLimiter.js';
-import upload from '../middlewares/upload.js';
+import upload, { handleMulterError } from '../middlewares/upload.js';
 
 const router = express.Router();
 
@@ -35,7 +35,7 @@ router.get('/verify-email', verifyEmail);
 router.post('/logout', authenticate, logout);
 router.get('/profile', authenticate, getProfile);
 router.patch('/profile', authenticate, updateProfile);
-router.post('/profile/picture', authenticate, upload.single('profilePicture'), uploadProfilePicture);
+router.post('/profile/picture', authenticate, upload.single('profilePicture'), handleMulterError, uploadProfilePicture);
 router.post('/set-password-role', authenticate, setPasswordAndRole);
 router.post('/complete-onboarding', authenticate, completeOnboarding);
 router.delete('/account', authenticate, deleteAccount);

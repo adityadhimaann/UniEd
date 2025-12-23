@@ -582,6 +582,18 @@ export const initializeSocket = (server) => {
       });
     });
 
+    // Speaking status (audio level detection)
+    socket.on('virtualClass:speaking', (data) => {
+      const { classId, userId: speakingUserId, isSpeaking } = data;
+      const room = `virtualClass:${classId}`;
+      
+      // Broadcast to others (not sender)
+      socket.to(room).emit('virtualClass:speaking', {
+        userId: speakingUserId,
+        isSpeaking,
+      });
+    });
+
     // File shared
     socket.on('virtualClass:file:shared', (data) => {
       const { classId, file } = data;

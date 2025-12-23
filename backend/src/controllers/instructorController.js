@@ -495,7 +495,7 @@ export const updatePrerequisites = asyncHandler(async (req, res) => {
 const getProfile = asyncHandler(async (req, res) => {
   const User = (await import('../models/User.js')).default;
   
-  const user = await User.findById(req.user.id).select('-password');
+  const user = await User.findById(req.user._id).select('-password');
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -511,7 +511,7 @@ const updateProfile = asyncHandler(async (req, res) => {
   const User = (await import('../models/User.js')).default;
   const { firstName, lastName, phone, department, designation, bio, officeLocation, officeHours, specialization } = req.body;
   
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -549,7 +549,7 @@ const changePassword = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Please provide current and new password' });
   }
   
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -576,7 +576,7 @@ const updateNotificationSettings = asyncHandler(async (req, res) => {
   const User = (await import('../models/User.js')).default;
   const { emailNotifications, assignmentSubmissions, enrollmentRequests, announcements, systemUpdates } = req.body;
   
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -611,7 +611,7 @@ const updatePrivacySettings = asyncHandler(async (req, res) => {
   const User = (await import('../models/User.js')).default;
   const { showEmail, showPhone, showOfficeHours } = req.body;
   
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -645,14 +645,14 @@ const deleteAccount = asyncHandler(async (req, res) => {
   const Course = (await import('../models/Course.js')).default;
   const Assignment = (await import('../models/Assignment.js')).default;
   
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
   
   // Check if user has active courses
-  const activeCourses = await Course.countDocuments({ faculty: req.user.id });
+  const activeCourses = await Course.countDocuments({ faculty: req.user._id });
   
   if (activeCourses > 0) {
     return res.status(400).json({ 
@@ -661,7 +661,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
   }
   
   // Delete user
-  await User.findByIdAndDelete(req.user.id);
+  await User.findByIdAndDelete(req.user._id);
   
   res.json({
     success: true,
