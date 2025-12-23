@@ -18,7 +18,14 @@ class CalendarService {
       return [];
     }
 
-    const courseIds = enrollments.map(e => e.course._id);
+    // Filter out enrollments with null courses (deleted courses)
+    const validEnrollments = enrollments.filter(e => e.course != null);
+    
+    if (validEnrollments.length === 0) {
+      return [];
+    }
+
+    const courseIds = validEnrollments.map(e => e.course._id);
 
     // Get upcoming assignments
     const assignments = await Assignment.find({
@@ -105,7 +112,19 @@ class CalendarService {
       };
     }
 
-    const courseIds = enrollments.map(e => e.course._id);
+    // Filter out enrollments with null courses (deleted courses)
+    const validEnrollments = enrollments.filter(e => e.course != null);
+    
+    if (validEnrollments.length === 0) {
+      return {
+        year,
+        month,
+        calendar: {},
+        totalEvents: 0
+      };
+    }
+
+    const courseIds = validEnrollments.map(e => e.course._id);
 
     // Get assignments for the month
     const assignments = await Assignment.find({
