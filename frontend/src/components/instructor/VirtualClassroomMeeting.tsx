@@ -65,6 +65,7 @@ export default function VirtualClassroomMeeting() {
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const [peerConnections, setPeerConnections] = useState<Map<string, RTCPeerConnection>>(new Map());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Start closed on mobile
+  const [pendingIceCandidates, setPendingIceCandidates] = useState<Map<string, RTCIceCandidateInit[]>>(new Map());
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
   const minimizedVideoRef = useRef<HTMLVideoElement>(null);
@@ -110,14 +111,47 @@ export default function VirtualClassroomMeeting() {
     console.log('🔗 Need to connect to', activeParticipants.length, 'participants');
     
     activeParticipants.forEach(participant => {
-      // Only create connection if it doesn't exist
-      if (!peerConnections.has(participant.user._id)) {
-        console.log('🆕 Creating new connection with', participant.user.firstName, participant.user._id);
+      const participantId = participant.user._id;
+      
+      // Only create connection if it doesn't exist or is in failed state
+      const existingPc = peerConnections.get(participantId);
+      
+      if (!existingPc) {
+        console.log('🆕 Creating new connection with', participant.user.firstName, participantId);
+        // Use polite/impolite pattern - user with lower ID is polite
+        const isPolite = (user?.id || '') < participantId;
         setTimeout(() => {
-          createOffer(participant.user._id);
+          if (isPolite) {
+            console.log('😊 Being polite - waiting for offer from', participant.user.firstName);
+          } else {
+            console.log('😎 Being impolite - creating offer for', participant.user.firstName);
+            createOffer(participantId);
+          }
         }, 500);
+      } else if (existingPc.connectionState === 'failed' || existingPc.connectionState === 'closed') {
+        console.log('🔄 Reconnecting with', participant.user.firstName);
+        existingPc.close();
+        peerConnections.delete(participantId);
+        setTimeout(() => {
+          createOffer(participantId);
+        }, 1000);
       } else {
-        console.log('✅ Connection already exists with', participant.user.firstName);
+        console.log('✅ Connection already exists with', participant.user.firstName, '- State:', existingPc.connectionState);
+      }
+    });
+    
+    // Clean up connections for participants who left
+    peerConnections.forEach((pc, participantId) => {
+      const stillActive = activeParticipants.some(p => p.user._id === participantId);
+      if (!stillActive) {
+        console.log('🧹 Cleaning up connection with', participantId);
+        pc.close();
+        peerConnections.delete(participantId);
+        setParticipantStreams(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(participantId);
+          return newMap;
+        });
       }
     });
   }, [virtualClass?.participants, localStream, user?.id]);
@@ -332,15 +366,28 @@ export default function VirtualClassroomMeeting() {
       console.log('🔗 Connection state with', participantId, ':', pc.connectionState);
       if (pc.connectionState === 'connected') {
         console.log('✅ Successfully connected to', participantId);
+        toast.success(`Connected to ${participantId.substring(0, 8)}...`);
       } else if (pc.connectionState === 'failed') {
         console.error('❌ Connection failed with', participantId);
+        toast.error(`Connection failed with ${participantId.substring(0, 8)}...`);
         // Attempt to reconnect
         setTimeout(() => {
           console.log('🔄 Attempting to reconnect with', participantId);
-          createOffer(participantId);
-        }, 2000);
+          pc.close();
+          setPeerConnections(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(participantId);
+            return newMap;
+          });
+          // Only impolite peer retries
+          const isPolite = (user?.id || '') < participantId;
+          if (!isPolite) {
+            createOffer(participantId);
+          }
+        }, 3000);
       } else if (pc.connectionState === 'disconnected') {
         console.warn('⚠️ Disconnected from', participantId);
+        toast.warning(`Disconnected from ${participantId.substring(0, 8)}...`);
       }
     };
 
@@ -394,10 +441,48 @@ export default function VirtualClassroomMeeting() {
         return;
       }
       
-      const pc = createPeerConnection(fromUserId);
-      setPeerConnections(prev => new Map(prev).set(fromUserId, pc));
+      let pc = peerConnections.get(fromUserId);
+      
+      // Create peer connection if it doesn't exist
+      if (!pc) {
+        console.log('🆕 Creating peer connection for incoming offer from', fromUserId);
+        pc = createPeerConnection(fromUserId);
+        setPeerConnections(prev => new Map(prev).set(fromUserId, pc));
+      }
+      
+      // Check if we need to handle collision (both sides sent offers)
+      const isPolite = (user?.id || '') < fromUserId;
+      const offerCollision = pc.signalingState !== 'stable';
+      
+      if (offerCollision) {
+        console.log('⚠️ Offer collision detected with', fromUserId);
+        if (!isPolite) {
+          console.log('😎 Impolite - ignoring offer');
+          return; // Impolite peer ignores offer
+        }
+        console.log('😊 Polite - rolling back and accepting offer');
+      }
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      console.log('✅ Remote description set for', fromUserId);
+      
+      // Process any queued ICE candidates
+      const queuedCandidates = pendingIceCandidates.get(fromUserId);
+      if (queuedCandidates && queuedCandidates.length > 0) {
+        console.log('🧊 Processing', queuedCandidates.length, 'queued ICE candidates for', fromUserId);
+        for (const candidate of queuedCandidates) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (err) {
+            console.error('❌ Error adding queued ICE candidate:', err);
+          }
+        }
+        setPendingIceCandidates(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(fromUserId);
+          return newMap;
+        });
+      }
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -423,6 +508,24 @@ export default function VirtualClassroomMeeting() {
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(answer));
         console.log('✅ Remote description set for', fromUserId);
+        
+        // Process any queued ICE candidates
+        const queuedCandidates = pendingIceCandidates.get(fromUserId);
+        if (queuedCandidates && queuedCandidates.length > 0) {
+          console.log('🧊 Processing', queuedCandidates.length, 'queued ICE candidates for', fromUserId);
+          for (const candidate of queuedCandidates) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (err) {
+              console.error('❌ Error adding queued ICE candidate:', err);
+            }
+          }
+          setPendingIceCandidates(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(fromUserId);
+            return newMap;
+          });
+        }
       } else {
         console.error('❌ No peer connection found for', fromUserId);
       }
@@ -435,9 +538,19 @@ export default function VirtualClassroomMeeting() {
   const handleIceCandidate = async (fromUserId: string, candidate: RTCIceCandidateInit) => {
     try {
       const pc = peerConnections.get(fromUserId);
-      if (pc) {
+      if (pc && pc.remoteDescription) {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
         console.log('🧊 ICE candidate added for', fromUserId);
+      } else if (pc) {
+        // Queue candidate if remote description not set yet
+        console.log('⏳ Queueing ICE candidate for', fromUserId, '(remote description not set)');
+        setPendingIceCandidates(prev => {
+          const newMap = new Map(prev);
+          const queue = newMap.get(fromUserId) || [];
+          queue.push(candidate);
+          newMap.set(fromUserId, queue);
+          return newMap;
+        });
       } else {
         console.warn('⚠️ No peer connection found for ICE candidate from', fromUserId);
       }
@@ -486,6 +599,44 @@ export default function VirtualClassroomMeeting() {
       minimizedVideoRef.current.srcObject = localStream;
     }
   }, [localStream, isMinimized]);
+  
+  // Periodic connection health check
+  useEffect(() => {
+    const healthCheckInterval = setInterval(() => {
+      if (!virtualClass?.participants || !localStream) return;
+      
+      const activeParticipants = virtualClass.participants.filter(p => !p.leftAt && p.user._id !== user?.id);
+      
+      activeParticipants.forEach(participant => {
+        const participantId = participant.user._id;
+        const pc = peerConnections.get(participantId);
+        
+        if (!pc) {
+          console.log('🏥 Health check: No connection with', participant.user.firstName, '- Creating...');
+          const isPolite = (user?.id || '') < participantId;
+          if (!isPolite) {
+            createOffer(participantId);
+          }
+        } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          console.log('🏥 Health check: Connection failed with', participant.user.firstName, '- Reconnecting...');
+          pc.close();
+          peerConnections.delete(participantId);
+          const isPolite = (user?.id || '') < participantId;
+          if (!isPolite) {
+            createOffer(participantId);
+          }
+        } else if (pc.connectionState === 'connected') {
+          // Check if we're receiving media
+          const hasStream = participantStreams.has(participantId);
+          if (!hasStream) {
+            console.log('🏥 Health check: Connected but no stream from', participant.user.firstName);
+          }
+        }
+      });
+    }, 10000); // Check every 10 seconds
+    
+    return () => clearInterval(healthCheckInterval);
+  }, [virtualClass?.participants, localStream, user?.id, peerConnections, participantStreams]);
 
   // Ensure remote participant audio is playing
   useEffect(() => {
@@ -560,15 +711,31 @@ export default function VirtualClassroomMeeting() {
 
     // Listen for participant joined
     socket.on('virtualClass:participant:joined', (data) => {
-      console.log('Participant joined:', data);
+      console.log('👋 Participant joined:', data.participant.userName, data.participant.userId);
       fetchClassData(); // Refresh participant list
       toast.success(`${data.participant.userName} joined the class`);
       
       // Initiate WebRTC connection with new participant
-      if (data.participant.userId !== user?.id) {
+      if (data.participant.userId !== user?.id && localStream) {
+        const participantId = data.participant.userId;
+        
+        // Use polite/impolite pattern - user with lower ID is polite (waits for offer)
+        const isPolite = (user?.id || '') < participantId;
+        
         setTimeout(() => {
-          createOffer(data.participant.userId);
-        }, 1000);
+          if (isPolite) {
+            console.log('😊 Being polite - waiting for offer from', data.participant.userName);
+            // Polite peer waits for offer, but ensures peer connection exists
+            if (!peerConnections.has(participantId)) {
+              console.log('📝 Pre-creating peer connection for', data.participant.userName);
+              const pc = createPeerConnection(participantId);
+              setPeerConnections(prev => new Map(prev).set(participantId, pc));
+            }
+          } else {
+            console.log('😎 Being impolite - creating offer for', data.participant.userName);
+            createOffer(participantId);
+          }
+        }, 1500); // Give time for both sides to be ready
       }
     });
 
