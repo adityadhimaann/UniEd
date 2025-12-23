@@ -4,7 +4,7 @@ import { instructorService } from '@/services/instructorService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Calendar as CalendarIcon, Users, TrendingUp, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Users, TrendingUp, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getSocket } from '@/lib/socket';
