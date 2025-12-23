@@ -199,6 +199,186 @@ class EmailService {
 
     return this.sendEmail(user.email, `Announcement: ${announcement.title}`, html);
   }
+
+  async sendEnrollmentApprovalEmail(student, course, faculty) {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4F46E5; margin: 0;">UniEd</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Unified Education Platform</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+          <h2 style="color: white; margin: 0 0 10px 0;">Enrollment Approved! 🎉</h2>
+          <p style="color: white; margin: 0; font-size: 16px;">You're now enrolled in the course</p>
+        </div>
+
+        <div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Hello <strong>${student.firstName} ${student.lastName}</strong>,
+          </p>
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Great news! Your enrollment request has been approved.
+          </p>
+          
+          <div style="background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">Course Details</h3>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Course Name:</strong> ${course.courseName}
+            </p>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Course Code:</strong> ${course.courseCode}
+            </p>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Credits:</strong> ${course.credits}
+            </p>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Instructor:</strong> ${faculty.firstName} ${faculty.lastName}
+            </p>
+            ${course.description ? `
+              <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">
+                ${course.description}
+              </p>
+            ` : ''}
+          </div>
+
+          <p style="margin: 15px 0 0 0; color: #374151; font-size: 16px;">
+            You can now access:
+          </p>
+          <ul style="color: #374151; font-size: 15px; line-height: 1.8; margin: 10px 0;">
+            <li>Course materials and resources</li>
+            <li>Assignments and submissions</li>
+            <li>Virtual classroom sessions</li>
+            <li>Grades and feedback</li>
+            <li>Course announcements</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/dashboard/courses" 
+             style="display: inline-block; padding: 14px 32px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+            View Course
+          </a>
+        </div>
+
+        <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+          <p style="margin: 0; color: #92400e; font-size: 14px;">
+            <strong>📌 Next Steps:</strong><br>
+            • Check the course dashboard for upcoming assignments<br>
+            • Review the course syllabus and schedule<br>
+            • Join the virtual classroom when sessions are scheduled<br>
+            • Stay updated with course announcements
+          </p>
+        </div>
+
+        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Need help? Contact your instructor or our support team.
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Best regards,<br>
+            <strong style="color: #4F46E5;">The UniEd Team</strong>
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} UniEd. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail(
+      student.email, 
+      `✅ Enrollment Approved - ${course.courseName}`, 
+      html
+    );
+  }
+
+  async sendEnrollmentRejectionEmail(student, course, faculty, reason) {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4F46E5; margin: 0;">UniEd</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Unified Education Platform</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+          <h2 style="color: white; margin: 0 0 10px 0;">Enrollment Request Update</h2>
+          <p style="color: white; margin: 0; font-size: 16px;">Your enrollment request status</p>
+        </div>
+
+        <div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Hello <strong>${student.firstName} ${student.lastName}</strong>,
+          </p>
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            We regret to inform you that your enrollment request for the following course has not been approved at this time.
+          </p>
+          
+          <div style="background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">Course Details</h3>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Course Name:</strong> ${course.courseName}
+            </p>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Course Code:</strong> ${course.courseCode}
+            </p>
+            <p style="margin: 8px 0; color: #374151;">
+              <strong>Instructor:</strong> ${faculty.firstName} ${faculty.lastName}
+            </p>
+            ${reason ? `
+              <div style="margin-top: 15px; padding: 12px; background-color: #fef2f2; border-radius: 6px;">
+                <p style="margin: 0; color: #991b1b; font-size: 14px;">
+                  <strong>Reason:</strong> ${reason}
+                </p>
+              </div>
+            ` : ''}
+          </div>
+
+          <p style="margin: 15px 0 0 0; color: #374151; font-size: 16px;">
+            You can:
+          </p>
+          <ul style="color: #374151; font-size: 15px; line-height: 1.8; margin: 10px 0;">
+            <li>Contact the instructor for more information</li>
+            <li>Check if prerequisites need to be completed</li>
+            <li>Explore other available courses</li>
+            <li>Reapply in the next enrollment period</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/dashboard/courses" 
+             style="display: inline-block; padding: 14px 32px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+            Browse Other Courses
+          </a>
+        </div>
+
+        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Need help? Contact your instructor or our support team.
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Best regards,<br>
+            <strong style="color: #4F46E5;">The UniEd Team</strong>
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} UniEd. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail(
+      student.email, 
+      `Enrollment Request Update - ${course.courseName}`, 
+      html
+    );
+  }
 }
 
 export default new EmailService();

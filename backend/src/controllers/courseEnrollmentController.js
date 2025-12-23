@@ -5,6 +5,7 @@ import Notification from '../models/Notification.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
+import emailService from '../services/emailService.js';
 
 /**
  * @desc    Create a new course enrollment request
@@ -146,7 +147,8 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
   // Find the enrollment request
   const enrollmentRequest = await CourseEnrollmentRequest.findById(id)
     .populate('student', 'firstName lastName email')
-    .populate('course', 'courseName courseCode');
+    .populate('course', 'courseName courseCode description credits')
+    .populate('instructor', 'firstName lastName email');
 
   if (!enrollmentRequest) {
     throw new ApiError(404, 'Enrollment request not found');
@@ -207,6 +209,29 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
       instructorName: `${req.user.firstName} ${req.user.lastName}`
     }
   });
+
+  // Send email notification to student
+  try {
+    if (status === 'approved') {
+      await emailService.sendEnrollmentApprovalEmail(
+        enrollmentRequest.student,
+        enrollmentRequest.course,
+        enrollmentRequest.instructor
+      );
+      console.log('✅ Enrollment approval email sent to', enrollmentRequest.student.email);
+    } else {
+      await emailService.sendEnrollmentRejectionEmail(
+        enrollmentRequest.student,
+        enrollmentRequest.course,
+        enrollmentRequest.instructor,
+        responseMessage
+      );
+      console.log('✅ Enrollment rejection email sent to', enrollmentRequest.student.email);
+    }
+  } catch (emailError) {
+    console.error('❌ Failed to send enrollment email:', emailError);
+    // Don't fail the request if email fails - just log it
+  }
 
   res.status(200).json(
     new ApiResponse(200, enrollmentRequest, `Enrollment request ${status} successfully`)
