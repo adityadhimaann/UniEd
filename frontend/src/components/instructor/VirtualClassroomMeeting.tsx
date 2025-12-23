@@ -64,6 +64,7 @@ export default function VirtualClassroomMeeting() {
   const [screenShareUserId, setScreenShareUserId] = useState<string | null>(null);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const [peerConnections, setPeerConnections] = useState<Map<string, RTCPeerConnection>>(new Map());
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Start closed on mobile
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
   const minimizedVideoRef = useRef<HTMLVideoElement>(null);
@@ -1098,21 +1099,21 @@ export default function VirtualClassroomMeeting() {
     <div className="h-screen bg-background flex flex-col">
       {/* Screen Share Overlay */}
       {screenShareUserId && (
-        <div className={`${isScreenShareFullscreen ? 'fixed inset-0 z-50 bg-black' : 'fixed top-20 left-1/2 transform -translate-x-1/2 z-40 w-4/5 h-3/4'} flex flex-col`}>
-          <div className="bg-gray-900 p-3 flex items-center justify-between border-b border-gray-700">
+        <div className={`${isScreenShareFullscreen ? 'fixed inset-0 z-50 bg-black' : 'fixed top-16 md:top-20 left-1/2 transform -translate-x-1/2 z-40 w-[95%] md:w-4/5 h-[70vh] md:h-3/4'} flex flex-col`}>
+          <div className="bg-gray-900 p-2 md:p-3 flex items-center justify-between border-b border-gray-700">
             <div className="flex items-center gap-2">
-              <Monitor className="w-5 h-5 text-green-500" />
-              <span className="text-white font-medium">
+              <Monitor className="w-4 h-4 md:w-5 md:h-5 text-green-500" />
+              <span className="text-white font-medium text-xs md:text-sm">
                 {screenShareUserId === user?.id ? 'You are' : `${virtualClass.participants?.find(p => p.user._id === screenShareUserId)?.user.firstName || 'Someone'} is`} sharing screen
               </span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setIsScreenShareFullscreen(!isScreenShareFullscreen)}
-                className="text-white border-gray-600 hover:bg-gray-800">
-                {isScreenShareFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                className="text-white border-gray-600 hover:bg-gray-800 text-xs md:text-sm px-2 md:px-3">
+                {isScreenShareFullscreen ? 'Exit' : 'Full'}
               </Button>
               {screenShareUserId !== user?.id && (
                 <Button 
@@ -1122,7 +1123,7 @@ export default function VirtualClassroomMeeting() {
                     setScreenShareUserId(null);
                     setIsScreenShareFullscreen(false);
                   }}
-                  className="text-white border-gray-600 hover:bg-gray-800">
+                  className="text-white border-gray-600 hover:bg-gray-800 text-xs md:text-sm px-2 md:px-3">
                   Close
                 </Button>
               )}
@@ -1165,28 +1166,46 @@ export default function VirtualClassroomMeeting() {
       
       {/* Top toolbar */}
       <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">{virtualClass.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {virtualClass.course?.courseCode} - {virtualClass.course?.courseName}
-          </p>
+        <div className="flex items-center gap-3">
+          {/* Mobile sidebar toggle */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="lg:hidden">
+            <MessageSquare className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-base md:text-lg font-semibold truncate max-w-[200px] md:max-w-none">{virtualClass.title}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[200px] md:max-w-none">
+              {virtualClass.course?.courseCode} - {virtualClass.course?.courseName}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white animate-pulse">
+          <span className="px-2 md:px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white animate-pulse">
             ● LIVE
           </span>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline">
             {virtualClass.participants?.filter(p => !p.leftAt).length || 0} participants
           </span>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile sidebar backdrop */}
+        {isSidebarOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/50 z-20"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
         {/* Video grid */}
-        <div className="flex-1 p-4 overflow-auto bg-gray-900">
-          <div className={`grid gap-4 h-full ${
-            viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
+        <div className="flex-1 p-2 md:p-4 overflow-auto bg-gray-900">
+          <div className={`grid gap-2 md:gap-4 h-full ${
+            viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'grid-cols-1'
           }`}>
             {/* Local user video (always show first) */}
             {user && (
@@ -1334,23 +1353,36 @@ export default function VirtualClassroomMeeting() {
         </div>
 
         {/* Right sidebar */}
-        <div className="w-80 border-l border-border flex flex-col bg-card">
+        <div className={`${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        } fixed lg:relative inset-y-0 right-0 z-30 w-full sm:w-96 lg:w-80 border-l border-border flex flex-col bg-card transition-transform duration-300 ease-in-out lg:translate-x-0`}>
+          {/* Close button for mobile */}
+          <div className="lg:hidden absolute top-2 left-2 z-10">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setIsSidebarOpen(false)}
+              className="bg-background/80 backdrop-blur-sm">
+              ✕
+            </Button>
+          </div>
+          
           {/* Tabs */}
           <div className="flex border-b border-border">
             <button onClick={() => { setShowChat(true); setShowParticipants(false); setShowPolls(false); setShowWhiteboard(false); }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${showChat ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
+              className={`flex-1 px-2 md:px-4 py-3 text-xs md:text-sm font-medium transition-colors ${showChat ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
               <MessageSquare className="w-4 h-4 mx-auto mb-1" />Chat
             </button>
             <button onClick={() => { setShowChat(false); setShowParticipants(true); setShowPolls(false); setShowWhiteboard(false); }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${showParticipants ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
+              className={`flex-1 px-2 md:px-4 py-3 text-xs md:text-sm font-medium transition-colors ${showParticipants ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
               <Users className="w-4 h-4 mx-auto mb-1" />People
             </button>
             <button onClick={() => { setShowChat(false); setShowParticipants(false); setShowPolls(true); setShowWhiteboard(false); }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${showPolls ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
+              className={`flex-1 px-2 md:px-4 py-3 text-xs md:text-sm font-medium transition-colors ${showPolls ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
               <BarChart3 className="w-4 h-4 mx-auto mb-1" />Polls
             </button>
             <button onClick={() => { setShowChat(false); setShowParticipants(false); setShowPolls(false); setShowWhiteboard(true); }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${showWhiteboard ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
+              className={`flex-1 px-2 md:px-4 py-3 text-xs md:text-sm font-medium transition-colors ${showWhiteboard ? 'border-b-2 border-primary text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'}`}>
               <Palette className="w-4 h-4 mx-auto mb-1" />Board
             </button>
           </div>
@@ -1585,7 +1617,7 @@ export default function VirtualClassroomMeeting() {
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-card border-t border-border px-4 py-4 flex items-center justify-center gap-3">
+      <div className="bg-card border-t border-border px-2 md:px-4 py-3 md:py-4 flex items-center justify-center gap-2 md:gap-3 flex-wrap">
         <Button variant={isMuted ? 'destructive' : 'outline'} size="lg" onClick={() => {
           const newMutedState = !isMuted;
           setIsMuted(newMutedState);
@@ -1604,8 +1636,8 @@ export default function VirtualClassroomMeeting() {
           
           socket.emit('virtualClass:toggleAudio', { classId, isMuted: newMutedState });
         }}
-          className="rounded-full w-12 h-12 p-0">
-          {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          className="rounded-full w-10 h-10 md:w-12 md:h-12 p-0">
+          {isMuted ? <MicOff className="w-4 h-4 md:w-5 md:h-5" /> : <Mic className="w-4 h-4 md:w-5 md:h-5" />}
         </Button>
         <Button variant={isVideoOff ? 'destructive' : 'outline'} size="lg" onClick={() => {
           const newVideoState = !isVideoOff;
@@ -1625,8 +1657,8 @@ export default function VirtualClassroomMeeting() {
           
           socket.emit('virtualClass:toggleVideo', { classId, isVideoOff: newVideoState });
         }}
-          className="rounded-full w-12 h-12 p-0">
-          {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+          className="rounded-full w-10 h-10 md:w-12 md:h-12 p-0">
+          {isVideoOff ? <VideoOff className="w-4 h-4 md:w-5 md:h-5" /> : <Video className="w-4 h-4 md:w-5 md:h-5" />}
         </Button>
         
         {/* Screen Share - Faculty Only */}
@@ -1739,27 +1771,27 @@ export default function VirtualClassroomMeeting() {
               toast.info('Screen sharing stopped');
             }
           }}
-            className="rounded-full w-12 h-12 p-0">
-            {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+            className="rounded-full w-10 h-10 md:w-12 md:h-12 p-0">
+            {isScreenSharing ? <MonitorOff className="w-4 h-4 md:w-5 md:h-5" /> : <Monitor className="w-4 h-4 md:w-5 md:h-5" />}
           </Button>
         )}
         
         {/* Raise Hand - Students Only */}
         {isStudent && (
           <Button variant={isHandRaised ? 'default' : 'outline'} size="lg" onClick={handleRaiseHand}
-            className="rounded-full w-12 h-12 p-0">
-            <Hand className="w-5 h-5" />
+            className="rounded-full w-10 h-10 md:w-12 md:h-12 p-0">
+            <Hand className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
         )}
         
         <Button variant="outline" size="lg" onClick={() => setViewMode(viewMode === 'grid' ? 'speaker' : 'grid')}
-          className="rounded-full w-12 h-12 p-0">
-          {viewMode === 'grid' ? <Maximize2 className="w-5 h-5" /> : <Grid3x3 className="w-5 h-5" />}
+          className="rounded-full w-10 h-10 md:w-12 md:h-12 p-0">
+          {viewMode === 'grid' ? <Maximize2 className="w-4 h-4 md:w-5 md:h-5" /> : <Grid3x3 className="w-4 h-4 md:w-5 md:h-5" />}
         </Button>
         
         {/* Faculty: Pause, Minimize, and End Class Buttons */}
         {isHost && (
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex gap-2 flex-wrap">
             <Button 
               variant={isPaused ? 'default' : 'outline'} 
               onClick={handlePauseMeeting} 
