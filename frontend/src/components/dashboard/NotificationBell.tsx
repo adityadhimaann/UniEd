@@ -34,8 +34,13 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Minimum time between fetches (5 seconds)
+  const MIN_FETCH_INTERVAL = 5000;
 
   // Determine the API base path based on user role
   const getApiBasePath = () => {
@@ -78,13 +83,29 @@ export function NotificationBell() {
         emitEvent('leave:notifications');
       };
     } else {
-      // Fallback to polling if socket not available
-      const interval = setInterval(fetchNotifications, 10000);
+      // Fallback to polling ONLY if socket not available - but with much longer interval
+      console.warn('⚠️ Socket not available, using polling fallback');
+      const interval = setInterval(fetchNotifications, 60000); // Reduced from 10s to 60s
       return () => clearInterval(interval);
     }
   }, []);
 
   const fetchNotifications = async () => {
+    // Prevent too frequent requests
+    const now = Date.now();
+    if (now - lastFetchTime < MIN_FETCH_INTERVAL) {
+      console.log('⏳ Skipping fetch - too soon since last request');
+      return;
+    }
+    
+    if (isLoading) {
+      console.log('⏳ Already fetching notifications');
+      return;
+    }
+    
+    setIsLoading(true);
+    setLastFetchTime(now);
+    
     try {
       const basePath = getApiBasePath();
       const response = await api.get(`${basePath}/notifications?limit=10`);
@@ -96,11 +117,19 @@ export function NotificationBell() {
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch notifications:", error);
-      // Set empty state on error
-      setNotifications([]);
-      setUnreadCount(0);
+      
+      // Only show error toast for non-rate-limit errors
+      if (error?.response?.status !== 429) {
+        // Set empty state on error
+        setNotifications([]);
+        setUnreadCount(0);
+      } else {
+        console.warn('⚠️ Rate limited - will retry later');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
