@@ -38,6 +38,7 @@ router.post('/assignments/:assignmentId/review/:studentId', instructorController
 
 // Attendance routes
 router.post('/attendance', instructorController.markAttendance);
+router.put('/attendance/:attendanceId', instructorController.updateAttendance);
 router.get('/courses/:courseId/attendance', instructorController.getCourseAttendance);
 router.get('/courses/:courseId/attendance/stats', instructorController.getAttendanceStats);
 

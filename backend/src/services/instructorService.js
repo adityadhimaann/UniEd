@@ -529,6 +529,37 @@ class InstructorService {
     return attendance;
   }
 
+  // Update attendance
+  async updateAttendance(instructorId, attendanceId, attendanceRecords) {
+    const attendance = await Attendance.findById(attendanceId).populate('course');
+
+    if (!attendance) {
+      throw ApiError.notFound('Attendance record not found');
+    }
+
+    if (attendance.course.faculty.toString() !== instructorId.toString()) {
+      throw ApiError.forbidden('You are not authorized to update this attendance record');
+    }
+
+    // Prepare updated records with markedBy field
+    const records = attendanceRecords.map(record => ({
+      student: record.student,
+      status: record.status,
+      markedBy: instructorId,
+      remarks: record.remarks || null,
+    }));
+
+    attendance.records = records;
+    await attendance.save();
+
+    await attendance.populate([
+      { path: 'course', select: 'courseCode courseName' },
+      { path: 'records.student', select: 'firstName lastName email' },
+    ]);
+
+    return attendance;
+  }
+
   // Get course attendance
   async getCourseAttendance(courseId, instructorId, startDate, endDate) {
     const course = await Course.findById(courseId);

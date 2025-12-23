@@ -4,7 +4,7 @@ import { instructorService } from '@/services/instructorService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Calendar as CalendarIcon, Users, TrendingUp, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Users, TrendingUp, CheckCircle, XCircle, Clock, Eye, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getSocket } from '@/lib/socket';
@@ -48,6 +48,7 @@ export default function AttendanceManagement() {
   const [courseData, setCourseData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showMarkDialog, setShowMarkDialog] = useState(false);
+  const [editingAttendance, setEditingAttendance] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord>>({});
   const [marking, setMarking] = useState(false);
@@ -130,8 +131,27 @@ export default function AttendanceManagement() {
 
   const handleMarkAttendance = () => {
     if (courseData) {
+      setEditingAttendance(null);
+      setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
       setShowMarkDialog(true);
     }
+  };
+
+  const handleEditAttendance = (attendanceRecord: any) => {
+    setEditingAttendance(attendanceRecord);
+    setSelectedDate(format(new Date(attendanceRecord.date), 'yyyy-MM-dd'));
+    
+    // Initialize attendance records from existing data
+    const initialRecords: Record<string, AttendanceRecord> = {};
+    attendanceRecord.records.forEach((record: any) => {
+      initialRecords[record.student._id] = {
+        student: record.student._id,
+        status: record.status,
+        remarks: record.remarks,
+      };
+    });
+    setAttendanceRecords(initialRecords);
+    setShowMarkDialog(true);
   };
 
   const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late') => {
@@ -151,7 +171,15 @@ export default function AttendanceManagement() {
       setMarking(true);
       const records = Object.values(attendanceRecords);
       
-      await instructorService.markAttendance(selectedCourse._id, selectedDate, records);
+      if (editingAttendance) {
+        // Update existing attendance
+        await instructorService.updateAttendance(editingAttendance._id, records);
+        toast.success('Attendance updated successfully');
+      } else {
+        // Create new attendance
+        await instructorService.markAttendance(selectedCourse._id, selectedDate, records);
+        toast.success('Attendance marked successfully');
+      }
       
       // Emit socket event for real-time update
       const socket = getSocket();
@@ -162,12 +190,12 @@ export default function AttendanceManagement() {
         });
       }
 
-      toast.success('Attendance marked successfully');
       setShowMarkDialog(false);
+      setEditingAttendance(null);
       fetchCourseData(selectedCourse._id);
     } catch (error: any) {
-      console.error('Error marking attendance:', error);
-      toast.error(error.response?.data?.message || 'Failed to mark attendance');
+      console.error('Error with attendance:', error);
+      toast.error(error.response?.data?.message || 'Failed to save attendance');
     } finally {
       setMarking(false);
     }
@@ -424,9 +452,19 @@ export default function AttendanceManagement() {
                         <div key={record._id} className="border border-gray-700 rounded-lg p-4 bg-gray-800/50">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-semibold text-white">{format(new Date(record.date), 'MMMM dd, yyyy')}</h4>
-                            <span className="text-sm text-gray-400">
-                              {record.records.length} students marked
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-400">
+                                {record.records.length} students marked
+                              </span>
+                              <Button
+                                size="sm"
+                                onClick={() => handleEditAttendance(record)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                            </div>
                           </div>
                           <div className="flex gap-4 text-sm">
                             <span className="text-green-400">
@@ -455,7 +493,7 @@ export default function AttendanceManagement() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gray-900 border-gray-700 text-white">
           <DialogHeader>
             <DialogTitle className="text-white">
-              Mark Attendance - {selectedCourse?.courseCode} {selectedCourse?.courseName}
+              {editingAttendance ? 'Edit Attendance' : 'Mark Attendance'} - {selectedCourse?.courseCode} {selectedCourse?.courseName}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -466,7 +504,11 @@ export default function AttendanceManagement() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white"
+                disabled={!!editingAttendance}
               />
+              {editingAttendance && (
+                <p className="text-xs text-gray-400 mt-1">Date cannot be changed when editing</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -515,6 +557,7 @@ export default function AttendanceManagement() {
                 variant="outline" 
                 onClick={() => {
                   setShowMarkDialog(false);
+                  setEditingAttendance(null);
                 }}
                 className="border-gray-700 text-gray-300 hover:bg-gray-800"
               >
@@ -525,7 +568,7 @@ export default function AttendanceManagement() {
                 disabled={marking}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {marking ? 'Marking...' : 'Submit Attendance'}
+                {marking ? (editingAttendance ? 'Updating...' : 'Marking...') : (editingAttendance ? 'Update Attendance' : 'Submit Attendance')}
               </Button>
             </div>
           </div>

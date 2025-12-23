@@ -153,6 +153,14 @@ export const instructorService = {
     return response.data;
   },
 
+  // Update attendance
+  async updateAttendance(attendanceId: string, attendanceRecords: Array<{ student: string; status: string }>) {
+    const response = await api.put(`/instructor/attendance/${attendanceId}`, {
+      attendanceRecords,
+    });
+    return response.data;
+  },
+
   // Get course attendance
   async getCourseAttendance(courseId: string, startDate?: string, endDate?: string) {
     const params = new URLSearchParams();

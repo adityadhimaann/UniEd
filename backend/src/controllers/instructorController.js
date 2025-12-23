@@ -206,6 +206,27 @@ export const markAttendance = asyncHandler(async (req, res) => {
   );
 });
 
+// Update attendance
+export const updateAttendance = asyncHandler(async (req, res) => {
+  const instructorId = req.user._id;
+  const { attendanceId } = req.params;
+  const { attendanceRecords } = req.body;
+
+  if (!attendanceRecords) {
+    throw ApiError.badRequest('Attendance records are required');
+  }
+
+  const attendance = await instructorService.updateAttendance(
+    instructorId,
+    attendanceId,
+    attendanceRecords
+  );
+
+  res.status(200).json(
+    ApiResponse.success(attendance, 'Attendance updated successfully')
+  );
+});
+
 // Get course attendance
 export const getCourseAttendance = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
@@ -683,6 +704,7 @@ export default {
   gradeSubmission,
   reviewSubmission,
   markAttendance,
+  updateAttendance,
   getCourseAttendance,
   getAttendanceStats,
   createAnnouncement,
