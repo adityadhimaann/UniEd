@@ -16,6 +16,7 @@ import discussionRoutes from './discussionRoutes.js';
 import uploadRoutes from './uploadRoutes.js';
 import virtualClassRoutes from './virtualClassRoutes.js';
 import announcementRoutes from './announcementRoutes.js';
+import eventRoutes from './eventRoutes.js';
 
 const router = express.Router();
 
@@ -46,6 +47,7 @@ router.use('/api/v1/discussions', discussionRoutes);
 router.use('/api/v1/upload', uploadRoutes);
 router.use('/api/v1/virtual-classes', virtualClassRoutes);
 router.use('/api/v1/announcements', announcementRoutes);
+router.use('/api/v1/events', eventRoutes);
 
 // 404 handler for API routes
 router.use('*', (req, res) => {
