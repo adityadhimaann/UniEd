@@ -13,6 +13,11 @@ class CalendarService {
     const enrollments = await Enrollment.find({ student: studentId })
       .populate('course', 'courseName courseCode');
 
+    // Return empty array if no enrollments
+    if (!enrollments || enrollments.length === 0) {
+      return [];
+    }
+
     const courseIds = enrollments.map(e => e.course._id);
 
     // Get upcoming assignments
@@ -89,6 +94,16 @@ class CalendarService {
     // Get student's enrolled courses
     const enrollments = await Enrollment.find({ student: studentId })
       .populate('course', 'courseName courseCode');
+
+    // Return empty calendar if no enrollments
+    if (!enrollments || enrollments.length === 0) {
+      return {
+        year,
+        month,
+        calendar: {},
+        totalEvents: 0
+      };
+    }
 
     const courseIds = enrollments.map(e => e.course._id);
 

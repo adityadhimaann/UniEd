@@ -49,6 +49,7 @@ import { MessagesPage } from "@/components/dashboard/MessagesPage";
 import { SettingsPage } from "@/components/dashboard/SettingsPage";
 import { VirtualClassesPage } from "@/components/dashboard/VirtualClassesPage";
 import { AdminPage } from "@/components/dashboard/AdminPage";
+import AttendancePage from "@/components/dashboard/AttendancePage";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { GlobalSearch } from "@/components/dashboard/GlobalSearch";
 import { VirtualClassPopup } from "@/components/dashboard/VirtualClassPopup";
@@ -62,6 +63,7 @@ const studentNavItems = [
   { icon: BookOpen, label: "Courses", path: "/dashboard/courses" },
   { icon: FileText, label: "Assignments", path: "/dashboard/assignments" },
   { icon: TrendingUp, label: "Grades", path: "/dashboard/grades" },
+  { icon: Users, label: "Attendance", path: "/dashboard/attendance" },
   { icon: Calendar, label: "Calendar", path: "/dashboard/calendar" },
   { icon: MessageSquare, label: "Messages", path: "/dashboard/messages" },
   { icon: GraduationCap, label: "Virtual Classes", path: "/dashboard/virtual-classes" },
@@ -362,6 +364,7 @@ export default function Dashboard() {
             <Route path="courses" element={<CoursesPage />} />
             <Route path="assignments" element={<AssignmentsPage />} />
             <Route path="grades" element={<GradesPage />} />
+            <Route path="attendance" element={<AttendancePage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="virtual-classes" element={<VirtualClassesPage />} />

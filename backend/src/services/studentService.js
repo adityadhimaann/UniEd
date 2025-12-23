@@ -514,11 +514,72 @@ const getCourseGrades = async (courseId, studentId) => {
 
 // Get student attendance
 const getStudentAttendance = async (studentId) => {
-  const attendance = await Attendance.find({ student: studentId })
-    .populate('course', 'name code')
+  // Get all enrolled courses
+  const enrollments = await Enrollment.find({
+    student: studentId,
+    status: 'active'
+  }).select('course');
+
+  const courseIds = enrollments.map(e => e.course);
+
+  // Get all attendance records for enrolled courses
+  const attendanceRecords = await Attendance.find({
+    course: { $in: courseIds }
+  })
+    .populate('course', 'courseCode courseName')
+    .populate('records.student', 'firstName lastName email')
     .sort({ date: -1 });
 
-  return attendance;
+  // Filter and format records for this student
+  const studentAttendance = [];
+  
+  for (const record of attendanceRecords) {
+    const studentRecord = record.records.find(
+      r => r.student._id.toString() === studentId.toString()
+    );
+    
+    if (studentRecord) {
+      studentAttendance.push({
+        _id: record._id,
+        course: record.course,
+        date: record.date,
+        status: studentRecord.status,
+        remarks: studentRecord.remarks,
+      });
+    }
+  }
+
+  // Calculate statistics per course
+  const courseStats = {};
+  
+  for (const courseId of courseIds) {
+    const courseAttendance = studentAttendance.filter(
+      a => a.course._id.toString() === courseId.toString()
+    );
+    
+    const totalClasses = courseAttendance.length;
+    const present = courseAttendance.filter(a => a.status === 'present').length;
+    const absent = courseAttendance.filter(a => a.status === 'absent').length;
+    const late = courseAttendance.filter(a => a.status === 'late').length;
+    const percentage = totalClasses > 0 ? ((present + late * 0.5) / totalClasses * 100).toFixed(2) : 0;
+    
+    if (totalClasses > 0) {
+      const course = await Course.findById(courseId).select('courseCode courseName');
+      courseStats[courseId] = {
+        course,
+        totalClasses,
+        present,
+        absent,
+        late,
+        percentage
+      };
+    }
+  }
+
+  return {
+    records: studentAttendance,
+    statistics: Object.values(courseStats)
+  };
 };
 
 // Get course attendance
@@ -534,12 +595,50 @@ const getCourseAttendance = async (courseId, studentId) => {
     throw new ApiError(403, 'You are not enrolled in this course');
   }
 
-  const attendance = await Attendance.find({ 
-    course: courseId,
-    student: studentId 
-  }).sort({ date: -1 });
+  // Get all attendance records for this course
+  const attendanceRecords = await Attendance.find({ 
+    course: courseId
+  })
+    .populate('course', 'courseCode courseName')
+    .populate('records.student', 'firstName lastName email')
+    .sort({ date: -1 });
 
-  return attendance;
+  // Filter records for this student
+  const studentAttendance = [];
+  
+  for (const record of attendanceRecords) {
+    const studentRecord = record.records.find(
+      r => r.student._id.toString() === studentId.toString()
+    );
+    
+    if (studentRecord) {
+      studentAttendance.push({
+        _id: record._id,
+        course: record.course,
+        date: record.date,
+        status: studentRecord.status,
+        remarks: studentRecord.remarks,
+      });
+    }
+  }
+
+  // Calculate statistics
+  const totalClasses = studentAttendance.length;
+  const present = studentAttendance.filter(a => a.status === 'present').length;
+  const absent = studentAttendance.filter(a => a.status === 'absent').length;
+  const late = studentAttendance.filter(a => a.status === 'late').length;
+  const percentage = totalClasses > 0 ? ((present + late * 0.5) / totalClasses * 100).toFixed(2) : 0;
+
+  return {
+    records: studentAttendance,
+    statistics: {
+      totalClasses,
+      present,
+      absent,
+      late,
+      percentage
+    }
+  };
 };
 
 // Get student announcements
@@ -794,98 +893,139 @@ const getContentProgress = async (studentId, courseId) => {
 
 // Get enrolled courses with progress
 const getEnrolledCoursesWithProgress = async (studentId) => {
-  const enrollments = await Enrollment.find({
-    student: studentId,
-    status: 'active'
-  })
-    .populate({
-      path: 'course',
-      populate: {
-        path: 'faculty',
-        select: 'firstName lastName email'
-      }
+  try {
+    const enrollments = await Enrollment.find({
+      student: studentId,
+      status: 'active'
     })
-    .sort({ enrolledAt: -1 });
+      .populate({
+        path: 'course',
+        populate: {
+          path: 'faculty',
+          select: 'firstName lastName email'
+        }
+      })
+      .sort({ enrolledAt: -1 });
 
-  // Get content progress for each course
-  const coursesWithProgress = await Promise.all(
-    enrollments.map(async (enrollment) => {
-      const course = enrollment.course;
-      
-      // Get content progress
-      let contentProgress = await ContentProgress.findOne({
-        student: studentId,
-        course: course._id
-      });
+    // Return empty array if no enrollments
+    if (!enrollments || enrollments.length === 0) {
+      return [];
+    }
 
-      if (!contentProgress) {
-        contentProgress = new ContentProgress({
-          student: studentId,
-          course: course._id,
-          totalVideos: course.videos?.length || 0,
-          totalMaterials: course.materials?.length || 0,
-        });
-        contentProgress.calculateProgress();
-        await contentProgress.save();
-      }
+    // Get content progress for each course
+    const coursesWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        try {
+          const course = enrollment.course;
+          
+          // Skip if course is null (deleted course)
+          if (!course) {
+            return null;
+          }
+          
+          // Get content progress
+          let contentProgress = await ContentProgress.findOne({
+            student: studentId,
+            course: course._id
+          });
 
-      // Get assignment stats
-      const assignments = await Assignment.find({ course: course._id });
-      const submittedAssignments = assignments.filter(assignment => 
-        assignment.submissions.some(sub => 
-          sub.student.toString() === studentId.toString()
-        )
-      );
+          if (!contentProgress) {
+            try {
+              contentProgress = new ContentProgress({
+                student: studentId,
+                course: course._id,
+                totalVideos: course.videos?.length || 0,
+                totalMaterials: course.materials?.length || 0,
+              });
+              contentProgress.calculateProgress();
+              await contentProgress.save();
+            } catch (progressError) {
+              console.error('Error creating content progress:', progressError);
+              // Create a default progress object if save fails
+              contentProgress = {
+                videosWatched: [],
+                totalVideos: 0,
+                materialsViewed: [],
+                totalMaterials: 0,
+                videosProgress: 0,
+                materialsProgress: 0,
+                overallContentProgress: 0,
+              };
+            }
+          }
 
-      // Get grades
-      const grades = await Grade.find({
-        student: studentId,
-        course: course._id
-      });
+          // Get assignment stats
+          const assignments = await Assignment.find({ course: course._id });
+          const submittedAssignments = assignments.filter(assignment => 
+            assignment.submissions && assignment.submissions.some(sub => 
+              sub.student && sub.student.toString() === studentId.toString()
+            )
+          );
 
-      const averageGrade = grades.length > 0
-        ? grades.reduce((sum, g) => sum + (g.grade || 0), 0) / grades.length
-        : 0;
+          // Get grades
+          const grades = await Grade.find({
+            student: studentId,
+            course: course._id
+          });
 
-      // Get attendance
-      const attendanceRecords = await Attendance.find({
-        course: course._id,
-        'students.student': studentId
-      });
+          const averageGrade = grades.length > 0
+            ? grades.reduce((sum, g) => sum + (g.grade || 0), 0) / grades.length
+            : 0;
 
-      const totalClasses = attendanceRecords.length;
-      const attendedClasses = attendanceRecords.filter(record =>
-        record.students.some(s => 
-          s.student.toString() === studentId.toString() && s.status === 'present'
-        )
-      ).length;
+          // Get attendance
+          const attendanceRecords = await Attendance.find({
+            course: course._id
+          });
 
-      const attendancePercentage = totalClasses > 0
-        ? Math.round((attendedClasses / totalClasses) * 100)
-        : 0;
+          // Filter records for this student
+          const studentAttendanceRecords = attendanceRecords.filter(record =>
+            record.records && record.records.some(r => 
+              r.student && r.student.toString() === studentId.toString()
+            )
+          );
 
-      return {
-        ...enrollment.toObject(),
-        contentProgress: {
-          videosWatched: contentProgress.videosWatched.length,
-          totalVideos: contentProgress.totalVideos,
-          materialsViewed: contentProgress.materialsViewed.length,
-          totalMaterials: contentProgress.totalMaterials,
-          videosProgress: contentProgress.videosProgress,
-          materialsProgress: contentProgress.materialsProgress,
-          overallContentProgress: contentProgress.overallContentProgress,
-        },
-        assignmentStats: {
-          total: assignments.length,
-          submitted: submittedAssignments.length,
-        },
-        averageGrade: Math.round(averageGrade),
-        attendancePercentage,
-      };
-    })
-  );
+          const totalClasses = studentAttendanceRecords.length;
+          const attendedClasses = studentAttendanceRecords.filter(record =>
+            record.records.some(r => 
+              r.student && r.student.toString() === studentId.toString() && r.status === 'present'
+            )
+          ).length;
 
-  return coursesWithProgress;
+          const attendancePercentage = totalClasses > 0
+            ? Math.round((attendedClasses / totalClasses) * 100)
+            : 0;
+
+          return {
+            ...enrollment.toObject(),
+            contentProgress: {
+              videosWatched: contentProgress.videosWatched?.length || 0,
+              totalVideos: contentProgress.totalVideos || 0,
+              materialsViewed: contentProgress.materialsViewed?.length || 0,
+              totalMaterials: contentProgress.totalMaterials || 0,
+              videosProgress: contentProgress.videosProgress || 0,
+              materialsProgress: contentProgress.materialsProgress || 0,
+              overallContentProgress: contentProgress.overallContentProgress || 0,
+            },
+            assignmentStats: {
+              total: assignments.length,
+              submitted: submittedAssignments.length,
+            },
+            averageGrade: Math.round(averageGrade),
+            attendancePercentage,
+          };
+        } catch (error) {
+          console.error('Error processing enrollment:', error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out null entries (failed enrollments)
+    return coursesWithProgress.filter(course => course !== null);
+  } catch (error) {
+    console.error('Error in getEnrolledCoursesWithProgress:', error);
+    throw error;
+  }
 };
 
 export default {

@@ -34,7 +34,7 @@ export default function StudentDashboardNew() {
       setDashboard(dashboardRes.data);
       setEnrolledCourses(Array.isArray(coursesRes.data) ? coursesRes.data.slice(0, 4) : []);
       
-      // Fetch upcoming virtual classes
+      // Fetch upcoming virtual classes (optional - fail silently if not available)
       try {
         const virtualClassesRes = await api.get('/student/virtual-classes');
         const upcomingClasses = virtualClassesRes.data.data?.filter((vc: any) => 
@@ -42,7 +42,8 @@ export default function StudentDashboardNew() {
         ).slice(0, 3) || [];
         setUpcomingClasses(upcomingClasses);
       } catch (error) {
-        console.error('Error fetching virtual classes:', error);
+        // Virtual classes endpoint not available - this is okay
+        setUpcomingClasses([]);
       }
     } catch (error) {
       console.error('Error fetching dashboard:', error);
