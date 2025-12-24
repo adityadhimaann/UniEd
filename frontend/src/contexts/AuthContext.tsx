@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firstName: response.user.firstName || '',
         lastName: response.user.lastName || '',
         name: `${response.user.firstName || ''} ${response.user.lastName || ''}`.trim(),
-        avatar: response.user.profilePicture,
+        avatar: response.user.avatar || response.user.profilePicture,
         studentId: response.user.studentId,
         employeeId: response.user.employeeId,
         department: response.user.department,

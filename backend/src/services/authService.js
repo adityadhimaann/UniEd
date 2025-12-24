@@ -299,8 +299,8 @@ class AuthService {
     const { uploadToCloudinary } = await import('../config/cloudinary.js');
     const result = await uploadToCloudinary(fileBuffer, 'unied/profiles');
 
-    // Update user avatar
-    user.profile.avatar = result.url;
+    // Update user avatar (use root level avatar field, not profile.avatar)
+    user.avatar = result.url;
 
     // Save the user first
     await user.save();
