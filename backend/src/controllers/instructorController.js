@@ -570,7 +570,8 @@ const changePassword = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Please provide current and new password' });
   }
   
-  const user = await User.findById(req.user._id);
+  // Find user with password field
+  const user = await User.findById(req.user._id).select('+password');
   
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
