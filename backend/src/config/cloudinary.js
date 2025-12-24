@@ -15,6 +15,11 @@ const configureCloudinary = () => {
 
 const uploadToCloudinary = async (filePathOrBuffer, folder = 'unied') => {
   try {
+    // Verify Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      throw new Error('Cloudinary credentials not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.');
+    }
+
     let uploadOptions = {
       folder,
       resource_type: 'auto',
@@ -32,8 +37,12 @@ const uploadToCloudinary = async (filePathOrBuffer, folder = 'unied') => {
         const uploadStream = cloudinary.uploader.upload_stream(
           uploadOptions,
           (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
+            if (error) {
+              console.error('Cloudinary upload_stream error:', error);
+              reject(error);
+            } else {
+              resolve(result);
+            }
           }
         );
         uploadStream.end(filePathOrBuffer);
@@ -59,7 +68,8 @@ const uploadToCloudinary = async (filePathOrBuffer, folder = 'unied') => {
       size: result.bytes,
     };
   } catch (error) {
-    throw new Error(`Cloudinary upload failed: ${error.message}`);
+    console.error('Cloudinary upload error details:', error);
+    throw new Error(`Cloudinary upload failed: ${error.message || error}`);
   }
 };
 
