@@ -243,7 +243,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-6">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={user?.avatar || user?.profilePicture} />
+                    <AvatarImage src={user?.avatar || user?.profilePicture} className="object-cover" />
                     <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
                       {user?.name?.split(" ").map(n => n[0]).join("")}
                     </AvatarFallback>
