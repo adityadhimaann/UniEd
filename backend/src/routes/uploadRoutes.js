@@ -20,8 +20,8 @@ router.post(
       );
     }
 
-    // Upload to Cloudinary
-    const result = await uploadToCloudinary(req.file.path, 'messages');
+    // Upload to Cloudinary using buffer from memory storage
+    const result = await uploadToCloudinary(req.file.buffer, 'messages');
 
     res.status(200).json(
       new ApiResponse(200, {

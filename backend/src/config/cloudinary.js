@@ -13,16 +13,35 @@ const configureCloudinary = () => {
   console.log('✅ Cloudinary configured');
 };
 
-const uploadToCloudinary = async (filePath, folder = 'unied') => {
+const uploadToCloudinary = async (filePathOrBuffer, folder = 'unied') => {
   try {
-    // Determine resource type based on file
-    const result = await cloudinary.uploader.upload(filePath, {
+    let uploadOptions = {
       folder,
       resource_type: 'auto',
       access_mode: 'public',
       type: 'upload',
       flags: 'attachment',
-    });
+    };
+
+    let result;
+    
+    // Check if input is a buffer (from memory storage) or file path
+    if (Buffer.isBuffer(filePathOrBuffer)) {
+      // Upload from buffer using upload_stream
+      result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(filePathOrBuffer);
+      });
+    } else {
+      // Upload from file path (for backward compatibility)
+      result = await cloudinary.uploader.upload(filePathOrBuffer, uploadOptions);
+    }
 
     // For PDFs and documents, create a direct download URL
     let url = result.secure_url;

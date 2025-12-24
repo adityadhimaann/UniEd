@@ -1,24 +1,13 @@
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import ApiError from '../utils/ApiError.js';
 import { FILE_UPLOAD } from '../config/constants.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 // Named export for upload
 export { upload };
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
+// Use memory storage instead of disk storage for cloud deployments
+const storage = multer.memoryStorage();
 
 // File filter
 const fileFilter = (req, file, cb) => {
