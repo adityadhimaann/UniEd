@@ -146,7 +146,8 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Please upload a file');
   }
 
-  const result = await authService.updateProfilePicture(userId, req.file.path);
+  // Use buffer instead of path for memory storage
+  const result = await authService.updateProfilePicture(userId, req.file.buffer);
 
   res.status(200).json(
     ApiResponse.success(

@@ -289,22 +289,18 @@ class AuthService {
     };
   }
 
-  async updateProfilePicture(userId, filePath) {
+  async updateProfilePicture(userId, fileBuffer) {
     const user = await User.findById(userId);
     if (!user) {
       throw ApiError.notFound('User not found');
     }
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary (now accepts buffer)
     const { uploadToCloudinary } = await import('../config/cloudinary.js');
-    const result = await uploadToCloudinary(filePath, 'unied/profiles');
+    const result = await uploadToCloudinary(fileBuffer, 'unied/profiles');
 
     // Update user avatar
-    user.profile.avatar = result.secure_url;
-
-    // Delete local file
-    const fs = await import('fs/promises');
-    await fs.unlink(filePath).catch(() => {});
+    user.profile.avatar = result.url;
 
     // Save the user first
     await user.save();
