@@ -133,7 +133,7 @@ class InstructorService {
     }
 
     const enrollments = await Enrollment.find({ course: courseId, status: 'active' })
-      .populate('student', 'firstName lastName email')
+      .populate('student', 'firstName lastName email academicInfo')
       .sort({ enrolledAt: -1 });
 
     return enrollments.map(enrollment => enrollment.student);

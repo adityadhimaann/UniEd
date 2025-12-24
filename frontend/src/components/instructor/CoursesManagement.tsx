@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { instructorService } from '@/services/instructorService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -91,7 +92,7 @@ export default function CoursesManagement() {
       // Check if response indicates success
       if (response?.success || response?.data?.success || response?.status === 200) {
         await fetchEnrollmentRequests();
-        alert('✅ Enrollment request approved successfully! The student has been notified.');
+        toast.success('Enrollment request approved successfully! The student has been notified.');
       } else {
         throw new Error(response?.message || response?.data?.message || 'Approval failed');
       }
@@ -114,7 +115,7 @@ export default function CoursesManagement() {
       // Check if response indicates success
       if (response?.success || response?.data?.success || response?.status === 200) {
         await fetchEnrollmentRequests();
-        alert('✅ Enrollment request rejected. The student has been notified.');
+        toast.success('Enrollment request rejected. The student has been notified.');
       } else {
         throw new Error(response?.message || response?.data?.message || 'Rejection failed');
       }
@@ -171,7 +172,7 @@ export default function CoursesManagement() {
         }
         
         // Upload image to server
-        const uploadResponse = await fetch(`${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001'}/api/upload`, {
+        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1'}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -258,7 +259,7 @@ export default function CoursesManagement() {
           return;
         }
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001'}/api/upload`, {
+        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1'}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

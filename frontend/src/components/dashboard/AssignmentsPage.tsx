@@ -169,7 +169,7 @@ export function AssignmentsPage() {
           return;
         }
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001'}/api/upload`, {
+        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1'}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
