@@ -35,7 +35,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: SignupData) => Promise<void>;
+  signup: (data: SignupData) => Promise<{ email: string; message: string }>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
@@ -99,6 +99,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Helper function to set user after OTP verification (used by VerifyOTP page)
+  const setUserAfterVerification = (userData: User, accessToken: string, refreshToken: string) => {
+    setUser(userData);
+    localStorage.setItem("edu_user", JSON.stringify(userData));
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    initializeSocket(accessToken);
+  };
+
   const signup = async (data: SignupData) => {
     try {
       setIsLoading(true);
@@ -116,30 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const response = await authService.register(registerData);
 
-      // Store tokens
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
-
-      // Transform backend user to frontend user format
-      const userData: User = {
-        id: response.user._id,
-        email: response.user.email,
-        role: response.user.role,
-        firstName: response.user.firstName || '',
-        lastName: response.user.lastName || '',
-        name: `${response.user.firstName || ''} ${response.user.lastName || ''}`.trim(),
-        avatar: response.user.profilePicture,
-        studentId: response.user.studentId,
-        employeeId: response.user.employeeId,
-        department: response.user.department,
-        semester: response.user.semester,
-      };
-
-      setUser(userData);
-      localStorage.setItem("edu_user", JSON.stringify(userData));
-
-      // Initialize socket with token
-      initializeSocket(response.accessToken);
+      // Return email and message for OTP verification
+      return response;
     } catch (error: any) {
       console.error("Signup error:", error);
       console.error("Error response:", error.response?.data);
@@ -215,4 +202,24 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+}
+
+// Export helper for OTP verification
+export function useAuthHelpers() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuthHelpers must be used within an AuthProvider");
+  }
+  
+  const setUserAfterVerification = (userData: User, accessToken: string, refreshToken: string) => {
+    // This is a workaround to access the internal state setter
+    localStorage.setItem("edu_user", JSON.stringify(userData));
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    initializeSocket(accessToken);
+    // Force a page reload to update the context
+    window.location.href = '/dashboard';
+  };
+  
+  return { setUserAfterVerification };
 }

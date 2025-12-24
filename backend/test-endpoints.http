@@ -1,0 +1,44 @@
+### Test OTP Endpoints
+
+### 1. Register a new user (should send OTP)
+POST http://localhost:5001/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!@#",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "student",
+  "department": "Computer Science",
+  "semester": 1
+}
+
+### 2. Verify OTP (replace with actual OTP from email/console)
+POST http://localhost:5001/api/v1/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "otp": "123456"
+}
+
+### 3. Resend OTP
+POST http://localhost:5001/api/v1/auth/resend-otp
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### 4. Test login (should fail if not verified)
+POST http://localhost:5001/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!@#"
+}
+
+### 5. Health check
+GET http://localhost:5001/health

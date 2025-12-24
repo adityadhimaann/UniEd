@@ -52,10 +52,26 @@ class AuthService {
     return response.data.data;
   }
 
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+  async register(data: RegisterData): Promise<{ email: string; message: string }> {
+    const response = await api.post<ApiResponse<{ email: string; message: string }>>(
       '/auth/register',
       data
+    );
+    return response.data.data;
+  }
+
+  async verifyOTP(email: string, otp: string): Promise<AuthResponse> {
+    const response = await api.post<ApiResponse<AuthResponse>>(
+      '/auth/verify-otp',
+      { email, otp }
+    );
+    return response.data.data;
+  }
+
+  async resendOTP(email: string): Promise<{ message: string; expiresIn: number }> {
+    const response = await api.post<ApiResponse<{ message: string; expiresIn: number }>>(
+      '/auth/resend-otp',
+      { email }
     );
     return response.data.data;
   }

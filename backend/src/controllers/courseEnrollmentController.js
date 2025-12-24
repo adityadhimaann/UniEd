@@ -157,7 +157,7 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
   }
 
   // Verify instructor owns this request
-  if (enrollmentRequest.instructor.toString() !== instructorId.toString()) {
+  if (enrollmentRequest.instructor._id.toString() !== instructorId.toString()) {
     throw new ApiError(403, 'You are not authorized to respond to this request');
   }
 

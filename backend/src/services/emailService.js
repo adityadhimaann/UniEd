@@ -18,6 +18,9 @@ class EmailService {
 
   async sendEmail(to, subject, html) {
     try {
+      console.log(`📧 Attempting to send email to: ${to}`);
+      console.log(`📧 Subject: ${subject}`);
+      
       const info = await this.transporter.sendMail({
         from: process.env.EMAIL_FROM,
         to,
@@ -25,10 +28,11 @@ class EmailService {
         html,
       });
 
-      console.log('✉️  Email sent:', info.messageId);
+      console.log('✅ Email sent successfully:', info.messageId);
       return info;
     } catch (error) {
-      console.error('❌ Email sending failed:', error);
+      console.error('❌ Email sending failed:', error.message);
+      console.error('❌ Error details:', error);
       throw error;
     }
   }
@@ -294,6 +298,128 @@ class EmailService {
       `✅ Enrollment Approved - ${course.courseName}`, 
       html
     );
+  }
+
+  async sendOTPEmail(email, otp) {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4F46E5; margin: 0;">UniEd</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Unified Education Platform</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+          <h2 style="color: white; margin: 0 0 10px 0;">Email Verification</h2>
+          <p style="color: white; margin: 0; font-size: 16px;">Your OTP code is ready</p>
+        </div>
+
+        <div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Hello,
+          </p>
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Thank you for signing up with UniEd! To complete your registration, please use the following OTP code:
+          </p>
+          
+          <div style="background-color: white; padding: 30px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px dashed #4F46E5;">
+            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+              Your OTP Code
+            </p>
+            <h1 style="margin: 0; color: #4F46E5; font-size: 48px; letter-spacing: 8px; font-weight: bold;">
+              ${otp}
+            </h1>
+          </div>
+
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+            <p style="margin: 0; color: #92400e; font-size: 14px;">
+              <strong>⏰ Important:</strong><br>
+              • This OTP will expire in 10 minutes<br>
+              • Do not share this code with anyone<br>
+              • If you didn't request this, please ignore this email
+            </p>
+          </div>
+        </div>
+
+        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Need help? Contact our support team anytime.
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Best regards,<br>
+            <strong style="color: #4F46E5;">The UniEd Team</strong>
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} UniEd. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail(email, 'Verify Your Email - UniEd OTP', html);
+  }
+
+  async sendPasswordResetOTP(email, otp) {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4F46E5; margin: 0;">UniEd</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Unified Education Platform</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+          <h2 style="color: white; margin: 0 0 10px 0;">Password Reset Request</h2>
+          <p style="color: white; margin: 0; font-size: 16px;">Your OTP code is ready</p>
+        </div>
+
+        <div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            Hello,
+          </p>
+          <p style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+            We received a request to reset your password. Please use the following OTP code:
+          </p>
+          
+          <div style="background-color: white; padding: 30px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px dashed #f59e0b;">
+            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+              Your OTP Code
+            </p>
+            <h1 style="margin: 0; color: #f59e0b; font-size: 48px; letter-spacing: 8px; font-weight: bold;">
+              ${otp}
+            </h1>
+          </div>
+
+          <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
+            <p style="margin: 0; color: #991b1b; font-size: 14px;">
+              <strong>🔒 Security Notice:</strong><br>
+              • This OTP will expire in 10 minutes<br>
+              • Do not share this code with anyone<br>
+              • If you didn't request this, please secure your account immediately
+            </p>
+          </div>
+        </div>
+
+        <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Need help? Contact our support team anytime.
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            Best regards,<br>
+            <strong style="color: #4F46E5;">The UniEd Team</strong>
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} UniEd. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail(email, 'Password Reset OTP - UniEd', html);
   }
 
   async sendEnrollmentRejectionEmail(student, course, faculty, reason) {

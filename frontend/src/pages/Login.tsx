@@ -111,12 +111,28 @@ export default function Login() {
         description: "Logged in successfully!",
       });
       navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Invalid email or password",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      // Check if error is about email verification
+      const errorMessage = error instanceof Error ? error.message : "Invalid email or password";
+      
+      if (errorMessage.includes("verify your email") || errorMessage.includes("OTP")) {
+        // Redirect to OTP verification page
+        toast({
+          title: "Email Not Verified",
+          description: "Please verify your email first. Redirecting to verification page...",
+          variant: "destructive",
+        });
+        
+        setTimeout(() => {
+          navigate("/verify-otp", { state: { email } });
+        }, 1500);
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

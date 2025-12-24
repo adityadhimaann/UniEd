@@ -13,6 +13,8 @@ import {
   setPasswordAndRole,
   completeOnboarding,
   deleteAccount,
+  verifyOTP,
+  resendOTP,
 } from '../controllers/authController.js';
 import User from '../models/User.js';
 import { authenticate } from '../middlewares/auth.js';
@@ -25,6 +27,8 @@ const router = express.Router();
 
 // Public routes
 router.post('/register', authLimiter, validate(registerValidator), register);
+router.post('/verify-otp', authLimiter, verifyOTP);
+router.post('/resend-otp', authLimiter, resendOTP);
 router.post('/login', authLimiter, validate(loginValidator), login);
 router.post('/refresh-token', validate(refreshTokenValidator), refreshToken);
 router.post('/forgot-password', authLimiter, forgotPassword);

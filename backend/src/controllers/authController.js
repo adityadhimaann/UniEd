@@ -2,14 +2,29 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import ApiError from '../utils/ApiError.js';
 import authService from '../services/authService.js';
+import otpService from '../services/otpService.js';
 
 export const register = asyncHandler(async (req, res) => {
-  const user = await authService.register(req.body);
+  console.log('📝 Registration request received:', { email: req.body.email, role: req.body.role });
+  
+  const result = await authService.register(req.body);
+  
+  console.log('✅ Registration successful, OTP sent to:', req.body.email);
+
+  // In development, include OTP in response for easier testing
+  const response = {
+    ...result,
+  };
+
+  // Add development hint
+  if (process.env.NODE_ENV === 'development') {
+    response.devHint = 'Check backend console for OTP if email not received';
+  }
 
   res.status(201).json(
     ApiResponse.created(
-      user,
-      'User registered successfully. Please verify your email.'
+      response,
+      'Registration successful. Please verify your email with the OTP sent to your email address.'
     )
   );
 });
@@ -192,6 +207,48 @@ export const deleteAccount = asyncHandler(async (req, res) => {
     ApiResponse.success(
       result,
       'Account deleted successfully'
+    )
+  );
+});
+
+export const verifyOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  console.log('🔐 OTP verification request:', { email, otp });
+
+  if (!email || !otp) {
+    throw new ApiError(400, 'Email and OTP are required');
+  }
+
+  const result = await authService.verifyEmailOTP(email, otp);
+
+  console.log('✅ OTP verified successfully for:', email);
+
+  res.status(200).json(
+    ApiResponse.success(
+      result,
+      'Email verified successfully'
+    )
+  );
+});
+
+export const resendOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  console.log('🔄 Resend OTP request for:', email);
+
+  if (!email) {
+    throw new ApiError(400, 'Email is required');
+  }
+
+  const result = await otpService.resendOTP(email, 'email_verification');
+
+  console.log('✅ OTP resent successfully to:', email);
+
+  res.status(200).json(
+    ApiResponse.success(
+      result,
+      'OTP resent successfully'
     )
   );
 });

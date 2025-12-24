@@ -135,7 +135,7 @@ export default function Signup() {
 
     setIsLoading(true);
     try {
-      await signup({
+      const response = await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -149,15 +149,11 @@ export default function Signup() {
 
       toast({
         title: "Success",
-        description: "Account created successfully!",
+        description: "Registration successful! Please check your email for OTP.",
       });
       
-      // Redirect based on role
-      if (formData.role === "faculty" || formData.role === "admin") {
-        navigate("/instructor");
-      } else {
-        navigate("/dashboard");
-      }
+      // Redirect to OTP verification page
+      navigate("/verify-otp", { state: { email: formData.email } });
     } catch (error) {
       toast({
         title: "Error",

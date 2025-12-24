@@ -3,6 +3,7 @@ import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { sanitizeUser } from '../utils/helpers.js';
 import emailService from './emailService.js';
+import otpService from './otpService.js';
 import Enrollment from '../models/Enrollment.js';
 import CourseEnrollmentRequest from '../models/CourseEnrollmentRequest.js';
 import Grade from '../models/Grade.js';
@@ -38,7 +39,7 @@ class AuthService {
       }
     }
 
-    // Create user
+    // Create user (not verified yet)
     try {
       const user = await User.create({
         email,
@@ -47,6 +48,7 @@ class AuthService {
         firstName,
         lastName,
         authProvider: 'local',
+        isVerified: false, // User needs to verify email with OTP
         academicInfo: {
           studentId: role === 'student' ? studentId : undefined,
           employeeId: role !== 'student' ? employeeId : undefined,
@@ -55,30 +57,17 @@ class AuthService {
         },
       });
 
-      // Generate tokens
-      const accessToken = generateAccessToken({
-        userId: user._id,
-        email: user.email,
-        role: user.role,
-      });
+      // Send OTP for email verification
+      await otpService.createAndSendOTP(email, 'email_verification');
 
-      const refreshToken = generateRefreshToken({
-        userId: user._id,
-      });
-
-      // Save refresh token to database
-      user.refreshToken = refreshToken;
-      await user.save();
-
-      // Send welcome email (async, don't wait for it)
-      emailService.sendWelcomeEmail(user).catch(err => {
-        console.error('Failed to send welcome email:', err);
-      });
+      // In development, also return a hint
+      const message = process.env.NODE_ENV === 'development' 
+        ? 'Registration successful. Please check your email for OTP verification. (Check backend console if email not received)'
+        : 'Registration successful. Please check your email for OTP verification.';
 
       return {
-        user: sanitizeUser(user),
-        accessToken,
-        refreshToken,
+        email: user.email,
+        message,
       };
     } catch (error) {
       // If it's a validation error, let it bubble up to the error handler
@@ -88,6 +77,50 @@ class AuthService {
       // For any other error, wrap it in ApiError
       throw ApiError.internalError('Failed to create user account');
     }
+  }
+
+  async verifyEmailOTP(email, otpCode) {
+    // Verify OTP
+    await otpService.verifyOTP(email, otpCode, 'email_verification');
+
+    // Find user and mark as verified
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    if (user.isVerified) {
+      throw ApiError.badRequest('Email already verified');
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    // Generate tokens
+    const accessToken = generateAccessToken({
+      userId: user._id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const refreshToken = generateRefreshToken({
+      userId: user._id,
+    });
+
+    // Save refresh token to database
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    // Send welcome email (async, don't wait for it)
+    emailService.sendWelcomeEmail(user).catch(err => {
+      console.error('Failed to send welcome email:', err);
+    });
+
+    return {
+      user: sanitizeUser(user),
+      accessToken,
+      refreshToken,
+    };
   }
 
   async login(email, password) {
@@ -100,6 +133,11 @@ class AuthService {
 
     if (!user.isActive) {
       throw ApiError.forbidden('Your account has been deactivated');
+    }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      throw ApiError.forbidden('Please verify your email before logging in. Check your email for OTP.');
     }
 
     // Check password
