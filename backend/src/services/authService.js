@@ -230,7 +230,7 @@ class AuthService {
   }
 
   async updateProfile(userId, updates) {
-    const { firstName, lastName, phone, dateOfBirth, address, department, semester } = updates;
+    const { firstName, lastName, phone, dateOfBirth, location, address, department, semester } = updates;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -249,6 +249,10 @@ class AuthService {
     if (dateOfBirth !== undefined) {
       if (!user.profile) user.profile = {};
       user.profile.dateOfBirth = dateOfBirth;
+    }
+    if (location !== undefined) {
+      if (!user.profile) user.profile = {};
+      user.profile.location = location;
     }
     if (address !== undefined) {
       if (!user.profile) user.profile = {};

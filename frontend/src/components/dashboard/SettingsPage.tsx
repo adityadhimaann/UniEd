@@ -67,7 +67,7 @@ export function SettingsPage() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         phone: user.phone || '',
-        location: '',
+        location: user.location || '',
       });
     }
   }, [user]);
@@ -169,6 +169,7 @@ export function SettingsPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
+        location: formData.location,
       });
 
       // Update user in context
@@ -177,6 +178,7 @@ export function SettingsPage() {
         lastName: updatedUser.lastName,
         name: updatedUser.name,
         phone: updatedUser.phone,
+        location: updatedUser.location,
       });
 
       toast({

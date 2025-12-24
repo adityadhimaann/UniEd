@@ -54,6 +54,7 @@ export const sanitizeUser = (user) => {
     avatar: userObj.avatar,
     profilePicture: userObj.avatar,
     phone: userObj.profile?.phone,
+    location: userObj.profile?.location,
     dateOfBirth: userObj.profile?.dateOfBirth,
     address: userObj.profile?.address,
     studentId: userObj.academicInfo?.studentId,
