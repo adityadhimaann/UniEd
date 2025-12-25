@@ -770,7 +770,7 @@ export default function AssignmentsManagement() {
                         <h4 className="text-sm font-semibold text-blue-400 mb-2">Attached Files</h4>
                         <div className="space-y-2">
                           {selectedSubmission.files.map((file: string, index: number) => {
-                            const fileUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${file}`;
+                            const fileUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001'}${file}`;
                             const fileName = file.split('/').pop() || `File ${index + 1}`;
                             return (
                               <motion.button

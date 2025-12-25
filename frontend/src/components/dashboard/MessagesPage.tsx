@@ -362,7 +362,7 @@ export function MessagesPage() {
       scrollToBottom();
 
       // Send message via HTTP (backend will handle Socket.IO broadcast)
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/messages/send`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1'}/messages/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
