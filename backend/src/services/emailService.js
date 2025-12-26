@@ -5,34 +5,68 @@ dotenv.config();
 
 class EmailService {
   constructor() {
+    console.log('📧 Initializing Email Service...');
+    console.log('📧 Email Host:', process.env.EMAIL_HOST);
+    console.log('📧 Email Port:', process.env.EMAIL_PORT);
+    console.log('📧 Email User:', process.env.EMAIL_USER);
+    console.log('📧 Email From:', process.env.EMAIL_FROM);
+    
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
+      port: parseInt(process.env.EMAIL_PORT),
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
+      tls: {
+        rejectUnauthorized: false // Accept self-signed certificates
+      }
+    });
+
+    // Verify connection configuration
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.error('❌ Email service verification failed:', error);
+      } else {
+        console.log('✅ Email service is ready to send messages');
+      }
     });
   }
 
   async sendEmail(to, subject, html) {
     try {
-      console.log(`📧 Attempting to send email to: ${to}`);
+      console.log('\n' + '='.repeat(60));
+      console.log('📧 SENDING EMAIL');
+      console.log('='.repeat(60));
+      console.log(`📧 To: ${to}`);
       console.log(`📧 Subject: ${subject}`);
+      console.log(`📧 From: ${process.env.EMAIL_FROM}`);
+      console.log('='.repeat(60));
       
-      const info = await this.transporter.sendMail({
+      const mailOptions = {
         from: process.env.EMAIL_FROM,
         to,
         subject,
         html,
-      });
+      };
 
-      console.log('✅ Email sent successfully:', info.messageId);
+      const info = await this.transporter.sendMail(mailOptions);
+
+      console.log('✅ Email sent successfully!');
+      console.log('📧 Message ID:', info.messageId);
+      console.log('📧 Response:', info.response);
+      console.log('='.repeat(60) + '\n');
+      
       return info;
     } catch (error) {
-      console.error('❌ Email sending failed:', error.message);
-      console.error('❌ Error details:', error);
+      console.error('\n' + '='.repeat(60));
+      console.error('❌ EMAIL SENDING FAILED');
+      console.error('='.repeat(60));
+      console.error('❌ Error Message:', error.message);
+      console.error('❌ Error Code:', error.code);
+      console.error('❌ Error Details:', error);
+      console.error('='.repeat(60) + '\n');
       throw error;
     }
   }
