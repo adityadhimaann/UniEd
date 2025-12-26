@@ -105,11 +105,16 @@ export default function Dashboard() {
       toast.error("Please login to access the dashboard");
     } else if (user?.role === "faculty") {
       // Redirect faculty users directly to instructor portal
-      navigate("/instructor");
+      navigate("/instructor", { replace: true });
     }
   }, [isAuthenticated, navigate, user]);
 
   if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  // Don't render dashboard for faculty users
+  if (user.role === "faculty") {
     return null;
   }
 
