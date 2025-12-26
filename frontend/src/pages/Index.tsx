@@ -58,10 +58,10 @@ const Index = () => {
         <Navbar />
         <main>
           <HeroSection />
+          <IntegrationsSection />
           <PremiumSection />
           <PricingSection />
           <FeaturesSection />
-          <IntegrationsSection />
           <StatsSection />
           <TestimonialsSection />
           <CTASection />
