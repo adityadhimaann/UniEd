@@ -141,9 +141,9 @@ export default function VerifyOTP() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Dynamic Content with Purple Gradient */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/95 via-indigo-900/90 to-purple-800/95 z-10" />
+      {/* Left side - Dynamic Content with Cyan/Blue Gradient */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-cyan-900 via-blue-900 to-cyan-800">
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/95 via-blue-900/90 to-cyan-800/95 z-10" />
         <motion.img
           key={currentContentIndex}
           src={securityContent[currentContentIndex].image}
@@ -163,17 +163,12 @@ export default function VerifyOTP() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20">
-                <Shield className="w-10 h-10 text-purple-300" />
-              </div>
-            </div>
             <div className="flex items-center justify-center gap-3 mb-4">
               <img src={uniEdLogo} alt="UniEd" className="h-12 w-auto" />
               <h1 className="font-display text-5xl font-bold text-white">UniEd</h1>
             </div>
             <p className="text-white/90 text-xl font-medium mb-2">Secure Verification</p>
-            <div className="w-24 h-1 bg-purple-400 mx-auto rounded-full" />
+            <div className="w-24 h-1 bg-cyan-400 mx-auto rounded-full" />
           </motion.div>
 
           {/* Dynamic Content */}
@@ -227,7 +222,7 @@ export default function VerifyOTP() {
                 onClick={() => setCurrentContentIndex(index)}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   index === currentContentIndex
-                    ? "bg-purple-400 w-8"
+                    ? "bg-cyan-400 w-8"
                     : "bg-white/30 w-2 hover:bg-white/50"
                 }`}
               />
@@ -259,14 +254,14 @@ export default function VerifyOTP() {
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="p-4 bg-indigo-500/10 rounded-full border border-indigo-500/20">
-                <Mail className="h-10 w-10 text-indigo-400" />
+              <div className="p-4 bg-cyan-500/10 rounded-full border border-cyan-500/20">
+                <Mail className="h-10 w-10 text-cyan-400" />
               </div>
             </div>
             <h1 className="font-display text-3xl font-bold mb-2 text-white">Verify Your Email</h1>
             <p className="text-gray-400">
               We've sent a 6-digit OTP to<br />
-              <span className="font-semibold text-indigo-400">{email}</span>
+              <span className="font-semibold text-cyan-400">{email}</span>
             </p>
           </div>
 
@@ -296,18 +291,18 @@ export default function VerifyOTP() {
                 value={otp}
                 onChange={handleOtpChange}
                 maxLength={6}
-                className="text-center text-3xl tracking-[0.5em] font-bold bg-gray-900 border-gray-700 text-white placeholder:text-gray-600 focus:border-indigo-500 focus:ring-indigo-500"
+                className="text-center text-3xl tracking-[0.5em] font-bold bg-gray-900 border-gray-700 text-white placeholder:text-gray-600 focus:border-cyan-500 focus:ring-cyan-500"
                 disabled={loading}
                 autoFocus
               />
               <p className="text-xs text-gray-500 text-center">
-                ⏰ OTP expires in 10 minutes
+                OTP expires in 10 minutes
               </p>
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-6 text-lg"
+              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold py-6 text-lg"
               disabled={loading || otp.length !== 6}
             >
               {loading ? (
@@ -349,7 +344,7 @@ export default function VerifyOTP() {
           <div className="text-center pt-6 border-t border-gray-800">
             <p className="text-sm text-gray-500">
               Need help?{" "}
-              <a href="mailto:support@unied.com" className="text-indigo-400 hover:text-indigo-300">
+              <a href="mailto:support@unied.com" className="text-cyan-400 hover:text-cyan-300">
                 Contact Support
               </a>
             </p>
