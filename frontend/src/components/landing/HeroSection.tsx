@@ -43,21 +43,6 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Image indicators */}
-      <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-        {backgroundImages.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentImageIndex(index)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              index === currentImageIndex 
-                ? "bg-primary w-8" 
-                : "bg-muted-foreground/50 hover:bg-muted-foreground"
-            }`}
-          />
-        ))}
-      </div>
-
       <div className="container relative z-10 px-4 py-25">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left content */}

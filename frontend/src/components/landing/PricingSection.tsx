@@ -22,13 +22,14 @@ export function PricingSection() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="md:grid md:grid-cols-3 gap-6 max-w-6xl mx-auto overflow-x-auto md:overflow-visible flex md:block snap-x snap-mandatory scrollbar-hide pb-4">
           {/* Single Learning Program */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true }}
+            className="min-w-[85vw] md:min-w-0 snap-center"
           >
             <Card className="glass border-border/50 h-full hover:border-primary/50 transition-all">
               <CardHeader className="text-center pb-8">
@@ -71,6 +72,7 @@ export function PricingSection() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             viewport={{ once: true }}
+            className="min-w-[85vw] md:min-w-0 snap-center"
           >
             <Card className="glass border-2 border-blue-500 h-full relative overflow-hidden shadow-xl shadow-blue-500/20">
               {/* Most Popular Badge */}
@@ -128,6 +130,7 @@ export function PricingSection() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             viewport={{ once: true }}
+            className="min-w-[85vw] md:min-w-0 snap-center"
           >
             <Card className="glass border-border/50 h-full hover:border-primary/50 transition-all">
               <CardHeader className="text-center pb-8">
