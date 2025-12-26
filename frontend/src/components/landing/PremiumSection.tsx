@@ -67,10 +67,10 @@ export function PremiumSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 viewport={{ once: true }}
-                className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-6 text-foreground leading-tight whitespace-nowrap"
+                className="text-lg sm:text-xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 md:mb-6 text-foreground leading-tight"
               >
                 Achieve your career goals with{" "}
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent whitespace-nowrap">
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   UniEd Plus
                 </span>
               </motion.h2>
