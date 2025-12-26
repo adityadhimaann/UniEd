@@ -23,7 +23,7 @@ export function PremiumSection() {
   }, [features.length]);
 
   return (
-    <section className="py-8 md:py-20 px-3 md:px-8 relative overflow-hidden">
+    <section className="py-6 md:py-12 relative overflow-hidden">
       {/* Animated Background Blobs */}
       <motion.div
         animate={{
@@ -50,16 +50,16 @@ export function PremiumSection() {
         className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl"
       />
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="relative z-10">
         {/* Main Premium Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="bg-gray-800 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-2xl p-4 md:p-12 border border-white/50"
+          className="bg-gray-800 backdrop-blur-xl p-4 md:p-8"
         >
-          <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-center">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-20 md:gap-48 items-center justify-between">
             {/* Left Content */}
             <div className="text-center md:text-left">
               <motion.h2
@@ -237,39 +237,17 @@ export function PremiumSection() {
                 <img
                   src={pic2Image}
                   alt="Students achieving success"
-                  className="w-full h-auto object-contain drop-shadow-2xl"
+                  className="w-full h-auto object-contain"
+                  style={{
+                    filter: 'drop-shadow(0 10px 20px rgba(6, 182, 212, 0.25)) drop-shadow(0 5px 10px rgba(34, 211, 238, 0.2))'
+                  }}
                 />
               </div>
             </motion.div>
           </div>
         </motion.div>
 
-        {/* Trust Indicators */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1 }}
-          viewport={{ once: true }}
-          className="mt-6 md:mt-12 grid grid-cols-4 gap-2 md:flex md:flex-wrap md:justify-center md:gap-8 text-center"
-        >
-          {[
-            { number: "7,000+", label: "Courses" },
-            { number: "50,000+", label: "Students" },
-            { number: "95%", label: "Success" },
-            { number: "24/7", label: "Support" },
-          ].map((stat, index) => (
-            <motion.div
-              key={index}
-              whileHover={{ scale: 1.1 }}
-              className="px-1 md:px-6"
-            >
-              <p className="text-base md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                {stat.number}
-              </p>
-              <p className="text-[10px] md:text-sm text-foreground/70 mt-0.5 md:mt-1">{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+
       </div>
     </section>
   );
