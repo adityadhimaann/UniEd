@@ -99,7 +99,7 @@ export default function CoursesManagement() {
     } catch (error: any) {
       console.error('Error approving request:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Error approving request';
-      alert(`❌ ${errorMsg}`);
+      toast.error(errorMsg);
     }
   };
 
@@ -122,7 +122,7 @@ export default function CoursesManagement() {
     } catch (error: any) {
       console.error('Error rejecting request:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Error rejecting request';
-      alert(`❌ ${errorMsg}`);
+      toast.error(errorMsg);
     }
   };
 
@@ -131,12 +131,12 @@ export default function CoursesManagement() {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        toast.error('Please select an image file');
         return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        toast.error('Image size should be less than 5MB');
         return;
       }
       setImageFile(file);
@@ -166,7 +166,7 @@ export default function CoursesManagement() {
         
         const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
         if (!token) {
-          alert('Authentication token not found. Please login again.');
+          toast.error('Authentication token not found. Please login again.');
           window.location.href = '/login';
           return;
         }
@@ -191,11 +191,11 @@ export default function CoursesManagement() {
           
           // Check if it's an auth error
           if (uploadResponse.status === 401) {
-            alert('⚠️ Your session has expired. Please logout and login again to upload images.');
+            toast.error('Your session has expired. Please logout and login again to upload images.');
             return;
           }
           
-          alert(`Image upload failed: ${errorText}`);
+          toast.error(`Image upload failed: ${errorText}`);
           return;
         }
       }
@@ -210,9 +210,9 @@ export default function CoursesManagement() {
       setImageFile(null);
       setImagePreview('');
       fetchCourses();
-      alert('Course created successfully!');
+      toast.success('Course created successfully!');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error creating course');
+      toast.error(error.response?.data?.message || 'Error creating course');
     }
   };
 
@@ -254,7 +254,7 @@ export default function CoursesManagement() {
         console.log('Token from:', localStorage.getItem('accessToken') ? 'accessToken' : 'token');
         
         if (!token) {
-          alert('Authentication token not found. Please login again.');
+          toast.error('Authentication token not found. Please login again.');
           window.location.href = '/login';
           return;
         }
@@ -280,11 +280,11 @@ export default function CoursesManagement() {
           
           // Check if it's an auth error
           if (uploadResponse.status === 401) {
-            alert('⚠️ Your session has expired. Please logout and login again to upload images.');
+            toast.error('Your session has expired. Please logout and login again to upload images.');
             return;
           }
           
-          alert(`Image upload failed: ${errorText}`);
+          toast.error(`Image upload failed: ${errorText}`);
           return; // Don't proceed if upload fails
         }
       } else {
@@ -311,10 +311,10 @@ export default function CoursesManagement() {
       setImagePreview('');
       
       await fetchCourses();
-      alert('✅ Course updated successfully with image!');
+      toast.success('Course updated successfully with image!');
     } catch (error: any) {
       console.error('Update error:', error);
-      alert(error.response?.data?.message || error.message || 'Error updating course');
+      toast.error(error.response?.data?.message || error.message || 'Error updating course');
     }
   };
 
@@ -331,8 +331,9 @@ export default function CoursesManagement() {
     try {
       await instructorService.deleteCourse(courseId);
       fetchCourses();
+      toast.success('Course deleted successfully');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error deleting course');
+      toast.error(error.response?.data?.message || 'Error deleting course');
     }
   };
 
