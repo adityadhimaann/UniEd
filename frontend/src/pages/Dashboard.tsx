@@ -66,7 +66,7 @@ const studentNavItems = [
   { icon: FileText, label: "Assignments", path: "/dashboard/assignments" },
   { icon: TrendingUp, label: "Grades", path: "/dashboard/grades" },
   { icon: Users, label: "Attendance", path: "/dashboard/attendance" },
-  { icon: Brain, label: "AI Assessment", path: "/dashboard/ai-assessment" },
+  { icon: Brain, label: "Lisa AI", path: "/dashboard/ai-assessment" },
   { icon: Calendar, label: "Calendar", path: "/dashboard/calendar" },
   { icon: MessageSquare, label: "Messages", path: "/dashboard/messages" },
   { icon: GraduationCap, label: "Virtual Classes", path: "/dashboard/virtual-classes" },

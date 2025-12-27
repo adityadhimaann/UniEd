@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowRight } from "lucide-react";
+import lisaPng from "@/assets/lisa.png";
+import lisaGif from "@/assets/lisa.gif";
 
 type Difficulty = "easy" | "medium" | "hard";
 
@@ -42,8 +44,11 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
       <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-6 md:space-y-8 shadow-xl">
         {/* Header */}
         <div className="text-center space-y-3">
+          <div className="flex justify-center mb-4">
+            <img src={lisaPng} alt="Lisa AI" className="h-20 w-20 rounded-2xl shadow-lg" />
+          </div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
-            AI Assessment
+            Lisa AI Assessment
           </h1>
           <p className="text-muted-foreground text-sm md:text-base">
             Test your knowledge with AI-powered adaptive questions
@@ -116,8 +121,8 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
         >
           {isLoading ? (
             <>
-              <Sparkles className="h-5 w-5 mr-2 animate-spin" />
-              Generating Question...
+              <img src={lisaGif} alt="Loading" className="h-5 w-5 mr-2" />
+              Lisa is preparing...
             </>
           ) : (
             <>
@@ -128,7 +133,7 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          The AI will adapt difficulty based on your performance
+          Lisa will adapt difficulty based on your performance
         </p>
       </div>
     </div>
