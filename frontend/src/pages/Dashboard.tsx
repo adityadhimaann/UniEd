@@ -52,6 +52,8 @@ import { VirtualClassesPage } from "@/components/dashboard/VirtualClassesPage";
 import { AdminPage } from "@/components/dashboard/AdminPage";
 import AttendancePage from "@/components/dashboard/AttendancePage";
 import AIAssessmentPage from "@/components/dashboard/AIAssessmentPage";
+import { FirebaseTest } from "@/components/ai-assessment/FirebaseTest";
+import { FirebaseConfigCheck } from "@/components/ai-assessment/FirebaseConfigCheck";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { GlobalSearch } from "@/components/dashboard/GlobalSearch";
 import { VirtualClassPopup } from "@/components/dashboard/VirtualClassPopup";
@@ -143,7 +145,7 @@ export default function Dashboard() {
       {/* Desktop Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: sidebarOpen ? 240 : 64 }}
+        animate={{ width: sidebarOpen ? 220 : 64 }}
         className="hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl fixed left-0 top-0 h-screen z-40"
       >
         {/* Logo */}
@@ -293,7 +295,7 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* Main content */}
-      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[240px]" : "lg:ml-16"} transition-all duration-300`}>
+      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[220px]" : "lg:ml-16"} transition-all duration-300`}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center justify-between px-3 lg:px-6 h-14">
@@ -374,6 +376,8 @@ export default function Dashboard() {
             <Route path="grades" element={<GradesPage />} />
             <Route path="attendance" element={<AttendancePage />} />
             <Route path="ai-assessment" element={<AIAssessmentPage />} />
+            <Route path="ai-assessment/config" element={<FirebaseConfigCheck />} />
+            <Route path="ai-assessment/test" element={<FirebaseTest />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="virtual-classes" element={<VirtualClassesPage />} />

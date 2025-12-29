@@ -8,17 +8,17 @@ interface QuestionCardProps {
 
 export function QuestionCard({ questionNumber, question, className }: QuestionCardProps) {
   return (
-    <div className={`bg-card border border-border rounded-xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-shadow ${className}`}>
+    <div className={`bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 ${className}`}>
       <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shrink-0 shadow-lg">
-          <HelpCircle className="h-6 w-6 text-white" />
+        <div className="h-12 w-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0">
+          <HelpCircle className="h-6 w-6 text-cyan-400" />
         </div>
         
         <div className="flex-1">
-          <p className="text-xs text-cyan-500 uppercase tracking-wider mb-2 font-medium">
-            Question {questionNumber}
+          <p className="text-xs text-cyan-400 uppercase tracking-wider mb-2 font-medium">
+            QUESTION {questionNumber}
           </p>
-          <h2 className="text-lg md:text-xl font-semibold leading-relaxed">
+          <h2 className="text-lg font-medium text-white leading-relaxed">
             {question}
           </h2>
         </div>

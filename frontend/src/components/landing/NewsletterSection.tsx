@@ -3,52 +3,46 @@ import { Mail, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import api from "@/lib/api";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
+      toast.error("Please enter your email address");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
+      toast.error("Please enter a valid email address");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await api.post('/newsletter/subscribe', { email });
+      const response = await api.post('/newsletter/subscribe', { email });
       
-      toast({
-        title: "Successfully Subscribed! 🎉",
+      toast.success("Successfully Subscribed! 🎉", {
         description: "Check your email for a confirmation message.",
+        duration: 5000,
       });
       
-      setEmail("");
+      setIsSubscribed(true);
+      console.log('Newsletter subscription response:', response.data);
     } catch (error: any) {
-      toast({
-        title: "Subscription Failed",
-        description: error.response?.data?.message || "Please try again later",
-        variant: "destructive",
+      console.error('Newsletter subscription error:', error);
+      const errorMessage = error.response?.data?.message || "Failed to subscribe. Please try again later.";
+      toast.error("Subscription Failed", {
+        description: errorMessage,
+        duration: 5000,
       });
     } finally {
       setIsSubmitting(false);
@@ -127,38 +121,89 @@ export function NewsletterSection() {
               onSubmit={handleNewsletterSubscribe}
               className="max-w-md mx-auto"
             >
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  type="email"
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isSubmitting}
-                  className="flex-1 h-12 px-4 bg-background/50 border-border/50 focus:border-primary text-base"
-                />
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  size="lg"
-                  className="group relative overflow-hidden bg-gradient-to-r from-primary to-accent text-primary-foreground hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 h-12 px-8"
+              {!isSubscribed ? (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isSubmitting}
+                      className="flex-1 h-12 px-4 bg-background/50 border-border/50 focus:border-primary text-base"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      size="lg"
+                      className="group relative overflow-hidden bg-gradient-to-r from-primary to-accent text-primary-foreground hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 h-12 px-8"
+                    >
+                      {isSubmitting ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span className="relative z-10 flex items-center gap-2">
+                            Subscribe
+                            <Send className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                          </span>
+                          {/* Shimmer effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-4">
+                    We respect your privacy. Unsubscribe at any time.
+                  </p>
+                </>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center py-8"
                 >
-                  {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span className="relative z-10 flex items-center gap-2">
-                        Subscribe
-                        <Send className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                      {/* Shimmer effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                We respect your privacy. Unsubscribe at any time.
-              </p>
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 mb-6"
+                  >
+                    <svg
+                      className="w-10 h-10 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </motion.div>
+                  
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3 gradient-text">
+                    Thank You for Subscribing! 🎉
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    We've sent a confirmation email to your inbox.<br />
+                    Welcome to the UniEd community!
+                  </p>
+                  
+                  <Button
+                    onClick={() => {
+                      setIsSubscribed(false);
+                      setEmail("");
+                    }}
+                    variant="outline"
+                    className="border-primary/50 hover:bg-primary/10"
+                  >
+                    Subscribe Another Email
+                  </Button>
+                </motion.div>
+              )}
             </motion.form>
 
             {/* Stats or social proof */}

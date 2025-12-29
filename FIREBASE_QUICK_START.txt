@@ -1,0 +1,49 @@
+╔══════════════════════════════════════════════════════════════╗
+║           FIREBASE SETUP - QUICK START GUIDE                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 STEP-BY-STEP:
+
+1️⃣  Create Firebase Project
+   → https://console.firebase.google.com/
+   → Click "Add project"
+   → Name: unied-lisa-ai
+
+2️⃣  Register Web App
+   → Click Web icon (</>)
+   → Nickname: UniEd Frontend
+   → Copy the config values
+
+3️⃣  Add to .env.local
+   → Open: frontend/.env.local
+   → Add these lines:
+
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+4️⃣  Enable Firestore
+   → Firebase Console → Firestore Database
+   → Create database → Test mode
+   → Choose region → Enable
+
+5️⃣  Restart Dev Server
+   → Stop server (Ctrl+C)
+   → Run: npm run dev
+
+6️⃣  Test Integration
+   → Navigate to: /dashboard/ai-assessment/test
+   → Click "Run All Tests"
+   → All should pass ✓
+
+📚 Full Guide: See FIREBASE_SETUP.md
+🧪 Test Guide: See FIREBASE_TEST_GUIDE.md
+📖 Features: See FIREBASE_INTEGRATION.md
+
+╔══════════════════════════════════════════════════════════════╗
+║  Need help? Check browser console for detailed messages      ║
+╚══════════════════════════════════════════════════════════════╝

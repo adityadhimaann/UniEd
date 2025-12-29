@@ -40,15 +40,15 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-6 md:space-y-8 shadow-xl">
+    <div className="absolute inset-0 -m-3 lg:-m-6 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-6 md:space-y-8 shadow-xl my-auto">
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="flex justify-center mb-4">
             <img src={lisaPng} alt="Lisa AI" className="h-20 w-20 rounded-2xl shadow-lg" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
-            Lisa AI Assessment
+            AI Assessment
           </h1>
           <p className="text-muted-foreground text-sm md:text-base">
             Test your knowledge with AI-powered adaptive questions
