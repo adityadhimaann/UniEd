@@ -20,7 +20,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
-  timeout: 30000, // 30 second timeout
+  timeout: 60000, // 60 second timeout (for cold starts on free tier)
 });
 
 // Request interceptor to add auth token and handle deduplication
