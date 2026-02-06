@@ -219,7 +219,7 @@ export default function Signup() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[9999] bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 flex items-center justify-center"
+          className="fixed inset-0 z-[100] bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 flex items-center justify-center"
         >
           <div className="text-center space-y-6">
             <div className="w-20 h-20 mx-auto">

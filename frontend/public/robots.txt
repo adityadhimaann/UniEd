@@ -1,3 +1,6 @@
+# UniEd - Unified Education Platform
+# This is an educational platform with no advertisements
+
 User-agent: Googlebot
 Allow: /
 
@@ -12,3 +15,13 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /instructor/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://uniedplatform.vercel.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

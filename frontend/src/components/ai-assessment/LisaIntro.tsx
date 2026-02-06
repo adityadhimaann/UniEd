@@ -27,7 +27,7 @@ export function LisaIntro({ onComplete }: LisaIntroProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden"
+          className="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden"
         >
           {/* Background gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-blue-900/20 to-purple-900/20" />

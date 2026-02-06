@@ -1,0 +1,6 @@
+# ads.txt file for uniedplatform.vercel.app
+# This site does not serve any advertisements
+# UniEd is an educational platform with no ad monetization
+
+# No advertising partners
+# Contact: support@unied.com
