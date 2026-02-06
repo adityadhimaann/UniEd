@@ -125,7 +125,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const response = await authService.register(registerData);
 
-      // Return email and message for OTP verification
+      // Store tokens and user data for immediate login
+      if (response.accessToken && response.refreshToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
+        
+        const userData = {
+          id: response.user._id,
+          email: response.user.email,
+          role: response.user.role,
+          firstName: response.user.firstName || '',
+          lastName: response.user.lastName || '',
+          name: `${response.user.firstName || ''} ${response.user.lastName || ''}`.trim(),
+          avatar: response.user.avatar,
+          studentId: response.user.studentId,
+          employeeId: response.user.employeeId,
+          department: response.user.department,
+          semester: response.user.semester,
+        };
+        
+        localStorage.setItem('edu_user', JSON.stringify(userData));
+        setUser(userData);
+      }
+
       return response;
     } catch (error: any) {
       console.error("Signup error:", error);

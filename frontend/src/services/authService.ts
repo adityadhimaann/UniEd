@@ -52,8 +52,8 @@ class AuthService {
     return response.data.data;
   }
 
-  async register(data: RegisterData): Promise<{ email: string; message: string }> {
-    const response = await api.post<ApiResponse<{ email: string; message: string }>>(
+  async register(data: RegisterData): Promise<AuthResponse> {
+    const response = await api.post<ApiResponse<AuthResponse>>(
       '/auth/register',
       data
     );

@@ -39,7 +39,7 @@ class AuthService {
       }
     }
 
-    // Create user (not verified yet)
+    // Create user (verified immediately - no OTP required)
     try {
       const user = await User.create({
         email,
@@ -48,7 +48,7 @@ class AuthService {
         firstName,
         lastName,
         authProvider: 'local',
-        isVerified: false, // User needs to verify email with OTP
+        isVerified: true, // Auto-verify user
         academicInfo: {
           studentId: role === 'student' ? studentId : undefined,
           employeeId: role !== 'student' ? employeeId : undefined,
@@ -57,17 +57,26 @@ class AuthService {
         },
       });
 
-      // Send OTP for email verification
-      await otpService.createAndSendOTP(email, 'email_verification');
+      // Send welcome email (non-blocking)
+      emailService.sendWelcomeEmail(user).catch(error => {
+        console.error('Failed to send welcome email:', error.message);
+      });
 
-      // In development, also return a hint
-      const message = process.env.NODE_ENV === 'development' 
-        ? 'Registration successful. Please check your email for OTP verification. (Check backend console if email not received)'
-        : 'Registration successful. Please check your email for OTP verification.';
+      // Generate tokens for immediate login
+      const accessToken = generateAccessToken({
+        userId: user._id,
+        role: user.role,
+      });
+
+      const refreshToken = generateRefreshToken({
+        userId: user._id,
+      });
 
       return {
-        email: user.email,
-        message,
+        accessToken,
+        refreshToken,
+        user: sanitizeUser(user),
+        message: 'Registration successful! Welcome to UniEd.',
       };
     } catch (error) {
       // If it's a validation error, let it bubble up to the error handler

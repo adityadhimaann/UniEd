@@ -166,13 +166,17 @@ export default function Signup() {
       console.log('Signup response:', response);
 
       toast({
-        title: "Success",
-        description: "Registration successful! Please check your email for OTP.",
+        title: "Success!",
+        description: "Registration successful! Welcome to UniEd. Check your email for more details.",
+        duration: 5000,
       });
       
-      // Redirect to OTP verification page
-      console.log('Navigating to verify-otp with email:', formData.email);
-      navigate("/verify-otp", { state: { email: formData.email } });
+      // Redirect to dashboard immediately
+      console.log('Navigating to dashboard');
+      setTimeout(() => {
+        navigate("/dashboard");
+        window.location.reload(); // Refresh to load user data
+      }, 1500);
     } catch (error) {
       console.error('Signup error caught:', error);
       const errorMessage = error instanceof Error ? error.message : "Registration failed. Please try again.";
