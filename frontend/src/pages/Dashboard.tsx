@@ -114,6 +114,20 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, navigate, user]);
 
+  // Show welcome notification for new users
+  useEffect(() => {
+    const showWelcome = localStorage.getItem('show_welcome_notification');
+    if (showWelcome === 'true' && user) {
+      toast.success(
+        `Welcome to UniEd, ${user.firstName}! 🎉 A confirmation email has been sent to ${user.email}`,
+        {
+          duration: 8000,
+        }
+      );
+      localStorage.removeItem('show_welcome_notification');
+    }
+  }, [user]);
+
   if (!isAuthenticated || !user) {
     return null;
   }

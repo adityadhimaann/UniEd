@@ -146,6 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         localStorage.setItem('edu_user', JSON.stringify(userData));
         setUser(userData);
+        
+        // Set flag for showing welcome notification
+        localStorage.setItem('show_welcome_notification', 'true');
       }
 
       return response;
