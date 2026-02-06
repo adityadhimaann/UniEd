@@ -560,8 +560,8 @@ export default function Signup() {
                   disabled={oauthLoading}
                   onClick={() => {
                     setOauthLoading(true);
-                    const apiUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5001';
-                    window.location.href = `${apiUrl}/api/v1/oauth/google`;
+                    const oauthUrl = import.meta.env.VITE_OAUTH_BACKEND_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5001';
+                    window.location.href = `${oauthUrl}/api/v1/oauth/google`;
                   }}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -590,8 +590,8 @@ export default function Signup() {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
-                    const apiUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5001';
-                    window.location.href = `${apiUrl}/api/v1/oauth/microsoft`;
+                    const oauthUrl = import.meta.env.VITE_OAUTH_BACKEND_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5001';
+                    window.location.href = `${oauthUrl}/api/v1/oauth/microsoft`;
                   }}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

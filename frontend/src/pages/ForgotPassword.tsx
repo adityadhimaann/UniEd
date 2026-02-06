@@ -32,10 +32,12 @@ export default function ForgotPassword() {
     setIsLoading(true);
     try {
       const response = await authService.forgotPassword(email);
+      console.log('Forgot password response:', response);
+      
       setIsSubmitted(true);
       
       // Show different message if in development mode with token
-      if (response.resetToken) {
+      if (response?.resetToken) {
         toast({
           title: "Development Mode",
           description: "Email service not configured. Check browser console and server logs for reset link.",
@@ -53,7 +55,7 @@ export default function ForgotPassword() {
       console.error('Forgot password error:', error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "An error occurred. Please try again.",
+        description: error.response?.data?.message || error.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
