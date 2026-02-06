@@ -94,11 +94,12 @@ class EmailService {
 
   async sendPasswordResetEmail(user, resetToken) {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const firstName = user.firstName || user.profile?.firstName || 'User';
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
-        <p>Hello ${user.profile.firstName},</p>
+        <p>Hello ${firstName},</p>
         <p>We received a request to reset your password. Click the button below to reset it:</p>
         <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0;">
           Reset Password
