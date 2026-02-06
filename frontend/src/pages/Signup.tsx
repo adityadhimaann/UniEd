@@ -136,6 +136,11 @@ export default function Signup() {
 
     setIsLoading(true);
     try {
+      console.log('Starting signup with data:', {
+        ...formData,
+        password: '***hidden***'
+      });
+      
       const response = await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -148,14 +153,18 @@ export default function Signup() {
         semester: formData.role === "student" ? formData.semester : undefined,
       });
 
+      console.log('Signup response:', response);
+
       toast({
         title: "Success",
         description: "Registration successful! Please check your email for OTP.",
       });
       
       // Redirect to OTP verification page
+      console.log('Navigating to verify-otp with email:', formData.email);
       navigate("/verify-otp", { state: { email: formData.email } });
     } catch (error) {
+      console.error('Signup error caught:', error);
       const errorMessage = error instanceof Error ? error.message : "Registration failed. Please try again.";
       
       // Check if error is about existing account
@@ -184,6 +193,7 @@ export default function Signup() {
         });
       }
     } finally {
+      console.log('Signup process completed, setting isLoading to false');
       setIsLoading(false);
     }
   };
