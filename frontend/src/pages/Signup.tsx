@@ -156,11 +156,33 @@ export default function Signup() {
       // Redirect to OTP verification page
       navigate("/verify-otp", { state: { email: formData.email } });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Registration failed. Please try again.",
-        variant: "destructive",
-      });
+      const errorMessage = error instanceof Error ? error.message : "Registration failed. Please try again.";
+      
+      // Check if error is about existing account
+      if (errorMessage.toLowerCase().includes('already exists') || 
+          errorMessage.toLowerCase().includes('already registered')) {
+        toast({
+          title: "Account Exists",
+          description: "An account with this email already exists. Redirecting to login...",
+          variant: "destructive",
+        });
+        
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          navigate("/login", { 
+            state: { 
+              message: "An account with this email already exists. Please login instead.",
+              email: formData.email 
+            } 
+          });
+        }, 2000);
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

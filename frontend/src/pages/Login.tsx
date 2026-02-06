@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import uniEdLogo from "@/assets/UniEdlogoo.png";
@@ -49,6 +49,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const errorParam = searchParams.get('error');
 
   useEffect(() => {
@@ -58,6 +59,25 @@ export default function Login() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    // Check if redirected from signup with message
+    if (location.state?.message) {
+      toast({
+        title: "Account Exists",
+        description: location.state.message,
+        variant: "destructive",
+      });
+      
+      // Pre-fill email if provided
+      if (location.state.email) {
+        setEmail(location.state.email);
+      }
+      
+      // Clear the state
+      navigate('/login', { replace: true, state: {} });
+    }
+  }, [location.state, toast, navigate]);
 
   useEffect(() => {
     // Show error message if redirected from OAuth with error
@@ -80,17 +100,6 @@ export default function Login() {
       navigate('/login', { replace: true });
     }
   }, [errorParam, toast, navigate]);
-
-  useEffect(() => {
-    // Show error message if present in URL
-    if (errorParam) {
-      toast({
-        title: "Error",
-        description: errorParam,
-        variant: "destructive",
-      });
-    }
-  }, [errorParam, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
