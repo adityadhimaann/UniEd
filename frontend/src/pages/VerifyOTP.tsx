@@ -124,10 +124,14 @@ export default function VerifyOTP() {
     setResendLoading(true);
 
     try {
-      await authService.resendOTP(email);
+      console.log('Resending OTP to:', email);
+      const response = await authService.resendOTP(email);
+      console.log('Resend OTP response:', response);
       setSuccess('OTP resent successfully! Check your email.');
       setCountdown(60);
     } catch (err: any) {
+      console.error('Resend OTP error:', err);
+      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to resend OTP. Please try again.');
     } finally {
       setResendLoading(false);
