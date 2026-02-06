@@ -48,6 +48,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -166,6 +167,54 @@ export default function Signup() {
   };
 
   return (
+    <>
+      {/* OAuth Loading Overlay */}
+      {oauthLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[9999] bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 flex items-center justify-center"
+        >
+          <div className="text-center space-y-6">
+            <motion.div
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 360]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="w-20 h-20 mx-auto"
+            >
+              <img src={uniEdLogo} alt="UniEd" className="w-full h-full object-contain" />
+            </motion.div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-white">Connecting to Google</h2>
+              <p className="text-cyan-200">Please wait while we redirect you...</p>
+            </div>
+            <div className="flex gap-2 justify-center">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-3 h-3 bg-cyan-400 rounded-full"
+                  animate={{
+                    y: [0, -20, 0],
+                    opacity: [1, 0.5, 1]
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    delay: i * 0.2
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
     <div className="min-h-screen flex">
       {/* Left side - Dynamic Content */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
@@ -486,7 +535,9 @@ export default function Signup() {
                   type="button"
                   variant="outline"
                   className="w-full"
+                  disabled={oauthLoading}
                   onClick={() => {
+                    setOauthLoading(true);
                     const apiUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5001';
                     window.location.href = `${apiUrl}/api/v1/oauth/google`;
                   }}
@@ -542,5 +593,6 @@ export default function Signup() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }
