@@ -158,20 +158,9 @@ export default function Login() {
           className="fixed inset-0 z-[9999] bg-gradient-to-br from-cyan-900 via-blue-900 to-slate-900 flex items-center justify-center"
         >
           <div className="text-center space-y-6">
-            <motion.div
-              animate={{ 
-                scale: [1, 1.2, 1],
-                rotate: [0, 360]
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="w-20 h-20 mx-auto"
-            >
+            <div className="w-20 h-20 mx-auto">
               <img src={uniEdLogo} alt="UniEd" className="w-full h-full object-contain" />
-            </motion.div>
+            </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-white">Connecting to Google</h2>
               <p className="text-cyan-200">Please wait while we redirect you...</p>
