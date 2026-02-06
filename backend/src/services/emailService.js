@@ -34,41 +34,54 @@ class EmailService {
     });
   }
 
-  async sendEmail(to, subject, html) {
-    try {
-      console.log('\n' + '='.repeat(60));
-      console.log('📧 SENDING EMAIL');
-      console.log('='.repeat(60));
-      console.log(`📧 To: ${to}`);
-      console.log(`📧 Subject: ${subject}`);
-      console.log(`📧 From: ${process.env.EMAIL_FROM}`);
-      console.log('='.repeat(60));
-      
-      const mailOptions = {
-        from: process.env.EMAIL_FROM,
-        to,
-        subject,
-        html,
-      };
+  async sendEmail(to, subject, html, retries = 2) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log('\n' + '='.repeat(60));
+        console.log(`📧 SENDING EMAIL (Attempt ${attempt}/${retries})`);
+        console.log('='.repeat(60));
+        console.log(`📧 To: ${to}`);
+        console.log(`📧 Subject: ${subject}`);
+        console.log(`📧 From: ${process.env.EMAIL_FROM}`);
+        console.log('='.repeat(60));
+        
+        const mailOptions = {
+          from: process.env.EMAIL_FROM,
+          to,
+          subject,
+          html,
+        };
 
-      const info = await this.transporter.sendMail(mailOptions);
+        const info = await this.transporter.sendMail(mailOptions);
 
-      console.log('✅ Email sent successfully!');
-      console.log('📧 Message ID:', info.messageId);
-      console.log('📧 Response:', info.response);
-      console.log('='.repeat(60) + '\n');
-      
-      return info;
-    } catch (error) {
-      console.error('\n' + '='.repeat(60));
-      console.error('❌ EMAIL SENDING FAILED');
-      console.error('='.repeat(60));
-      console.error('❌ Error Message:', error.message);
-      console.error('❌ Error Code:', error.code);
-      console.error('❌ Error Details:', error);
-      console.error('='.repeat(60) + '\n');
-      throw error;
+        console.log('✅ Email sent successfully!');
+        console.log('📧 Message ID:', info.messageId);
+        console.log('📧 Response:', info.response);
+        console.log('='.repeat(60) + '\n');
+        
+        return info;
+      } catch (error) {
+        lastError = error;
+        console.error('\n' + '='.repeat(60));
+        console.error(`❌ EMAIL SENDING FAILED (Attempt ${attempt}/${retries})`);
+        console.error('='.repeat(60));
+        console.error('❌ Error Message:', error.message);
+        console.error('❌ Error Code:', error.code);
+        console.error('='.repeat(60) + '\n');
+        
+        // If not the last attempt, wait before retrying
+        if (attempt < retries) {
+          const waitTime = 2000 * attempt; // 2s, 4s
+          console.log(`⏳ Retrying in ${waitTime/1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
     }
+    
+    // All retries failed
+    throw lastError;
   }
 
   async sendVerificationEmail(user, verificationToken) {
