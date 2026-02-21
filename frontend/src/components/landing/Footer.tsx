@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { 
-  GraduationCap, 
-  Twitter, 
-  Linkedin, 
-  Github, 
+import {
+  GraduationCap,
+  Twitter,
+  Linkedin,
+  Github,
   Youtube
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import uniEdLogo from "@/assets/UniEdlogoo.png";
 
 const footerLinks = {
@@ -28,8 +29,8 @@ const footerLinks = {
     { label: "API", href: "#" },
   ],
   legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
+    { label: "Privacy", href: "/privacy-policy" },
+    { label: "Terms", href: "/terms-of-service" },
     { label: "Security", href: "#" },
     { label: "Compliance", href: "#" },
   ],
@@ -80,12 +81,21 @@ export function Footer() {
               <ul className="space-y-2 md:space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a 
-                      href={link.href} 
-                      className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-xs md:text-sm"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith('/') ? (
+                      <Link
+                        to={link.href}
+                        className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-xs md:text-sm"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.href}
+                        className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-xs md:text-sm"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

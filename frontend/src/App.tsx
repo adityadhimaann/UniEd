@@ -16,6 +16,8 @@ import ResetPassword from "./pages/ResetPassword";
 import AuthCallback from "./pages/AuthCallback";
 import SetPassword from "./pages/SetPassword";
 import Welcome from "./pages/Welcome";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import InstructorPortal from "./pages/InstructorPortal";
 import InstructorDashboardNew from "./components/instructor/InstructorDashboardNew";
 import CoursesManagement from "./components/instructor/CoursesManagement";
@@ -56,11 +58,13 @@ const App = () => (
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/welcome" element={<Welcome />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/dashboard/*" element={<Dashboard />} />
-              
+
               {/* Virtual Class Room for Students (Full Screen) */}
               <Route path="/dashboard/virtual-class/:classId" element={<VirtualClassroomMeeting />} />
-              
+
               {/* Instructor Portal Routes */}
               <Route path="/instructor" element={<InstructorPortal />}>
                 <Route index element={<InstructorDashboardNew />} />
@@ -76,10 +80,10 @@ const App = () => (
                 <Route path="profile" element={<InstructorProfile />} />
                 <Route path="settings" element={<InstructorSettings />} />
               </Route>
-              
+
               {/* Virtual Class Room (Full Screen) */}
               <Route path="/instructor/virtual-class/:classId" element={<VirtualClassroomMeeting />} />
-              
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </MinimizedMeetingProvider>

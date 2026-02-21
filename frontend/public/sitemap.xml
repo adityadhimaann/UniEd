@@ -14,8 +14,20 @@
   </url>
   <url>
     <loc>https://uniedplatform.vercel.app/signup</loc>
-    <lastmod>2026-02-06</lastmod>
+    <lastmod>2026-02-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://uniedplatform.vercel.app/privacy-policy</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://uniedplatform.vercel.app/terms-of-service</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>
