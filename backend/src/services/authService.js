@@ -50,8 +50,8 @@ class AuthService {
         authProvider: 'local',
         isVerified: true, // Auto-verify user
         academicInfo: {
-          studentId: role === 'student' ? studentId : undefined,
-          employeeId: role !== 'student' ? employeeId : undefined,
+          studentId: (role === 'student' && studentId?.trim()) ? studentId : undefined,
+          employeeId: (role !== 'student' && employeeId?.trim()) ? employeeId : undefined,
           department,
           semester,
         },

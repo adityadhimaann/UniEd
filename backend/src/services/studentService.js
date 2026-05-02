@@ -71,6 +71,11 @@ const getDashboardData = async (studentId) => {
     attendancePercentage = (presentCount / attendanceRecords.length) * 100;
   }
 
+  // Mock calculated fields for study progression
+  // In a real scenario, this would come from a user session tracker table
+  const studyStreak = attendanceRecords.length > 0 ? Math.floor(Math.random() * 5) + 1 : 0; 
+  const hoursThisWeek = enrolledCourses > 0 ? enrolledCourses * 4 : 0;
+
   return {
     enrolledCourses,
     totalAssignments,
@@ -78,6 +83,8 @@ const getDashboardData = async (studentId) => {
     averageGrade: Math.round(averageGrade),
     attendancePercentage: Math.round(attendancePercentage),
     recentAnnouncements,
+    studyStreak,
+    hoursThisWeek
   };
 };
 

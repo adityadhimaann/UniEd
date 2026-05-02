@@ -17,16 +17,8 @@ export const registerValidator = Joi.object({
   lastName: Joi.string().required().messages({
     'any.required': 'Last name is required',
   }),
-  studentId: Joi.string().when('role', {
-    is: 'student',
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
-  employeeId: Joi.string().when('role', {
-    is: Joi.valid('faculty', 'admin'),
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
+  studentId: Joi.string().allow('').optional(),
+  employeeId: Joi.string().allow('').optional(),
   department: Joi.string().optional(),
   semester: Joi.number().min(1).max(12).optional(),
 });

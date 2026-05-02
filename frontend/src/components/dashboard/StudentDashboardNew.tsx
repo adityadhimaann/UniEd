@@ -65,7 +65,7 @@ export default function StudentDashboardNew() {
     {
       title: 'Active Courses',
       value: dashboard?.enrolledCourses || 0,
-      change: '+2 this semester',
+      change: dashboard?.enrolledCourses > 0 ? 'Active this semester' : 'No active courses',
       icon: BookOpen,
       gradient: 'from-blue-500 to-cyan-500',
       bgGradient: 'from-blue-500/10 to-cyan-500/10'
@@ -81,7 +81,7 @@ export default function StudentDashboardNew() {
     {
       title: 'Average Grade',
       value: `${dashboard?.averageGrade || 0}%`,
-      change: '+5% from last month',
+      change: dashboard?.averageGrade >= 80 ? 'Excellent performance' : 'Keep it up!',
       icon: TrendingUp,
       gradient: 'from-green-500 to-emerald-500',
       bgGradient: 'from-green-500/10 to-emerald-500/10'
@@ -89,7 +89,7 @@ export default function StudentDashboardNew() {
     {
       title: 'Attendance',
       value: `${dashboard?.attendancePercentage || 0}%`,
-      change: 'Excellent record',
+      change: dashboard?.attendancePercentage >= 85 ? 'Excellent record' : 'Keep attending',
       icon: CheckCircle,
       gradient: 'from-orange-500 to-red-500',
       bgGradient: 'from-orange-500/10 to-red-500/10'
@@ -121,8 +121,8 @@ export default function StudentDashboardNew() {
           {/* Quick Stats Bar - Hidden on mobile, shown on desktop */}
           <div className="hidden md:grid mt-6 grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Study Streak', value: '12 days', icon: Zap },
-              { label: 'Hours This Week', value: '24h', icon: Clock },
+              { label: 'Study Streak', value: dashboard?.studyStreak !== undefined ? `${dashboard.studyStreak} days` : '0 days', icon: Zap },
+              { label: 'Hours This Week', value: dashboard?.hoursThisWeek !== undefined ? `${dashboard.hoursThisWeek}h` : '0h', icon: Clock },
               { label: 'Total Courses', value: dashboard?.enrolledCourses || 0, icon: Trophy },
               { label: 'Avg Grade', value: `${dashboard?.averageGrade || 0}%`, icon: Star }
             ].map((item, i) => (

@@ -141,15 +141,6 @@ export default function Signup() {
         password: '***hidden***'
       });
       
-      // Show a toast for slow backend (free tier cold start)
-      const slowBackendToast = setTimeout(() => {
-        toast({
-          title: "Please wait...",
-          description: "Backend is starting up (this may take 30-60 seconds on first request)",
-          duration: 10000,
-        });
-      }, 5000); // Show after 5 seconds
-      
       const response = await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -162,7 +153,6 @@ export default function Signup() {
         semester: formData.role === "student" ? formData.semester : undefined,
       });
 
-      clearTimeout(slowBackendToast);
       console.log('Signup response:', response);
 
       toast({
