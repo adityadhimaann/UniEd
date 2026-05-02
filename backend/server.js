@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import 'dotenv/config'; // Load environment variables immediately before anything else
 import { createServer } from 'http';
 import app from './src/app.js';
 import connectDB from './src/config/database.js';
@@ -7,8 +7,6 @@ import { configureCloudinary } from './src/config/cloudinary.js';
 import { initializeSocket } from './src/socket/socketHandler.js';
 
 // Load environment variables
-dotenv.config();
-
 const PORT = process.env.PORT || 5000;
 
 // Start server

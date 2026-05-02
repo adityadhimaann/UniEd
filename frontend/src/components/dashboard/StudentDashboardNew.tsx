@@ -293,6 +293,54 @@ export default function StudentDashboardNew() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Recommended Study Materials */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <BookMarked className="w-5 h-5" />
+                Recommended Study Materials
+              </CardTitle>
+              <Link to="/dashboard/courses">
+                <Button variant="ghost" size="sm" className="hidden sm:flex group">
+                  View Resources
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                {[
+                  { title: "Advanced Mathematics Guide", type: "PDF", size: "2.4 MB", course: "MAT201" },
+                  { title: "React Architecture Patterns", type: "Video", size: "45 mins", course: "CS305" },
+                  { title: "Physics Lab Requirements", type: "Doc", size: "1.2 MB", course: "PHY102" },
+                  { title: "Database Normalization Tips", type: "Article", size: "Read", course: "CS401" }
+                ].map((resource, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-secondary/50 dark:hover:bg-white/5 transition-all cursor-pointer group shadow-sm hover:shadow">
+                    <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
+                      {resource.type === 'PDF' && <FileText className="w-5 h-5" />}
+                      {resource.type === 'Video' && <PlayCircle className="w-5 h-5" />}
+                      {resource.type === 'Doc' && <BookOpen className="w-5 h-5" />}
+                      {resource.type === 'Article' && <FileText className="w-5 h-5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{resource.title}</h4>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-secondary/80 font-medium">
+                          {resource.course}
+                        </Badge>
+                        <span className="flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                          {resource.size}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Quick Actions & Updates */}

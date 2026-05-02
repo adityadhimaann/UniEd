@@ -159,7 +159,7 @@ export default function Dashboard() {
       {/* Desktop Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: sidebarOpen ? 220 : 64 }}
+        animate={{ width: sidebarOpen ? 240 : 64 }}
         className="hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl fixed left-0 top-0 h-screen z-40"
       >
         {/* Logo */}
@@ -202,7 +202,7 @@ export default function Dashboard() {
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="font-medium text-base"
+                    className="font-medium text-base whitespace-nowrap"
                   >
                     {item.label}
                   </motion.span>
@@ -301,7 +301,7 @@ export default function Dashboard() {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="font-medium text-base">{item.label}</span>
+                <span className="font-medium text-base whitespace-nowrap">{item.label}</span>
               </Link>
             );
           })}
@@ -309,7 +309,7 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* Main content */}
-      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[220px]" : "lg:ml-16"} transition-all duration-300`}>
+      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[240px]" : "lg:ml-16"} transition-all duration-300`}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center justify-between px-3 lg:px-6 h-14">

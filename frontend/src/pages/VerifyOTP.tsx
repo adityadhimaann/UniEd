@@ -246,7 +246,7 @@ export default function VerifyOTP() {
           {/* Logo and Back Button */}
           <div className="flex items-center justify-between mb-4">
             <Link to="/" className="flex items-center gap-2">
-              <img src={uniEdLogo} alt="UniEd" className="h-8 w-auto" />
+              <img src="/UniEdlogoo.png" alt="UniEd" className="h-8 w-auto" />
               <span className="font-display text-2xl font-bold text-white">UniEd</span>
             </Link>
             <Link to="/signup" className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors">
