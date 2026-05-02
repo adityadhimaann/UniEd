@@ -168,11 +168,11 @@ export default function StudentDashboardNew() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-fr">
         {/* Left Column - Courses & Progress */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Active Courses */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-lg flex-1 flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
                 <CardTitle className="text-xl">Active Courses</CardTitle>
@@ -185,7 +185,7 @@ export default function StudentDashboardNew() {
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-1">
               {enrolledCourses.length === 0 ? (
                 <div className="text-center py-12">
                   <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -256,14 +256,14 @@ export default function StudentDashboardNew() {
           </Card>
 
           {/* Learning Activity */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-lg flex-1 flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Activity className="w-5 h-5" />
                 Recent Announcements
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <div className="space-y-3">
                 {dashboard?.recentAnnouncements && dashboard.recentAnnouncements.length > 0 ? (
                   dashboard.recentAnnouncements.map((announcement: any) => (
@@ -295,7 +295,7 @@ export default function StudentDashboardNew() {
           </Card>
 
           {/* Recommended Study Materials */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-lg flex-1 flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xl flex items-center gap-2">
                 <BookMarked className="w-5 h-5" />
@@ -308,7 +308,7 @@ export default function StudentDashboardNew() {
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {[
                   { title: "Advanced Mathematics Guide", type: "PDF", size: "2.4 MB", course: "MAT201" },
@@ -344,13 +344,13 @@ export default function StudentDashboardNew() {
         </div>
 
         {/* Right Column - Quick Actions & Updates */}
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           {/* Quick Actions */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-lg flex-1 flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 flex-1">
               {[
                 { icon: Video, label: 'Join Virtual Class', color: 'text-blue-500', bg: 'bg-blue-500/10', href: '/dashboard/virtual-classes' },
                 { icon: FileText, label: 'Submit Assignment', color: 'text-purple-500', bg: 'bg-purple-500/10', href: '/dashboard/assignments' },
@@ -373,14 +373,14 @@ export default function StudentDashboardNew() {
           </Card>
 
           {/* Upcoming Deadlines */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-lg flex-1 flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Clock className="w-5 h-5" />
                 Upcoming Deadlines
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 flex-1">
               {upcomingClasses.length > 0 ? (
                 upcomingClasses.map((item: any, i: number) => {
                   const daysUntil = Math.ceil((new Date(item.scheduledStartTime).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -411,14 +411,14 @@ export default function StudentDashboardNew() {
           </Card>
 
           {/* Performance Summary */}
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10">
+          <Card className="border-0 shadow-lg flex-1 flex flex-col bg-gradient-to-br from-blue-500/10 to-purple-500/10">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Target className="w-5 h-5 text-blue-500" />
                 Performance Summary
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 flex-1">
               <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-green-500/10">
