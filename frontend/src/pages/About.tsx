@@ -191,21 +191,11 @@ export default function AboutPage() {
         {/* Global Impact / Mission */}
         <section className="py-24 bg-card/50 border-y border-border/50">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { label: "Uptime", value: "99.9%", icon: ShieldCheck },
-                { label: "Support", value: "24/7", icon: Users },
-                { label: "Security", value: "Enterprise", icon: Award },
-                { label: "Performance", value: "Fast", icon: Zap }
-              ].map((stat) => (
-                <div key={stat.label} className="space-y-2">
-                  <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center mx-auto mb-4 border border-primary/10">
-                    <stat.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <p className="text-3xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                </div>
-              ))}
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                To bridge the global education gap by providing a modern, accessible, and intelligent platform that empowers learners and educators worldwide.
+              </p>
             </div>
           </div>
         </section>

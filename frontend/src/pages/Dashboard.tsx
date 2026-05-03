@@ -160,26 +160,30 @@ export default function Dashboard() {
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 240 : 64 }}
-        className="hidden lg:flex flex-col border-r border-border bg-card/50 backdrop-blur-xl fixed left-0 top-0 h-screen z-40"
+        className="hidden lg:flex flex-col bg-card/60 backdrop-blur-2xl border-r border-border fixed left-0 top-0 h-screen z-40 box-border pointer-events-auto"
       >
-        {/* Logo */}
-        <Link to="/" className="p-3 flex items-center gap-2 border-b border-border hover:bg-secondary/50 transition-colors">
-          <img 
-            src={logo} 
-            alt="UniEd Logo" 
-            className="w-10 h-10 object-contain shrink-0"
-          />
-          {sidebarOpen && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="font-display text-xl font-bold"
-            >
-              UniEd
-            </motion.span>
-          )}
-        </Link>
+        {/* Logo Section - Height precisely matched with header */}
+        <div className="h-[57px] flex-shrink-0 border-b border-border box-border relative z-50">
+          <Link to="/" className="flex items-center gap-2 hover:bg-secondary/50 transition-colors h-full w-full px-3">
+            <img 
+              src={logo} 
+              alt="UniEd Logo" 
+              className="w-10 h-10 object-contain shrink-0"
+            />
+            {sidebarOpen && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="font-display text-xl font-bold"
+              >
+                UniEd
+              </motion.span>
+            )}
+          </Link>
+          {/* Vertical alignment line for perfect visual connection */}
+          <div className="absolute right-[-1px] top-0 h-full w-[1px] bg-border hidden lg:block" />
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
@@ -307,12 +311,11 @@ export default function Dashboard() {
           })}
         </nav>
       </motion.aside>
-
       {/* Main content */}
-      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[240px]" : "lg:ml-16"} transition-all duration-300`}>
+      <main className={`flex-1 ${sidebarOpen ? "lg:ml-[240px]" : "lg:ml-16"} transition-all duration-300 min-w-0 bg-background relative`}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
-          <div className="flex items-center justify-between px-3 lg:px-6 h-14">
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border w-full box-border">
+          <div className="flex items-center justify-between px-3 lg:px-6 h-[56px] box-border">
             {/* Mobile menu button */}
             <Button
               variant="ghost"

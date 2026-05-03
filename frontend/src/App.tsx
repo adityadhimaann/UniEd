@@ -39,7 +39,7 @@ const queryClient = new QueryClient();
 
 // Component to handle scrolling to hash after navigation
 const ScrollToHash = () => {
-  const { hash } = useLocation();
+  const { pathname, hash } = useLocation();
 
   useEffect(() => {
     if (hash) {
@@ -50,8 +50,11 @@ const ScrollToHash = () => {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 100);
       }
+    } else {
+      // If no hash, scroll to top on page change
+      window.scrollTo(0, 0);
     }
-  }, [hash]);
+  }, [pathname, hash]);
 
   return null;
 };
