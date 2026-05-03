@@ -360,7 +360,10 @@ export default function Dashboard() {
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-md border-border/50 shadow-xl">
+                <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-md border-border/50 shadow-xl mt-2 relative overflow-visible">
+                  {/* Pointer arrow for the profile dropdown */}
+                  <div className="absolute -top-1.5 right-4 w-3 h-3 bg-background border-l border-t border-border/50 transform rotate-45 z-[-1]"></div>
+                  
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard/settings" className="hover:bg-secondary/40 transition-colors">
                       <User className="w-4 h-4 mr-2" />
