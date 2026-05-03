@@ -193,17 +193,15 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
     }
   }
 
-  // Create notification for student
-  const notificationMessage = status === 'approved' 
-    ? `Your enrollment request for ${enrollmentRequest.course.courseName} has been approved! ${responseMessage || ''}`
-    : `Your enrollment request for ${enrollmentRequest.course.courseName} has been rejected. ${responseMessage || ''}`;
-
-  await Notification.create({
+  // Create notification for student (non-blocking)
+  const notificationPromise = Notification.create({
     user: enrollmentRequest.student._id,
     type: 'enrollment-response',
     title: status === 'approved' ? 'Enrollment Approved' : 'Enrollment Rejected',
-    content: notificationMessage,
-    link: status === 'approved' ? `/dashboard/courses` : `/dashboard/courses`,
+    content: status === 'approved' 
+      ? `Your enrollment request for ${enrollmentRequest.course.courseName} has been approved! ${responseMessage || ''}`
+      : `Your enrollment request for ${enrollmentRequest.course.courseName} has been rejected. ${responseMessage || ''}`,
+    link: `/dashboard/courses`,
     metadata: {
       enrollmentRequestId: enrollmentRequest._id,
       courseId: enrollmentRequest.course._id,
@@ -213,29 +211,23 @@ export const respondToEnrollmentRequest = asyncHandler(async (req, res) => {
     }
   });
 
-  // Send email notification to student
-  try {
-    if (status === 'approved') {
-      await emailService.sendEnrollmentApprovalEmail(
-        enrollmentRequest.student,
-        enrollmentRequest.course,
-        enrollmentRequest.instructor
-      );
-      console.log('✅ Enrollment approval email sent to', enrollmentRequest.student.email);
-    } else {
-      await emailService.sendEnrollmentRejectionEmail(
-        enrollmentRequest.student,
-        enrollmentRequest.course,
-        enrollmentRequest.instructor,
-        responseMessage
-      );
-      console.log('✅ Enrollment rejection email sent to', enrollmentRequest.student.email);
-    }
-  } catch (emailError) {
-    console.error('❌ Failed to send enrollment email:', emailError);
-    // Don't fail the request if email fails - just log it
+  // Send email notification to student (strictly non-blocking/non-awaiting)
+  if (status === 'approved') {
+    emailService.sendEnrollmentApprovalEmail(
+      enrollmentRequest.student,
+      enrollmentRequest.course,
+      enrollmentRequest.instructor
+    ).catch(err => console.error('❌ Failed to send enrollment approval email:', err));
+  } else {
+    emailService.sendEnrollmentRejectionEmail(
+      enrollmentRequest.student,
+      enrollmentRequest.course,
+      enrollmentRequest.instructor,
+      responseMessage
+    ).catch(err => console.error('❌ Failed to send enrollment rejection email:', err));
   }
 
+  // Finalize everything without waiting for email/notification IO
   res.status(200).json(
     new ApiResponse(200, enrollmentRequest, `Enrollment request ${status} successfully`)
   );

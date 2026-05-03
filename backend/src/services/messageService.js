@@ -205,6 +205,87 @@ export const getFacultyByCourse = async (studentId, courseId = null) => {
 };
 
 /**
+ * Update a message
+ */
+export const updateMessage = async (messageId, userId, content) => {
+  const message = await Message.findById(messageId);
+
+  if (!message) {
+    throw new ApiError(404, 'Message not found');
+  }
+
+  // Only sender can edit their own message
+  if (message.sender.toString() !== userId.toString()) {
+    throw new ApiError(403, 'You can only edit your own messages');
+  }
+
+  message.content = content;
+  await message.save();
+
+  // Populate sender for consistent response
+  await message.populate('sender', 'firstName lastName email avatar');
+
+  const fullName = `${message.sender.firstName || ''} ${message.sender.lastName || ''}`.trim();
+
+  const updatedMessage = {
+    _id: message._id,
+    sender: {
+      _id: message.sender._id,
+      firstName: message.sender.firstName,
+      lastName: message.sender.lastName,
+      name: fullName || message.sender.email.split('@')[0],
+      email: message.sender.email,
+      avatar: message.sender.avatar,
+    },
+    receiver: message.receiver,
+    content: message.content,
+    fileUrl: message.fileUrl,
+    fileType: message.fileType,
+    isRead: message.isRead,
+    createdAt: message.createdAt,
+    updatedAt: message.updatedAt,
+    isEdited: true
+  };
+
+  // Broadcast update via socket
+  const { sendMessage } = await import('../socket/socketHandler.js');
+  sendMessage(message.receiver.toString(), {
+    type: 'MESSAGE_UPDATE',
+    message: updatedMessage
+  });
+
+  return updatedMessage;
+};
+
+/**
+ * Delete a message
+ */
+export const deleteMessage = async (messageId, userId) => {
+  const message = await Message.findById(messageId);
+
+  if (!message) {
+    throw new ApiError(404, 'Message not found');
+  }
+
+  // Only sender can delete their own message
+  if (message.sender.toString() !== userId.toString()) {
+    throw new ApiError(403, 'You can only delete your own messages');
+  }
+
+  const receiverId = message.receiver.toString();
+  await Message.findByIdAndDelete(messageId);
+
+  // Notify receiver via socket
+  const { sendMessage } = await import('../socket/socketHandler.js');
+  sendMessage(receiverId, {
+    type: 'MESSAGE_DELETE',
+    messageId: messageId
+  });
+
+  return true;
+};
+
+/**
  * Get users for starting new conversation
  */
 export const getUsers = async (currentUserId, filters = {}) => {

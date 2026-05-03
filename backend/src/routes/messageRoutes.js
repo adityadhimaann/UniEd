@@ -16,16 +16,22 @@ router.get('/faculty-by-course', messageController.getFacultyByCourse);
 // Get all users (for starting new conversation)
 router.get('/users', messageController.getUsers);
 
-// Get messages with a specific user
-router.get('/:otherUserId', messageController.getMessages);
-
 // Send a message
 router.post('/send', messageController.sendMessageHTTP);
+
+// Edit message
+router.patch('/message/:messageId', messageController.updateMessage);
+
+// Delete single message
+router.delete('/message/:messageId', messageController.deleteMessage);
 
 // Mark messages as read
 router.patch('/:otherUserId/read', messageController.markAsRead);
 
 // Delete conversation
 router.delete('/:otherUserId', messageController.deleteConversation);
+
+// Get messages with a specific user
+router.get('/:otherUserId', messageController.getMessages);
 
 export default router;

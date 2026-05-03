@@ -98,6 +98,39 @@ export const sendMessageHTTP = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Update a message (Edit)
+ */
+export const updateMessage = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { messageId } = req.params;
+  const { content } = req.body;
+
+  if (!content?.trim()) {
+    throw new ApiError(400, 'Message content is required');
+  }
+
+  const message = await messageService.updateMessage(messageId, userId, content.trim());
+
+  res.status(200).json(
+    new ApiResponse(200, message, 'Message updated successfully')
+  );
+});
+
+/**
+ * Delete a message
+ */
+export const deleteMessage = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { messageId } = req.params;
+
+  await messageService.deleteMessage(messageId, userId);
+
+  res.status(200).json(
+    new ApiResponse(200, null, 'Message deleted successfully')
+  );
+});
+
+/**
  * Mark messages as read
  */
 export const markAsRead = asyncHandler(async (req, res) => {
@@ -133,4 +166,6 @@ export default {
   sendMessageHTTP,
   markAsRead,
   deleteConversation,
+  updateMessage,
+  deleteMessage,
 };

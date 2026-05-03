@@ -10,28 +10,27 @@ import ApiError from '../utils/ApiError.js';
 
 // Get student dashboard data
 const getDashboardData = async (studentId) => {
-  // Get enrolled courses count
-  const enrolledCourses = await Enrollment.find({ 
-    student: studentId,
-    status: 'active'
-  }).countDocuments();
-
-  // Get total assignments
-  const enrollments = await Enrollment.find({ 
-    student: studentId,
-    status: 'active'
-  }).select('course');
+  // Use Promise.all for parallel database queries
+  const [enrollmentsWithCourse, attendanceRecords, grades] = await Promise.all([
+    Enrollment.find({ 
+      student: studentId,
+      status: 'active'
+    }).select('course'),
+    Attendance.find({ student: studentId }).select('status'),
+    Grade.find({ student: studentId }).select('assignment points maxPoints')
+  ]);
   
-  const courseIds = enrollments.map(e => e.course);
-  
-  const totalAssignments = await Assignment.countDocuments({
-    course: { $in: courseIds }
-  });
+  const courseIds = enrollmentsWithCourse.map(e => e.course);
+  const enrolledCoursesCount = courseIds.length;
 
-  // Get pending assignments (not submitted)
-  const submittedAssignments = await Grade.find({
-    student: studentId
-  }).distinct('assignment');
+  const [totalAssignments, submittedAssignments, recentAnnouncements] = await Promise.all([
+    Assignment.countDocuments({ course: { $in: courseIds } }),
+    Grade.find({ student: studentId }).distinct('assignment'),
+    Announcement.find({ course: { $in: courseIds } })
+      .populate('course', 'name code')
+      .sort({ createdAt: -1 })
+      .limit(5)
+  ]);
 
   const pendingAssignments = await Assignment.countDocuments({
     course: { $in: courseIds },
@@ -39,32 +38,15 @@ const getDashboardData = async (studentId) => {
     dueDate: { $gte: new Date() }
   });
 
-  // Get recent announcements
-  const recentAnnouncements = await Announcement.find({
-    course: { $in: courseIds }
-  })
-    .populate('course', 'name code')
-    .sort({ createdAt: -1 })
-    .limit(5);
-
   // Calculate average grade
-  const grades = await Grade.find({
-    student: studentId,
-    points: { $exists: true }
-  });
-
   let averageGrade = 0;
   if (grades.length > 0) {
-    const totalPoints = grades.reduce((sum, grade) => sum + grade.points, 0);
-    const maxPoints = grades.reduce((sum, grade) => sum + (grade.maxPoints || 100), 0);
+    const totalPoints = grades.reduce((sum, g) => sum + (g.points || 0), 0);
+    const maxPoints = grades.reduce((sum, g) => sum + (g.maxPoints || 100), 0);
     averageGrade = maxPoints > 0 ? (totalPoints / maxPoints) * 100 : 0;
   }
 
   // Get attendance percentage
-  const attendanceRecords = await Attendance.find({
-    student: studentId
-  });
-
   let attendancePercentage = 0;
   if (attendanceRecords.length > 0) {
     const presentCount = attendanceRecords.filter(a => a.status === 'present').length;
@@ -72,12 +54,11 @@ const getDashboardData = async (studentId) => {
   }
 
   // Mock calculated fields for study progression
-  // In a real scenario, this would come from a user session tracker table
   const studyStreak = attendanceRecords.length > 0 ? Math.floor(Math.random() * 5) + 1 : 0; 
-  const hoursThisWeek = enrolledCourses > 0 ? enrolledCourses * 4 : 0;
+  const hoursThisWeek = enrolledCoursesCount > 0 ? enrolledCoursesCount * 4 : 0;
 
   return {
-    enrolledCourses,
+    enrolledCourses: enrolledCoursesCount,
     totalAssignments,
     pendingAssignments,
     averageGrade: Math.round(averageGrade),

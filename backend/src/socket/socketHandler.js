@@ -120,6 +120,18 @@ export const initializeSocket = (server) => {
       });
     });
 
+    // Handle Edit/Delete via Socket
+    socket.on('message:modify', (data) => {
+      const { type, receiverId, messageId, message } = data;
+      console.log(`💬 Message ${type} from ${userId} for ${receiverId}`);
+      
+      io.to(`chat:${receiverId}`).emit('message:received', {
+        type: type === 'edit' ? 'MESSAGE_UPDATE' : 'MESSAGE_DELETE',
+        messageId,
+        message: message // For edit, this is the updated message object
+      });
+    });
+
     // Typing indicator
     socket.on('typing:start', (receiverId) => {
       io.to(`chat:${receiverId}`).emit('user:typing', {
@@ -905,14 +917,20 @@ export const sendNotification = (userId, notification) => {
   });
 };
 
-// Send message to specific user
+// Send message or chat notification to specific user
 export const sendMessage = (receiverId, messageData) => {
   if (!io) return;
   
-  io.to(`chat:${receiverId}`).emit('new:message', {
-    ...messageData,
-    timestamp: new Date(),
-  });
+  if (messageData.type === 'MESSAGE_UPDATE' || messageData.type === 'MESSAGE_DELETE') {
+    // These are operational events, emit specifically as message:received for the frontend listener
+    io.to(`chat:${receiverId}`).emit('message:received', messageData);
+  } else {
+    // Normal message delivery
+    io.to(`chat:${receiverId}`).emit('new:message', {
+      ...messageData,
+      timestamp: new Date(),
+    });
+  }
 };
 
 // Broadcast announcement
