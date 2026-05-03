@@ -446,4 +446,6 @@ export default {
   getMessages,
   markMessagesAsRead,
   deleteConversation,
+  updateMessage,
+  deleteMessage,
 };

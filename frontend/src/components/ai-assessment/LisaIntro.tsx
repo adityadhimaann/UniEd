@@ -72,7 +72,7 @@ export function LisaIntro({ onComplete }: LisaIntroProps) {
                 autoPlay
                 muted
                 playsInline
-                className="w-full h-auto"
+                className="w-full h-auto mix-blend-screen"
                 onEnded={() => {
                   setVideoEnded(true);
                   setTimeout(onComplete, 800);

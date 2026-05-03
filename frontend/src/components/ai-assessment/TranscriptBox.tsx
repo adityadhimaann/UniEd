@@ -8,8 +8,8 @@ interface TranscriptBoxProps {
 
 export function TranscriptBox({ transcript, isActive, className }: TranscriptBoxProps) {
   return (
-    <div className={`bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 flex flex-col h-full min-h-0 ${className}`}>
-      <div className="flex items-center gap-2 mb-4 shrink-0">
+    <div className={`bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 md:p-6 flex flex-col h-[200px] md:h-full min-h-0 ${className}`}>
+      <div className="flex items-center gap-2 mb-3 md:mb-4 shrink-0">
         <FileText className="h-5 w-5 text-cyan-400" />
         <h3 className="text-sm font-medium text-white">Transcript</h3>
         {isActive && (

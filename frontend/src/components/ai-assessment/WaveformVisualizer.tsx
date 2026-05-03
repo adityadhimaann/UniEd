@@ -9,8 +9,8 @@ export function WaveformVisualizer({ isActive, className }: WaveformVisualizerPr
   const bars = 40;
   
   return (
-    <div className={`bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 flex flex-col h-full ${className}`}>
-      <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+    <div className={`bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 md:p-6 flex flex-col h-[200px] md:h-full ${className}`}>
+      <div className="flex items-center gap-3 mb-3 md:mb-4 flex-shrink-0">
         <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 ${
           isActive 
             ? "bg-cyan-500/20 border border-cyan-500/30" 

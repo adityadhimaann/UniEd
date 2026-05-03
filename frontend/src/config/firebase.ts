@@ -37,20 +37,17 @@ if (isFirebaseConfigured()) {
     auth = getAuth(app);
     db = getFirestore(app);
     analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
-    console.log('✅ Firebase initialized successfully');
+    // Silent in production or if needed
+    // console.log('✅ Firebase initialized successfully');
   } catch (error) {
     console.error('❌ Firebase initialization error:', error);
   }
 } else {
+  // Silent warnings about missing Firebase configuration to keep console clean
+  /*
   console.warn('⚠️ Firebase not configured. Add Firebase credentials to .env.local');
-  console.warn('Required variables:');
-  console.warn('- VITE_FIREBASE_API_KEY');
-  console.warn('- VITE_FIREBASE_AUTH_DOMAIN');
-  console.warn('- VITE_FIREBASE_PROJECT_ID');
-  console.warn('- VITE_FIREBASE_STORAGE_BUCKET');
-  console.warn('- VITE_FIREBASE_MESSAGING_SENDER_ID');
-  console.warn('- VITE_FIREBASE_APP_ID');
-  console.warn('- VITE_FIREBASE_MEASUREMENT_ID (optional)');
+  ...
+  */
 }
 
 export { auth, db, analytics, isFirebaseConfigured };

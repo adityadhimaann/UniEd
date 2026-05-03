@@ -40,17 +40,17 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
   };
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
-      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-6 md:space-y-8 shadow-xl mt-16 md:mt-20">
+    <div className="absolute inset-0 flex items-center justify-center p-4 lg:p-8 overflow-y-auto pt-20">
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-4 md:space-y-8 shadow-xl mt-4 md:mt-20">
         {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="flex justify-center mb-4">
-            <img src={lisaPng} alt="Lisa AI" className="h-20 w-20 rounded-2xl shadow-lg" />
+        <div className="text-center space-y-2 md:space-y-3">
+          <div className="flex justify-center mb-2 md:mb-4">
+            <img src={lisaPng} alt="Lisa AI" className="h-16 w-16 md:h-20 md:w-20 rounded-2xl shadow-lg" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
             AI Assessment
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
+          <p className="text-muted-foreground text-xs md:text-base">
             Test your knowledge with AI-powered adaptive questions
           </p>
         </div>
