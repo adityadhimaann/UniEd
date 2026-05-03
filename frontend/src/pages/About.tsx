@@ -196,17 +196,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-        {/* Global Impact / Mission */}
-        <section className="py-24 bg-card/50 border-y border-border/50">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                To bridge the global education gap by providing a modern, accessible, and intelligent platform that empowers learners and educators worldwide.
-              </p>
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />
