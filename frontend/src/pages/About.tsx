@@ -165,14 +165,6 @@ export default function AboutPage() {
                     "I built UniEd to solve the disconnect between modern technology and traditional education. It's not just a portal; it's a living ecosystem designed to make learning feel like a superpower."
                   </p>
                   
-                  {/* Mission directly inside the Right Content Area - Refined for mobile */}
-                  <div className="mb-8 lg:mb-10 p-5 lg:p-6 rounded-2xl bg-primary/5 border border-primary/10 text-left">
-                    <h3 className="text-sm font-bold mb-2 text-primary uppercase tracking-widest font-display">Our Mission</h3>
-                    <p className="text-base lg:text-lg text-muted-foreground leading-relaxed italic">
-                      "To bridge the global education gap by providing a modern, accessible, and intelligent platform that empowers learners and educators worldwide."
-                    </p>
-                  </div>
-                  
                   <div className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-4">
                     <Button variant="outline" className="h-12 lg:h-14 px-8 rounded-2xl gap-2 border-primary/20 hover:border-primary hover:bg-primary hover:text-white transition-all duration-300 w-full sm:w-auto" asChild>
                       <a href="mailto:dhimanaditya56@gmail.com">
@@ -193,6 +185,17 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Global Impact / Mission */}
+        <section className="py-24 bg-card/50 border-y border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                To bridge the global education gap by providing a modern, accessible, and intelligent platform that empowers learners and educators worldwide.
+              </p>
+            </div>
+          </div>
+        </section>
         {/* Global Impact / Mission */}
         <section className="py-24 bg-card/50 border-y border-border/50">
           <div className="container mx-auto px-4">
