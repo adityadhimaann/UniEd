@@ -39,7 +39,7 @@ class AuthService {
       }
     }
 
-    // Create user (verified immediately - no OTP required)
+    // Create user but keep unverified for OTP flow
     try {
       const user = await User.create({
         email,
@@ -48,7 +48,7 @@ class AuthService {
         firstName,
         lastName,
         authProvider: 'local',
-        isVerified: true, // Auto-verify user
+        isVerified: false, // User must verify via OTP now
         academicInfo: {
           studentId: (role === 'student' && studentId?.trim()) ? studentId : undefined,
           employeeId: (role !== 'student' && employeeId?.trim()) ? employeeId : undefined,
@@ -57,26 +57,14 @@ class AuthService {
         },
       });
 
-      // Send welcome email (non-blocking)
-      emailService.sendWelcomeEmail(user).catch(error => {
-        console.error('Failed to send welcome email:', error.message);
-      });
-
-      // Generate tokens for immediate login
-      const accessToken = generateAccessToken({
-        userId: user._id,
-        role: user.role,
-      });
-
-      const refreshToken = generateRefreshToken({
-        userId: user._id,
-      });
+      // Send OTP immediately upon registration
+      console.log(`🔐 Generating and sending registration OTP for ${email}`);
+      await otpService.createAndSendOTP(email, 'email_verification');
 
       return {
-        accessToken,
-        refreshToken,
         user: sanitizeUser(user),
-        message: 'Registration successful! Welcome to UniEd.',
+        requiresVerification: true,
+        message: 'Registration successful. Please check your email for the verification code.',
       };
     } catch (error) {
       // If it's a validation error, let it bubble up to the error handler
