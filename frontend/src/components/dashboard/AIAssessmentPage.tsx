@@ -125,7 +125,7 @@ export default function AIAssessmentPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-50 pt-32 md:pt-40">
+    <div className="fixed inset-0 flex overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-50 pt-16 md:pt-20">
       {/* Sidebar - compact width */}
       <div className="w-[220px] bg-slate-900/50 border-r border-slate-700/50 flex-shrink-0">
         <div className="h-full p-4">
