@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
-import myImg from "@/assets/myimg.jpeg";
+import myImg from "@/assets/myimgs.jpeg";
 
 const features = [
   {
@@ -131,41 +131,38 @@ export default function AboutPage() {
         </section>
 
         {/* Creator Section */}
-        <section className="py-32 relative overflow-hidden">
+        <section className="py-0 relative overflow-hidden bg-secondary/30">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
           <div className="container mx-auto px-4 relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-16 max-w-6xl mx-auto text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row items-stretch gap-16 max-w-6xl mx-auto text-center lg:text-left">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="relative shrink-0"
+                className="relative shrink-0 flex items-end"
               >
-                <div className="relative z-10 w-80 h-[400px] overflow-hidden shadow-[0_20px_50px_rgba(var(--primary-rgb),0.3)] group transition-all duration-700">
-                  <div className="w-full h-full bg-card overflow-hidden">
+                <div className="relative z-10 w-96 h-[500px] group transition-all duration-700">
+                  <div className="w-full h-full overflow-hidden flex items-end">
                     <img 
                       src={myImg} 
-                      alt="Aditya Dhiman" 
-                      className="w-full h-full object-cover object-[center_15%]"
+                      alt="Aditya" 
+                      className="w-full h-full object-contain object-bottom mix-blend-normal brightness-105"
                     />
                   </div>
                 </div>
-                {/* Decorative Elements */}
-                <div className="absolute -top-6 -left-6 w-24 h-24 bg-accent/20 rounded-full blur-2xl animate-pulse" />
-                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-primary/20 rounded-full blur-2xl animate-pulse delay-700" />
               </motion.div>
 
-              <div className="flex-1">
+              <div className="flex-1 py-32 flex flex-col justify-center">
                 <motion.div
                   initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                 >
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-6">
-                    <Sparkles className="w-4 h-4" />
+                    
                     MEET THE ARCHITECT
                   </div>
-                  <h2 className="text-4xl md:text-5xl font-bold mb-4 font-display">Aditya Dhiman</h2>
+                  <h2 className="text-4xl md:text-5xl font-bold mb-4 font-display">Aditya Kumar</h2>
                   <p className="text-xl font-medium text-accent mb-6 uppercase tracking-[0.2em]">Founder & Lead Developer</p>
                   <p className="text-lg text-muted-foreground mb-10 leading-relaxed italic border-l-4 border-primary/30 pl-6 py-2">
                     "I built UniEd to solve the disconnect between modern technology and traditional education. It's not just a portal; it's a living ecosystem designed to make learning feel like a superpower."
