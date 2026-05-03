@@ -131,17 +131,17 @@ export default function AboutPage() {
         </section>
 
         {/* Creator Section */}
-        <section className="py-0 relative overflow-hidden bg-secondary/30">
+        <section className="py-12 lg:py-0 relative overflow-hidden bg-secondary/30">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
           <div className="container mx-auto px-4 relative z-10">
-            <div className="flex flex-col lg:flex-row items-stretch gap-16 max-w-6xl mx-auto text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row items-stretch gap-8 lg:gap-16 max-w-6xl mx-auto text-center lg:text-left">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="relative shrink-0 flex items-end"
+                className="relative shrink-0 flex items-end justify-center lg:justify-start"
               >
-                <div className="relative z-10 w-96 h-[500px] group transition-all duration-700">
+                <div className="relative z-10 w-full max-w-[320px] sm:max-w-96 h-[400px] lg:h-[500px] group transition-all duration-700">
                   <div className="w-full h-full overflow-hidden flex items-end">
                     <img 
                       src={myImg} 
@@ -152,30 +152,37 @@ export default function AboutPage() {
                 </div>
               </motion.div>
 
-              <div className="flex-1 py-32 flex flex-col justify-center">
+              <div className="flex-1 py-12 lg:py-32 flex flex-col justify-center">
                 <motion.div
                   initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                 >
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-6">
-                    
                     MEET THE ARCHITECT
                   </div>
-                  <h2 className="text-4xl md:text-5xl font-bold mb-4 font-display">Aditya Kumar</h2>
-                  <p className="text-xl font-medium text-accent mb-6 uppercase tracking-[0.2em]">Founder & Lead Developer</p>
-                  <p className="text-lg text-muted-foreground mb-10 leading-relaxed italic border-l-4 border-primary/30 pl-6 py-2">
+                  <h2 className="text-3xl md:text-5xl font-bold mb-4 font-display">Aditya Kumar</h2>
+                  <p className="text-lg md:text-xl font-medium text-accent mb-6 uppercase tracking-[0.2em]">Founder & Lead Developer</p>
+                  <p className="text-base md:text-lg text-muted-foreground mb-8 lg:mb-10 leading-relaxed italic border-l-4 border-primary/30 pl-4 lg:pl-6 py-2">
                     "I built UniEd to solve the disconnect between modern technology and traditional education. It's not just a portal; it's a living ecosystem designed to make learning feel like a superpower."
                   </p>
                   
-                  <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-                    <Button variant="outline" className="h-14 px-8 rounded-2xl gap-2 border-primary/20 hover:border-primary hover:bg-primary hover:text-white transition-all duration-300" asChild>
+                  {/* Mission directly inside the Right Content Area - Refined for mobile */}
+                  <div className="mb-8 lg:mb-10 p-5 lg:p-6 rounded-2xl bg-primary/5 border border-primary/10 text-left">
+                    <h3 className="text-sm font-bold mb-2 text-primary uppercase tracking-widest font-display">Our Mission</h3>
+                    <p className="text-base lg:text-lg text-muted-foreground leading-relaxed italic">
+                      "To bridge the global education gap by providing a modern, accessible, and intelligent platform that empowers learners and educators worldwide."
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-4">
+                    <Button variant="outline" className="h-12 lg:h-14 px-8 rounded-2xl gap-2 border-primary/20 hover:border-primary hover:bg-primary hover:text-white transition-all duration-300 w-full sm:w-auto" asChild>
                       <a href="mailto:dhimanaditya56@gmail.com">
                         <Mail className="w-5 h-5" />
                         Get in Touch
                       </a>
                     </Button>
-                    <Button variant="outline" className="h-14 px-8 rounded-2xl gap-2 border-[#0077B5]/20 hover:border-[#0077B5] hover:bg-[#0077B5] hover:text-white group transition-all duration-300" asChild>
+                    <Button variant="outline" className="h-12 lg:h-14 px-8 rounded-2xl gap-2 border-[#0077B5]/20 hover:border-[#0077B5] hover:bg-[#0077B5] hover:text-white group transition-all duration-300 w-full sm:w-auto" asChild>
                       <a href="https://www.linkedin.com/in/adityadhimaann" target="_blank" rel="noopener noreferrer">
                         <Linkedin className="w-5 h-5 text-[#0077B5] group-hover:text-white transition-colors" />
                         Connect on LinkedIn
