@@ -117,7 +117,7 @@ export default function AIAssessmentPage() {
     return (
       <div className="absolute inset-0 -m-3 lg:-m-6 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <img src={lisaGif} alt="Lisa Loading" className="h-24 w-24 md:h-32 md:w-32 mx-auto" />
+          <img src={lisaGif} alt="Lisa Loading" className="h-24 w-24 md:h-32 md:w-32 mx-auto mix-blend-screen" />
           <p className="text-muted-foreground">Lisa is generating your first question...</p>
         </div>
       </div>

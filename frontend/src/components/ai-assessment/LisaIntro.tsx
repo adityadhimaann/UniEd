@@ -103,11 +103,13 @@ export function LisaIntro({ onComplete }: LisaIntroProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2 }}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setVideoEnded(true);
               onComplete();
             }}
-            className="absolute bottom-8 right-8 px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 text-sm font-medium"
+            className="absolute bottom-8 right-8 px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 text-sm font-medium z-[110] cursor-pointer"
           >
             Skip Intro →
           </motion.button>

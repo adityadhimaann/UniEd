@@ -121,7 +121,7 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
         >
           {isLoading ? (
             <>
-              <img src={lisaGif} alt="Loading" className="h-5 w-5 mr-2" />
+              <img src={lisaGif} alt="Loading" className="h-5 w-5 mr-2 mix-blend-screen" />
               Lisa is preparing...
             </>
           ) : (
