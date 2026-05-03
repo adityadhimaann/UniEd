@@ -106,7 +106,8 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(user, resetToken) {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
     const firstName = user.firstName || user.profile?.firstName || 'User';
 
     const html = `

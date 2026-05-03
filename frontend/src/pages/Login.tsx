@@ -42,6 +42,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
@@ -53,6 +54,13 @@ export default function Login() {
   const errorParam = searchParams.get('error');
 
   useEffect(() => {
+    // Load remembered email if exists
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+
     const interval = setInterval(() => {
       setCurrentContentIndex((prev) => (prev + 1) % educationContent.length);
     }, 4000); // Change every 4 seconds
@@ -116,6 +124,14 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(email, password);
+      
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+
       toast({
         title: "Success",
         description: "Logged in successfully!",
@@ -319,7 +335,11 @@ export default function Login() {
             {/* Remember me & Forgot password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Checkbox id="remember" />
+                <Checkbox 
+                  id="remember" 
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
                 <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
                   Remember me
                 </Label>
