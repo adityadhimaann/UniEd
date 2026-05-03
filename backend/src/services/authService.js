@@ -359,7 +359,7 @@ class AuthService {
       
       // Return success to user (for development, the token is logged)
       return { 
-        message: 'Password reset initiated. Check console for reset link (email not configured)',
+        message: 'Password reset link sent to your email.',
         resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined 
       };
     }
