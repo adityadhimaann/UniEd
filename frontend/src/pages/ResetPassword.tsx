@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
-import { Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight, CheckCircle, Check } from "lucide-react";
 import uniEdLogo from "@/assets/UniEdlogoo.png";
 import eduBg4 from "@/assets/edu-bg-4.jpg";
 import { Button } from "@/components/ui/button";
@@ -226,6 +226,24 @@ export default function ResetPassword() {
                       </button>
                     </div>
                   </div>
+
+                  {password && confirmPassword && (
+                    <div className={`flex items-center gap-2 text-sm transition-all duration-300 ${
+                      password === confirmPassword ? "text-green-500" : "text-destructive"
+                    }`}>
+                      {password === confirmPassword ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Passwords match perfectly</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                          <span>Passwords do not match yet</span>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <Button
                     type="submit"
