@@ -40,8 +40,8 @@ export function TopicSelector({ onStart, isLoading }: TopicSelectorProps) {
   };
 
   return (
-    <div className="absolute inset-0 -m-3 lg:-m-6 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-6 md:space-y-8 shadow-xl my-auto">
+    <div className="absolute inset-0 flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-6 md:space-y-8 shadow-xl">
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="flex justify-center mb-4">
