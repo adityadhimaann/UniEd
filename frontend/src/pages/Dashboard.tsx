@@ -330,10 +330,10 @@ export default function Dashboard() {
             <GlobalSearch />
 
             {/* Right side */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 relative">
               {/* Instructor Portal Link (for faculty) */}
               {user.role === "faculty" && (
-                <Link to="/instructor">
+                <Link to="/instructor" className="hidden sm:block">
                   <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
                     <Users className="w-4 h-4 mr-2" />
                     Instructor Portal

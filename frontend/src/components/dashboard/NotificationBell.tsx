@@ -274,10 +274,10 @@ export function NotificationBell() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="fixed right-2 sm:absolute sm:right-0 mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-96 z-50"
+              className="fixed right-2 sm:absolute sm:right-0 mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-96 z-50 notification-panel"
             >
               {/* Arrow pointer */}
-              <div className="absolute -top-2 right-4 w-4 h-4 bg-white border-l border-t border-gray-200 transform rotate-45"></div>
+              <div className="absolute -top-2 right-10 sm:right-4 w-4 h-4 bg-white border-l border-t border-gray-200 transform rotate-45"></div>
               
               <Card className="bg-white border-gray-200 shadow-lg rounded-xl overflow-hidden relative">
                 <div className="p-4 border-b border-gray-200">
