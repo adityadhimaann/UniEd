@@ -274,10 +274,10 @@ export function NotificationBell() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="fixed right-4 sm:absolute sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-96 z-50 notification-panel"
+              className="fixed right-2 sm:absolute sm:right-0 mt-2 w-[calc(100vw-1rem)] sm:w-80 md:w-96 z-50 notification-panel"
             >
-              {/* Arrow pointer - Adjusted to point exactly to the bell icon */}
-              <div className="absolute -top-2 right-[60px] sm:right-4 w-4 h-4 bg-white border-l border-t border-gray-200 transform rotate-45 z-50"></div>
+              {/* Arrow pointer - Locked to the bell icon center */}
+              <div className="absolute -top-2 right-[50px] sm:right-4 w-4 h-4 bg-white border-l border-t border-gray-100 transform rotate-45 z-[60] shadow-[-2px_-2px_5px_rgba(0,0,0,0.02)]"></div>
               
               <Card className="bg-white border-gray-200 shadow-lg rounded-xl overflow-hidden relative">
                 <div className="p-4 border-b border-gray-200">
