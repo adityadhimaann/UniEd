@@ -57,9 +57,14 @@ export function PremiumSection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="bg-gray-800 backdrop-blur-xl p-4 md:p-8"
+          className="relative bg-gradient-to-r from-[#020617] via-[#0f172a] to-black backdrop-blur-xl p-4 md:p-8 overflow-hidden"
         >
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-20 md:gap-48 items-center justify-between">
+          {/* Slanted divider effect at the right */}
+          <div className="absolute top-0 right-0 w-1/4 h-full hidden md:block">
+            <div className="absolute inset-0 bg-black transform skew-x-[-12deg] translate-x-12 border-l border-white/5" />
+          </div>
+
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-20 md:gap-48 items-center justify-between relative z-20">
             {/* Left Content */}
             <div className="text-center md:text-left">
               <motion.h2

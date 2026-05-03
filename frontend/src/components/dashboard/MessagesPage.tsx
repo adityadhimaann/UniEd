@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen, Image as ImageIcon, Camera, File, X, Eye, Download } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, Phone, Video, Circle, ArrowLeft, Mail, User as UserIcon, Shield, BookOpen, Image as ImageIcon, Camera, File, X, Eye, Download, Copy, Pencil, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -67,6 +67,11 @@ export function MessagesPage() {
   const [showFileViewer, setShowFileViewer] = useState(false);
   const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
   const [viewerFileUrl, setViewerFileUrl] = useState<string | null>(null);
+  
+  // New states for edit/copy/delete
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -115,6 +120,18 @@ export function MessagesPage() {
 
     socket.on('new:message', handleNewMessage);
 
+    // Listen for message updates/deletes
+    const handleSocketNotification = (data: any) => {
+      if (data.type === 'MESSAGE_UPDATE') {
+        const updatedMsg = data.message;
+        setMessages(prev => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m));
+      } else if (data.type === 'MESSAGE_DELETE') {
+        const deletedId = data.messageId;
+        setMessages(prev => prev.filter(m => m._id !== deletedId));
+      }
+    };
+    socket.on('message:received', handleSocketNotification);
+
     // Listen for online/offline status
     socket.on('user:online', ({ userId }) => {
       setOnlineUsers(prev => new Set(prev).add(userId));
@@ -130,6 +147,7 @@ export function MessagesPage() {
 
     return () => {
       socket.off('new:message', handleNewMessage);
+      socket.off('message:received', handleSocketNotification);
       socket.off('user:online');
       socket.off('user:offline');
     };
@@ -397,6 +415,60 @@ export function MessagesPage() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleEditMessage = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+
+    try {
+      const updatedMessage = await messageService.updateMessage(editingMessageId, editContent.trim());
+      setMessages(prev => prev.map(m => m._id === editingMessageId ? updatedMessage : m));
+      
+      // Emit via socket for real-time update
+      const socket = getSocket();
+      if (socket && selectedConversation) {
+        socket.emit('message:modify', {
+          type: 'edit',
+          receiverId: selectedConversation.user._id,
+          messageId: editingMessageId,
+          message: updatedMessage
+        });
+      }
+
+      setEditingMessageId(null);
+      setEditContent("");
+      toast.success("Message updated");
+    } catch (error) {
+      console.error("Failed to edit message:", error);
+      toast.error("Failed to edit message");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      await messageService.deleteMessage(messageId);
+      
+      // Emit via socket for real-time delete
+      const socket = getSocket();
+      if (socket && selectedConversation) {
+        socket.emit('message:modify', {
+          type: 'delete',
+          receiverId: selectedConversation.user._id,
+          messageId: messageId
+        });
+      }
+
+      setMessages(prev => prev.filter(m => m._id !== messageId));
+      toast.success("Message deleted");
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+      toast.error("Failed to delete message");
+    }
+  };
+
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success("Message copied to clipboard");
   };
 
   const handleConversationClick = async (facultyUser: any) => {
@@ -810,13 +882,84 @@ export function MessagesPage() {
                               </div>
                             )}
                             {message.content && (
-                              <p className="text-sm p-3">{message.content}</p>
+                              <div className="group relative">
+                                {editingMessageId === message._id ? (
+                                  <div className="p-3 bg-background/10 rounded-lg m-1">
+                                    <textarea
+                                      className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none"
+                                      value={editContent}
+                                      onChange={(e) => setEditContent(e.target.value)}
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                          e.preventDefault();
+                                          handleEditMessage();
+                                        } else if (e.key === 'Escape') {
+                                          setEditingMessageId(null);
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex justify-end gap-1 mt-2">
+                                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingMessageId(null)}>
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleEditMessage}>
+                                        <Check className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="relative group/content max-w-full">
+                                    <p className="text-sm p-3 whitespace-pre-wrap">{message.content}</p>
+                                    <div className={`absolute top-0 ${isMe ? '-left-10' : '-right-10'} opacity-0 group-hover/content:opacity-100 transition-opacity flex gap-1 items-center h-full`}>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-background/80 hover:bg-background shadow-sm border border-border/50">
+                                            <MoreVertical className="w-3.5 h-3.5 text-foreground" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align={isMe ? "end" : "start"} className="w-32">
+                                          <DropdownMenuItem onClick={() => handleCopyMessage(message.content)}>
+                                            <Copy className="w-3.5 h-3.5 mr-2" />
+                                            Copy
+                                          </DropdownMenuItem>
+                                          {isMe && (
+                                            <>
+                                              <DropdownMenuItem onClick={() => {
+                                                setEditingMessageId(message._id);
+                                                setEditContent(message.content);
+                                              }}>
+                                                <Pencil className="w-3.5 h-3.5 mr-2" />
+                                                Edit
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem 
+                                                className="text-destructive focus:text-destructive"
+                                                onClick={() => handleDeleteMessage(message._id)}
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                Delete
+                                              </DropdownMenuItem>
+                                            </>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             )}
-                            <span className={`text-xs px-3 pb-2 block ${
-                              isMe ? "text-primary-foreground/70" : "text-muted-foreground"
-                            }`}>
-                              {formatTime(message.createdAt)}
-                            </span>
+                            <div className="flex items-center justify-between px-3 pb-2 gap-2">
+                              {message.isEdited && (
+                                <span className={`text-[10px] italic ${isMe ? "text-primary-foreground/50" : "text-muted-foreground/50"}`}>
+                                  Edited
+                                </span>
+                              )}
+                              <span className={`text-xs ml-auto ${
+                                isMe ? "text-primary-foreground/70" : "text-muted-foreground"
+                              }`}>
+                                {formatTime(message.createdAt)}
+                              </span>
+                            </div>
                           </div>
                         </motion.div>
                       );

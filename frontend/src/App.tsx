@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 import { MinimizedMeetingProvider } from "@/contexts/MinimizedMeetingContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -16,6 +17,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AuthCallback from "./pages/AuthCallback";
 import SetPassword from "./pages/SetPassword";
 import Welcome from "./pages/Welcome";
+import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import InstructorPortal from "./pages/InstructorPortal";
@@ -35,6 +37,25 @@ import VirtualClassroomMeeting from "./components/instructor/VirtualClassroomMee
 
 const queryClient = new QueryClient();
 
+// Component to handle scrolling to hash after navigation
+const ScrollToHash = () => {
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const id = hash.replace("#", "");
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+      }
+    }
+  }, [hash]);
+
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -48,6 +69,7 @@ const App = () => (
           }}
         >
           <MinimizedMeetingProvider>
+            <ScrollToHash />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -58,6 +80,7 @@ const App = () => (
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/welcome" element={<Welcome />} />
+              <Route path="/about" element={<About />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/dashboard/*" element={<Dashboard />} />

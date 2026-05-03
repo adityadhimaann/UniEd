@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const navItems = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "About", href: "#about" },
-  { label: "Contact", href: "#contact" },
+  { label: "Features", href: "/#features", isHash: true },
+  { label: "Pricing", href: "/#pricing", isHash: true },
+  { label: "About", href: "/about", isHash: false },
+  { label: "Contact", href: "/#contact", isHash: true },
 ];
 
 export function Navbar() {
@@ -48,12 +48,23 @@ export function Navbar() {
     setShowLogoutDialog(false);
   };
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleNavClick = (e: React.MouseEvent<any>, item: typeof navItems[0]) => {
+    if (!item.isHash) return; // Allow normal navigation for /about
+
     e.preventDefault();
-    const target = document.querySelector(href);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setIsMobileMenuOpen(false);
+    if (window.location.pathname !== '/') {
+      // If we are not on home, navigate to home with the hash
+      navigate(item.href);
+      return;
+    }
+
+    const hash = item.href.includes('#') ? item.href.split('#')[1] : null;
+    if (hash) {
+      const target = document.getElementById(hash);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setIsMobileMenuOpen(false);
+      }
     }
   };
 
@@ -83,15 +94,26 @@ export function Navbar() {
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center gap-8">
               {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => handleNavClick(e, item.href)}
-                  className="text-muted-foreground hover:text-foreground transition-colors duration-200 relative group cursor-pointer"
-                >
-                  {item.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
-                </a>
+                item.isHash ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => handleNavClick(e, item)}
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200 relative group cursor-pointer"
+                  >
+                    {item.label}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
+                  </a>
+                ) : (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200 relative group cursor-pointer"
+                  >
+                    {item.label}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
+                  </Link>
+                )
               ))}
             </div>
 
@@ -153,17 +175,34 @@ export function Navbar() {
         <div className="absolute right-0 top-0 h-full w-72 bg-card border-l border-border p-6 pt-24">
           <nav className="flex flex-col gap-4">
             {navItems.map((item, index) => (
-              <motion.a
-                key={item.label}
-                href={item.href}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 cursor-pointer"
-                onClick={(e) => handleNavClick(e, item.href)}
-              >
-                {item.label}
-              </motion.a>
+              item.isHash ? (
+                <motion.a
+                  key={item.label}
+                  href={item.href}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 cursor-pointer"
+                  onClick={(e) => handleNavClick(e, item)}
+                >
+                  {item.label}
+                </motion.a>
+              ) : (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <motion.span
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 cursor-pointer block"
+                  >
+                    {item.label}
+                  </motion.span>
+                </Link>
+              )
             ))}
             <div className="border-t border-border pt-4 mt-4 space-y-4">
               {user ? (

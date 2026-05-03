@@ -106,6 +106,21 @@ const deleteConversation = async (otherUserId: string): Promise<void> => {
   await api.delete(`/messages/${otherUserId}`);
 };
 
+/**
+ * Update a message
+ */
+const updateMessage = async (messageId: string, content: string): Promise<Message> => {
+  const response = await api.patch(`/messages/message/${messageId}`, { content });
+  return response.data.data;
+};
+
+/**
+ * Delete a single message
+ */
+const deleteMessage = async (messageId: string): Promise<void> => {
+  await api.delete(`/messages/message/${messageId}`);
+};
+
 export default {
   getConversations,
   getFacultyByCourse,
@@ -114,4 +129,6 @@ export default {
   sendMessage,
   markAsRead,
   deleteConversation,
+  updateMessage,
+  deleteMessage,
 };
