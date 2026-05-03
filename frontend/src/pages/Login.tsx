@@ -378,11 +378,12 @@ export default function Login() {
                 window.location.href = `${oauthUrl}/api/v1/oauth/microsoft`;
               }}
             >
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1024px-Microsoft_logo.svg.png" 
-                alt="Microsoft" 
-                className="w-5 h-5 mr-2 object-contain"
-              />
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 23 23">
+                <path fill="#f3f3f3" d="M0 0h11v11H0z"/>
+                <path fill="#f3f3f3" d="M12 0h11v11H12z"/>
+                <path fill="#f3f3f3" d="M0 12h11v11H0z"/>
+                <path fill="#f3f3f3" d="M12 12h11v11H12z"/>
+              </svg>
               Microsoft
             </Button>
           </div>
