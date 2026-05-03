@@ -116,7 +116,7 @@ export default function AIAssessmentPage() {
   if (isLoading && !currentQuestion) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center space-y-4 mt-12 md:mt-20">
+        <div className="text-center space-y-4">
           <img src={lisaGif} alt="Lisa Loading" className="h-24 w-24 md:h-32 md:w-32 mx-auto mix-blend-screen" />
           <p className="text-muted-foreground">Lisa is generating your first question...</p>
         </div>
@@ -125,7 +125,7 @@ export default function AIAssessmentPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-50 pt-10 md:pt-14">
+    <div className="fixed inset-0 flex overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-50 pt-20 md:pt-28">
       {/* Sidebar - compact width */}
       <div className="w-[220px] bg-slate-900/50 border-r border-slate-700/50 flex-shrink-0">
         <div className="h-full p-4">
