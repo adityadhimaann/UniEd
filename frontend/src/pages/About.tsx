@@ -74,7 +74,7 @@ export default function AboutPage() {
       
       <main className="pt-24 pb-16">
         {/* Hero Section */}
-        <section className="relative py-24 overflow-hidden">
+        <section className="relative py-16 md:py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background z-0" />
           <div className="container relative z-10 mx-auto px-4 text-center">
             <motion.div
@@ -82,13 +82,14 @@ export default function AboutPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h1 className="text-5xl md:text-7xl font-display font-bold mb-8 tracking-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-display font-bold mb-6 md:mb-8 tracking-tight leading-[1.1]">
                 Empowering the Future of{" "}
+                <br className="hidden sm:block" />
                 <span className="bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent">
                   Learning
                 </span>
               </h1>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
+              <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 md:mb-12 leading-relaxed px-4">
                 UniEd is a sophisticated ecosystem engineered to transform the educational landscape. We combine cutting-edge technology with intuitive design to create the ultimate learning environment.
               </p>
             </motion.div>
@@ -96,14 +97,14 @@ export default function AboutPage() {
         </section>
 
         {/* Features Grid - Detailed Showcase */}
-        <section className="py-24 relative">
+        <section className="py-16 md:py-24 relative">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12 md:mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Core Ecosystem</h2>
               <p className="text-muted-foreground">Everything you need to excel in your academic journey.</p>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:grid-cols-2 lg:gap-8 max-w-7xl mx-auto">
               {features.map((feature, index) => (
                 <motion.div
                   key={feature.title}
@@ -112,18 +113,15 @@ export default function AboutPage() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ y: -8 }}
-                  className="group relative p-8 rounded-3xl bg-card border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-xl shadow-primary/5"
+                  className="group relative p-6 md:p-8 rounded-2xl md:rounded-3xl bg-card border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-xl shadow-primary/5"
                 >
-                  <div className={`w-14 h-14 rounded-2xl ${feature.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
-                    <feature.icon className={`w-7 h-7 ${feature.color}`} />
+                  <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl ${feature.bg} flex items-center justify-center mb-5 md:mb-6 group-hover:scale-110 transition-transform duration-500`}>
+                    <feature.icon className={`w-6 h-6 md:w-7 md:h-7 ${feature.color}`} />
                   </div>
-                  <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 group-hover:text-primary transition-colors">{feature.title}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
-                  <div className="absolute bottom-4 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <ArrowRight className="w-5 h-5 text-primary" />
-                  </div>
                 </motion.div>
               ))}
             </div>
