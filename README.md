@@ -225,7 +225,28 @@ Backend:   http://localhost:5000
 
 ---
 
-## 📁 Project Structure
+## � Running with Docker
+
+You can run the UniEd backend using Docker for a more consistent environment.
+
+### 1. Build the Backend Image
+From the root directory:
+```bash
+cd backend
+docker build -t unied-backend .
+```
+
+### 2. Run the Backend Container
+Make sure your `.env` file is ready in the `backend` folder and run:
+```bash
+docker run -p 5000:5000 --env-file .env unied-backend
+```
+
+*Note: If your database is running on your Mac (outside the container), update your `MONGODB_URI` or `DATABASE_URL` in `.env` to use `host.docker.internal` instead of `localhost`.*
+
+---
+
+## �📁 Project Structure
 
 ```
 UniEd/
