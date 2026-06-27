@@ -48,6 +48,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [canSubmit, setCanSubmit] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -72,6 +73,14 @@ export default function Signup() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (step === 3) {
+      setCanSubmit(false);
+      const timer = setTimeout(() => setCanSubmit(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
 
   const passwordStrength = () => {
     const { password } = formData;
@@ -543,8 +552,8 @@ export default function Signup() {
               ) : (
                 <Button
                   type="submit"
-                  disabled={isLoading}
-                  className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                  disabled={isLoading || !canSubmit}
+                  className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground transition-all"
                 >
                   {isLoading ? "Creating..." : "Create Account"}
                   {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
