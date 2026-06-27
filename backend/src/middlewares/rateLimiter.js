@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : (parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100), // 1000 in dev, 100 in production
+  max: process.env.NODE_ENV === 'development' ? 1000 : (parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500), // Increased from 100 to 500 for testing
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later',
@@ -16,7 +16,7 @@ export const apiLimiter = rateLimit({
 // Strict rate limiter for auth routes
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 100 : 20, // 100 in dev, 20 in production
+  max: process.env.NODE_ENV === 'development' ? 100 : 50, // Increased from 20 to 50 for testing
   skipSuccessfulRequests: true,
   message: {
     success: false,
