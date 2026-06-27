@@ -18,7 +18,7 @@ const roles = [
   { id: "student", label: "Student", icon: "🎓", description: "Access courses, submit assignments, track grades" },
   { id: "faculty", label: "Faculty", icon: "📚", description: "Create courses, manage students, grade work" },
   { id: "admin", label: "Administrator", icon: "⚙️", description: "Manage institution, users, and settings" },
-];
+] as const;
 
 const educationContent = [
   {
