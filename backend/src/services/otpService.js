@@ -34,18 +34,21 @@ class OTPService {
     console.log(`⏱️  Valid for: 10 minutes`);
     console.log('='.repeat(60) + '\n');
 
-    // Send OTP via email
-    try {
-      if (type === 'email_verification') {
-        await emailService.sendOTPEmail(email, otpCode);
-        console.log(`✅ OTP email sent successfully to ${email}`);
-      } else if (type === 'password_reset') {
-        await emailService.sendPasswordResetOTP(email, otpCode);
-        console.log(`✅ Password reset OTP sent successfully to ${email}`);
-      }
-    } catch (error) {
-      console.error('❌ Failed to send OTP email:', error.message);
-      console.log('⚠️  Email delivery failed, but OTP is shown above');
+    // Send OTP via email (fire and forget to prevent hanging)
+    if (type === 'email_verification') {
+      emailService.sendOTPEmail(email, otpCode)
+        .then(() => console.log(`✅ OTP email sent successfully to ${email}`))
+        .catch(error => {
+          console.error('❌ Failed to send OTP email:', error.message);
+          console.log('⚠️  Email delivery failed, but OTP is shown above');
+        });
+    } else if (type === 'password_reset') {
+      emailService.sendPasswordResetOTP(email, otpCode)
+        .then(() => console.log(`✅ Password reset OTP sent successfully to ${email}`))
+        .catch(error => {
+          console.error('❌ Failed to send OTP email:', error.message);
+          console.log('⚠️  Email delivery failed, but OTP is shown above');
+        });
     }
 
     return {

@@ -530,15 +530,26 @@ export default function Signup() {
                   Back
                 </Button>
               )}
-              <Button
-                type={step === 3 ? "submit" : "button"}
-                onClick={step < 3 ? nextStep : undefined}
-                disabled={isLoading}
-                className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground"
-              >
-                {isLoading ? "Creating..." : step === 3 ? "Create Account" : "Continue"}
-                {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
-              </Button>
+              {step < 3 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={isLoading}
+                  className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                >
+                  {isLoading ? "Creating..." : "Create Account"}
+                  {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
+                </Button>
+              )}
             </div>
           </form>
 
