@@ -34,11 +34,11 @@ export const subscribeNewsletter = asyncHandler(async (req, res) => {
       </div>
     `;
 
-    await emailService.sendEmail(
+    emailService.sendEmail(
       'dhimanaditya56@gmail.com',
       'New Newsletter Subscription - UniEd',
       adminHtml
-    );
+    ).catch(err => console.error('Failed to send admin notification:', err));
 
     // Send thank you email to subscriber
     const subscriberHtml = `
@@ -92,11 +92,11 @@ export const subscribeNewsletter = asyncHandler(async (req, res) => {
       </div>
     `;
 
-    await emailService.sendEmail(
+    emailService.sendEmail(
       email,
       'Thank You for Subscribing to UniEd Newsletter! 🎉',
       subscriberHtml
-    );
+    ).catch(err => console.error('Failed to send subscriber email:', err));
 
     res.status(200).json({
       success: true,
