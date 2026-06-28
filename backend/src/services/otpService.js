@@ -8,17 +8,24 @@ class OTPService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
+  // Normalize email to avoid casing/spacing mismatches
+  normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+  }
+
   // Create and send OTP
   async createAndSendOTP(email, type = 'email_verification') {
+    const normalizedEmail = this.normalizeEmail(email);
+
     // Delete any existing OTPs for this email and type
-    await OTP.deleteMany({ email, type });
+    await OTP.deleteMany({ email: normalizedEmail, type });
 
     // Generate new OTP
     const otpCode = this.generateOTP();
 
     // Save OTP to database
-    const otp = await OTP.create({
-      email,
+    await OTP.create({
+      email: normalizedEmail,
       otp: otpCode,
       type,
       expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
@@ -28,27 +35,30 @@ class OTPService {
     console.log('\n' + '='.repeat(60));
     console.log('🔐 OTP CODE FOR VERIFICATION');
     console.log('='.repeat(60));
-    console.log(`📧 Email: ${email}`);
+    console.log(`📧 Email: ${normalizedEmail}`);
     console.log(`🔢 OTP: ${otpCode}`);
     console.log(`⏰ Expires: ${new Date(Date.now() + 10 * 60 * 1000).toLocaleString()}`);
-    console.log(`⏱️  Valid for: 10 minutes`);
+    console.log('⏱️  Valid for: 10 minutes');
     console.log('='.repeat(60) + '\n');
 
-    // Send OTP via email (fire and forget to prevent hanging)
-    if (type === 'email_verification') {
-      emailService.sendOTPEmail(email, otpCode)
-        .then(() => console.log(`✅ OTP email sent successfully to ${email}`))
-        .catch(error => {
-          console.error('❌ Failed to send OTP email:', error.message);
-          console.log('⚠️  Email delivery failed, but OTP is shown above');
-        });
-    } else if (type === 'password_reset') {
-      emailService.sendPasswordResetOTP(email, otpCode)
-        .then(() => console.log(`✅ Password reset OTP sent successfully to ${email}`))
-        .catch(error => {
-          console.error('❌ Failed to send OTP email:', error.message);
-          console.log('⚠️  Email delivery failed, but OTP is shown above');
-        });
+    // Send OTP via email and fail the request if delivery fails
+    try {
+      if (type === 'email_verification') {
+        await emailService.sendOTPEmail(normalizedEmail, otpCode);
+        console.log(`✅ OTP email sent successfully to ${normalizedEmail}`);
+      } else if (type === 'password_reset') {
+        await emailService.sendPasswordResetOTP(normalizedEmail, otpCode);
+        console.log(`✅ Password reset OTP sent successfully to ${normalizedEmail}`);
+      } else {
+        throw new Error(`Unsupported OTP type: ${type}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to send OTP email:', error?.message || error);
+
+      // Remove OTP record if email was not sent to avoid unusable OTPs in DB
+      await OTP.deleteMany({ email: normalizedEmail, type });
+
+      throw ApiError.internal('Failed to send OTP email. Please verify email settings and try again.');
     }
 
     return {
@@ -59,8 +69,10 @@ class OTPService {
 
   // Verify OTP
   async verifyOTP(email, otpCode, type = 'email_verification') {
+    const normalizedEmail = this.normalizeEmail(email);
+
     const otp = await OTP.findOne({
-      email,
+      email: normalizedEmail,
       type,
       verified: false,
     }).sort({ createdAt: -1 });
@@ -100,9 +112,11 @@ class OTPService {
 
   // Resend OTP
   async resendOTP(email, type = 'email_verification') {
+    const normalizedEmail = this.normalizeEmail(email);
+
     // Check if there's a recent OTP (within last 1 minute)
     const recentOTP = await OTP.findOne({
-      email,
+      email: normalizedEmail,
       type,
       createdAt: { $gte: Date.now() - 60 * 1000 },
     });
@@ -111,7 +125,7 @@ class OTPService {
       throw ApiError.badRequest('Please wait 1 minute before requesting a new OTP');
     }
 
-    return this.createAndSendOTP(email, type);
+    return this.createAndSendOTP(normalizedEmail, type);
   }
 
   // Clean up expired OTPs (optional, as MongoDB TTL index handles this)
