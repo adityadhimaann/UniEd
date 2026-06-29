@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import authService, { type RegisterData } from "@/services/authService";
+import authService, { type RegisterData, type RegisterResponse } from "@/services/authService";
 import { initializeSocket, disconnectSocket } from "@/lib/socket";
 
 export type UserRole = "student" | "faculty" | "admin";
@@ -35,7 +35,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: SignupData) => Promise<{ email: string; message: string }>;
+  signup: (data: SignupData) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;

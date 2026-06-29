@@ -37,6 +37,13 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface RegisterResponse {
+  user: AuthResponse['user'];
+  accessToken?: string;
+  refreshToken?: string;
+  requiresVerification?: boolean;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -52,8 +59,8 @@ class AuthService {
     return response.data.data;
   }
 
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+  async register(data: RegisterData): Promise<RegisterResponse> {
+    const response = await api.post<ApiResponse<RegisterResponse>>(
       '/auth/register',
       data
     );
