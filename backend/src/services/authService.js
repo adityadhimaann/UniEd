@@ -57,46 +57,30 @@ class AuthService {
         },
       });
 
-      const isEmailConfigured = process.env.EMAIL_HOST && process.env.EMAIL_USER;
+      // Always auto-verify users directly as per requirements
+      user.isVerified = true;
+      await user.save();
 
-      if (isEmailConfigured) {
-        // Send OTP immediately upon registration
-        console.log(`🔐 Generating and sending registration OTP for ${email}`);
-        await otpService.createAndSendOTP(email, 'email_verification');
+      // Generate tokens
+      const accessToken = generateAccessToken({
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+      });
 
-        return {
-          user: sanitizeUser(user),
-          requiresVerification: true,
-          message: 'Registration successful. Please check your email for the verification code.',
-        };
-      } else {
-        console.log(`⚠️ Email not configured. Auto-verifying user ${email}.`);
-        
-        user.isVerified = true;
-        await user.save();
+      const refreshToken = generateRefreshToken({
+        userId: user._id,
+      });
 
-        // Generate tokens
-        const accessToken = generateAccessToken({
-          userId: user._id,
-          email: user.email,
-          role: user.role,
-        });
+      user.refreshToken = refreshToken;
+      await user.save();
 
-        const refreshToken = generateRefreshToken({
-          userId: user._id,
-        });
-
-        user.refreshToken = refreshToken;
-        await user.save();
-
-        return {
-          user: sanitizeUser(user),
-          requiresVerification: false,
-          accessToken,
-          refreshToken,
-          message: 'Registration successful.',
-        };
-      }
+      return {
+        user: sanitizeUser(user),
+        accessToken,
+        refreshToken,
+        message: 'Registration successful.',
+      };
     } catch (error) {
       // If it's a validation error, let it bubble up to the error handler
       if (error.name === 'ValidationError') {

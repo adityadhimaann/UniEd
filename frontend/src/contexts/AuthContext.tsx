@@ -99,14 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Helper function to set user after OTP verification (used by VerifyOTP page)
-  const setUserAfterVerification = (userData: User, accessToken: string, refreshToken: string) => {
-    setUser(userData);
-    localStorage.setItem("edu_user", JSON.stringify(userData));
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-    initializeSocket(accessToken);
-  };
 
   const signup = async (data: SignupData) => {
     try {
@@ -229,22 +221,3 @@ export function useAuth() {
   return context;
 }
 
-// Export helper for OTP verification
-export function useAuthHelpers() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuthHelpers must be used within an AuthProvider");
-  }
-  
-  const setUserAfterVerification = (userData: User, accessToken: string, refreshToken: string) => {
-    // This is a workaround to access the internal state setter
-    localStorage.setItem("edu_user", JSON.stringify(userData));
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-    initializeSocket(accessToken);
-    // Force a page reload to update the context
-    window.location.href = '/dashboard';
-  };
-  
-  return { setUserAfterVerification };
-}
